@@ -50,8 +50,16 @@ def test_events_logged_at_each_step():
 
 def test_full_pipeline_end_to_end_with_fault():
     sim = Simulation("e2e", seed=5)
-    sim.inject_fault(FaultType.SENSOR_DRIFT, "sensor", start_step=2, duration=10, metadata={"magnitude": 5.0})
-    sim.inject_fault(FaultType.CONTROLLER_BIAS, "controller_b", start_step=3, duration=10, metadata={"offset": 60.0})
+    sim.inject_fault(
+        FaultType.SENSOR_DRIFT, "sensor", start_step=2, duration=10, metadata={"magnitude": 5.0}
+    )
+    sim.inject_fault(
+        FaultType.CONTROLLER_BIAS,
+        "controller_b",
+        start_step=3,
+        duration=10,
+        metadata={"offset": 60.0},
+    )
     records = sim.run(10)
     assert len(records) == 10
     final_mode = records[-1].decision.system_mode

@@ -1,8 +1,7 @@
 import uuid
-from typing import Optional
 
 
-def new_id(prefix: Optional[str] = None) -> str:
+def new_id(prefix: str | None = None) -> str:
     base = uuid.uuid4().hex
     return f"{prefix}_{base}" if prefix else base
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -6,8 +6,8 @@ from ..domain.enums import FaultSeverity, FaultType
 
 
 class CreateSimulationRequest(BaseModel):
-    simulation_id: Optional[str] = None
-    seed: Optional[int] = None
+    simulation_id: str | None = None
+    seed: int | None = None
 
 
 class CreateSimulationResponse(BaseModel):
@@ -17,20 +17,20 @@ class CreateSimulationResponse(BaseModel):
 
 class StepResponse(BaseModel):
     step: int
-    sensor: Dict[str, Any]
-    controllers: List[Dict[str, Any]]
-    vote: Dict[str, Any]
-    decision: Dict[str, Any]
-    state: Dict[str, Any]
+    sensor: dict[str, Any]
+    controllers: list[dict[str, Any]]
+    vote: dict[str, Any]
+    decision: dict[str, Any]
+    state: dict[str, Any]
 
 
 class FaultRequest(BaseModel):
     type: FaultType
     target: str = Field(..., description="sensor | controller_a | controller_b | controller_c")
-    start_step: Optional[int] = None
-    duration: Optional[int] = None
+    start_step: int | None = None
+    duration: int | None = None
     severity: FaultSeverity = FaultSeverity.WARNING
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class FaultResponse(BaseModel):
@@ -38,9 +38,9 @@ class FaultResponse(BaseModel):
     type: FaultType
     target: str
     start_step: int
-    end_step: Optional[int]
+    end_step: int | None
     severity: FaultSeverity
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class StateResponse(BaseModel):
@@ -55,7 +55,7 @@ class StateResponse(BaseModel):
     pitch: float
     roll: float
     system_mode: str
-    last_action: Optional[str]
+    last_action: str | None
 
 
 class EventResponse(BaseModel):
@@ -66,4 +66,4 @@ class EventResponse(BaseModel):
     type: str
     severity: str
     message: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]

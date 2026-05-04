@@ -40,7 +40,8 @@ def test_timeline_reconstruction_combines_signals():
     assert last["sensor"] is not None
     assert last["decision"] is not None
     assert last["vote"] is not None
-    assert isinstance(last["controllers"], list) and len(last["controllers"]) == 3
+    assert isinstance(last["controllers"], list)
+    assert len(last["controllers"]) == 3
 
 
 def test_get_events_and_faults():

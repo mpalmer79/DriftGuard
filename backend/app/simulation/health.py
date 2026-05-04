@@ -1,10 +1,8 @@
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Deque, Dict, List
 
 from ..domain.enums import HealthStatus, SensorStatus, VoteOutcome
 from ..domain.models import ControllerOutput, SensorReading, VoteResult
-
 
 CONTROLLER_IDS = ("controller_a", "controller_b", "controller_c")
 
@@ -24,14 +22,14 @@ class DetectionFinding:
     component: str
     severity: HealthStatus
     message: str
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 
 @dataclass
 class TrustState:
-    components: Dict[str, ComponentHealth] = field(default_factory=dict)
-    disagreement_window: Deque[bool] = field(default_factory=lambda: deque(maxlen=10))
-    sensor_invalid_window: Deque[bool] = field(default_factory=lambda: deque(maxlen=10))
+    components: dict[str, ComponentHealth] = field(default_factory=dict)
+    disagreement_window: deque[bool] = field(default_factory=lambda: deque(maxlen=10))
+    sensor_invalid_window: deque[bool] = field(default_factory=lambda: deque(maxlen=10))
 
 
 class TrustDetector:
@@ -71,11 +69,11 @@ class TrustDetector:
 
     def update(
         self,
-        outputs: List[ControllerOutput],
+        outputs: list[ControllerOutput],
         vote_result: VoteResult,
         sensor: SensorReading,
-    ) -> List[DetectionFinding]:
-        findings: List[DetectionFinding] = []
+    ) -> list[DetectionFinding]:
+        findings: list[DetectionFinding] = []
 
         for out in outputs:
             misbehaving = (not out.valid) or (out.response_time_ms > self.latency_threshold_ms)
@@ -122,9 +120,12 @@ class TrustDetector:
         if not misbehaving and h.clean_streak >= self.recovery_steps:
             if h.status in (HealthStatus.CRITICAL, HealthStatus.DEGRADED):
                 new_status = HealthStatus.RECOVERING
-            elif h.status == HealthStatus.RECOVERING and h.clean_streak >= self.recovery_steps * 2:
-                new_status = HealthStatus.HEALTHY
-            elif h.status == HealthStatus.SUSPECT and h.clean_streak >= self.recovery_steps:
+            elif (
+                h.status == HealthStatus.RECOVERING
+                and h.clean_streak >= self.recovery_steps * 2
+                or h.status == HealthStatus.SUSPECT
+                and h.clean_streak >= self.recovery_steps
+            ):
                 new_status = HealthStatus.HEALTHY
 
         h.status = new_status
@@ -146,31 +147,37 @@ class TrustDetector:
     def disagreement_rate(self) -> float:
         if not self.state.disagreement_window:
             return 0.0
-        return sum(1 for x in self.state.disagreement_window if x) / len(self.state.disagreement_window)
+        return sum(1 for x in self.state.disagreement_window if x) / len(
+            self.state.disagreement_window
+        )
 
-    def unhealthy_controllers(self) -> List[str]:
+    def unhealthy_controllers(self) -> list[str]:
         return [
-            cid for cid in CONTROLLER_IDS
-            if self.state.components[cid].status in (HealthStatus.SUSPECT, HealthStatus.DEGRADED, HealthStatus.RECOVERING)
+            cid
+            for cid in CONTROLLER_IDS
+            if self.state.components[cid].status
+            in (HealthStatus.SUSPECT, HealthStatus.DEGRADED, HealthStatus.RECOVERING)
         ]
 
-    def critical_controllers(self) -> List[str]:
+    def critical_controllers(self) -> list[str]:
         return [
-            cid for cid in CONTROLLER_IDS
+            cid
+            for cid in CONTROLLER_IDS
             if self.state.components[cid].status == HealthStatus.CRITICAL
         ]
 
-    def degraded_controllers(self) -> List[str]:
+    def degraded_controllers(self) -> list[str]:
         return [
-            cid for cid in CONTROLLER_IDS
+            cid
+            for cid in CONTROLLER_IDS
             if self.state.components[cid].status == HealthStatus.DEGRADED
         ]
 
     def sensor_health(self) -> ComponentHealth:
         return self.state.components["sensor"]
 
-    def snapshot(self) -> Dict[str, Dict]:
-        out: Dict[str, Dict] = {}
+    def snapshot(self) -> dict[str, dict]:
+        out: dict[str, dict] = {}
         for cid, h in self.state.components.items():
             out[cid] = {
                 "status": h.status.value,

@@ -41,7 +41,9 @@ def _vote(outcome=VoteOutcome.CONSENSUS):
 
 
 def test_repeated_invalid_escalates_to_critical():
-    d = TrustDetector(latency_threshold_ms=50.0, critical_threshold=3, degraded_threshold=2, suspect_threshold=1)
+    d = TrustDetector(
+        latency_threshold_ms=50.0, critical_threshold=3, degraded_threshold=2, suspect_threshold=1
+    )
     for _ in range(3):
         d.update([_out(valid=False)], _vote(), _reading())
     assert d.state.components["controller_a"].status == HealthStatus.CRITICAL
@@ -57,7 +59,10 @@ def test_recovery_after_clean_streak():
     )
     for _ in range(2):
         d.update([_out(valid=False)], _vote(), _reading())
-    assert d.state.components["controller_a"].status in (HealthStatus.DEGRADED, HealthStatus.CRITICAL)
+    assert d.state.components["controller_a"].status in (
+        HealthStatus.DEGRADED,
+        HealthStatus.CRITICAL,
+    )
     for _ in range(2):
         d.update([_out(valid=True)], _vote(), _reading())
     assert d.state.components["controller_a"].status == HealthStatus.RECOVERING
@@ -71,7 +76,10 @@ def test_temporary_fault_does_not_poison_permanently():
     d.update([_out(valid=False)], _vote(), _reading())
     for _ in range(6):
         d.update([_out(valid=True)], _vote(), _reading())
-    assert d.state.components["controller_a"].status in (HealthStatus.HEALTHY, HealthStatus.RECOVERING)
+    assert d.state.components["controller_a"].status in (
+        HealthStatus.HEALTHY,
+        HealthStatus.RECOVERING,
+    )
 
 
 def test_disagreement_window_tracks_recent_outcomes():
@@ -85,7 +93,9 @@ def test_disagreement_window_tracks_recent_outcomes():
 def test_snapshot_contains_all_components():
     d = TrustDetector(latency_threshold_ms=50.0)
     snap = d.snapshot()
-    assert "controller_a" in snap and "controller_b" in snap and "controller_c" in snap
+    assert "controller_a" in snap
+    assert "controller_b" in snap
+    assert "controller_c" in snap
     assert "sensor" in snap
     assert "_global" in snap
 

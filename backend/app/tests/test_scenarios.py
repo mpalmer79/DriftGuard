@@ -1,6 +1,5 @@
 from app.scenarios import all_scenarios, get_scenario, run_scenario
 
-
 SCENARIO_NAMES = {s.name for s in all_scenarios()}
 
 
@@ -18,6 +17,7 @@ def test_six_scenarios_exist():
 
 def test_get_unknown_scenario_raises():
     import pytest
+
     from app.core.exceptions import ScenarioError
 
     with pytest.raises(ScenarioError):

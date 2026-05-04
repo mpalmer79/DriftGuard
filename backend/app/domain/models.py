@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from .enums import (
     Action,
-    SystemMode,
-    SensorStatus,
-    VoteOutcome,
-    FaultType,
     FaultSeverity,
+    FaultType,
+    SensorStatus,
+    SystemMode,
+    VoteOutcome,
 )
 
 
@@ -24,7 +24,7 @@ class VehicleState:
     pitch: float
     roll: float
     system_mode: SystemMode
-    last_action: Optional[Action]
+    last_action: Action | None
 
 
 @dataclass
@@ -38,7 +38,7 @@ class SensorReading:
     roll: float
     confidence: float
     status: SensorStatus
-    fault_flags: List[str] = field(default_factory=list)
+    fault_flags: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -55,9 +55,9 @@ class ControllerOutput:
 @dataclass
 class VoteResult:
     outcome: VoteOutcome
-    selected_action: Optional[Action]
-    agreeing_controllers: List[str]
-    rejected_controllers: List[str]
+    selected_action: Action | None
+    agreeing_controllers: list[str]
+    rejected_controllers: list[str]
     reason: str
 
 
@@ -69,8 +69,8 @@ class FaultRecord:
     severity: FaultSeverity
     active: bool
     start_step: int
-    end_step: Optional[int]
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    end_step: int | None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -80,5 +80,5 @@ class SystemDecision:
     system_mode: SystemMode
     safe_mode_active: bool
     justification: str
-    trusted_controllers: List[str]
-    rejected_controllers: List[str]
+    trusted_controllers: list[str]
+    rejected_controllers: list[str]

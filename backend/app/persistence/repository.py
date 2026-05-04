@@ -1,18 +1,24 @@
 import json
 import time
-from typing import List
 
-from ..domain.events import Event
-from ..domain.models import (
-    ControllerOutput,
-    FaultRecord,
-    SensorReading,
-    SystemDecision,
-    VehicleState,
-    VoteResult,
-)
+from ..domain.models import FaultRecord
 from ..simulation.orchestrator import Simulation, StepRecord
 from .database import Database
+from .repository_serialization import (
+    decision_row,
+    event_row_to_dict,
+    fault_row,
+    sensor_row,
+    vote_row,
+)
+from .repository_writes import (
+    save_decision,
+    save_event,
+    save_output,
+    save_sensor,
+    save_state,
+    save_vote,
+)
 
 
 class SimulationRepository:
@@ -25,19 +31,19 @@ class SimulationRepository:
             "INSERT OR REPLACE INTO simulations (id, seed, created_at) VALUES (?, ?, ?)",
             (sim.id, sim.seed, time.time()),
         )
+        save_state(conn, sim.id, sim.state)
         conn.commit()
-        self._save_state(sim.id, sim.state)
 
     def save_step(self, simulation_id: str, record: StepRecord) -> None:
         conn = self.db.connect()
-        self._save_state(simulation_id, record.state, conn=conn)
-        self._save_sensor(simulation_id, record.sensor, conn=conn)
+        save_state(conn, simulation_id, record.state)
+        save_sensor(conn, simulation_id, record.sensor)
         for out in record.outputs:
-            self._save_output(simulation_id, out, conn=conn)
-        self._save_vote(simulation_id, record.state.step, record.vote, conn=conn)
-        self._save_decision(simulation_id, record.decision, conn=conn)
+            save_output(conn, simulation_id, out)
+        save_vote(conn, simulation_id, record.state.step, record.vote)
+        save_decision(conn, simulation_id, record.decision)
         for ev in record.events:
-            self._save_event(simulation_id, ev, conn=conn)
+            save_event(conn, simulation_id, ev)
         conn.commit()
 
     def save_fault(self, simulation_id: str, fault: FaultRecord) -> None:
@@ -60,13 +66,13 @@ class SimulationRepository:
         )
         conn.commit()
 
-    def list_events(self, simulation_id: str) -> List[dict]:
+    def list_events(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM events WHERE simulation_id = ? ORDER BY step ASC, event_id ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._event_row_to_dict(r) for r in rows]
+        return [event_row_to_dict(r) for r in rows]
 
     def get_latest_state(self, simulation_id: str) -> dict | None:
         conn = self.db.connect()
@@ -76,21 +82,17 @@ class SimulationRepository:
         ).fetchone()
         return dict(row) if row else None
 
-    def list_simulations(self) -> List[dict]:
+    def list_simulations(self) -> list[dict]:
         conn = self.db.connect()
-        rows = conn.execute(
-            "SELECT * FROM simulations ORDER BY created_at DESC"
-        ).fetchall()
+        rows = conn.execute("SELECT * FROM simulations ORDER BY created_at DESC").fetchall()
         return [dict(r) for r in rows]
 
     def get_simulation(self, simulation_id: str) -> dict | None:
         conn = self.db.connect()
-        row = conn.execute(
-            "SELECT * FROM simulations WHERE id = ?", (simulation_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM simulations WHERE id = ?", (simulation_id,)).fetchone()
         return dict(row) if row else None
 
-    def get_step_records(self, simulation_id: str) -> List[dict]:
+    def get_step_records(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM vehicle_state WHERE simulation_id = ? ORDER BY step ASC",
@@ -98,31 +100,31 @@ class SimulationRepository:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def get_faults(self, simulation_id: str) -> List[dict]:
+    def get_faults(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM fault_records WHERE simulation_id = ? ORDER BY start_step ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._fault_row(r) for r in rows]
+        return [fault_row(r) for r in rows]
 
-    def get_decisions(self, simulation_id: str) -> List[dict]:
+    def get_decisions(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM system_decisions WHERE simulation_id = ? ORDER BY step ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._decision_row(r) for r in rows]
+        return [decision_row(r) for r in rows]
 
-    def get_sensor_readings(self, simulation_id: str) -> List[dict]:
+    def get_sensor_readings(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM sensor_readings WHERE simulation_id = ? ORDER BY step ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._sensor_row(r) for r in rows]
+        return [sensor_row(r) for r in rows]
 
-    def get_controller_outputs(self, simulation_id: str) -> List[dict]:
+    def get_controller_outputs(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM controller_outputs WHERE simulation_id = ? ORDER BY step ASC, controller_id ASC",
@@ -130,18 +132,18 @@ class SimulationRepository:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def get_votes(self, simulation_id: str) -> List[dict]:
+    def get_votes(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM vote_results WHERE simulation_id = ? ORDER BY step ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._vote_row(r) for r in rows]
+        return [vote_row(r) for r in rows]
 
-    def get_events(self, simulation_id: str) -> List[dict]:
+    def get_events(self, simulation_id: str) -> list[dict]:
         return self.list_events(simulation_id)
 
-    def get_timeline(self, simulation_id: str) -> List[dict]:
+    def get_timeline(self, simulation_id: str) -> list[dict]:
         states = {s["step"]: s for s in self.get_step_records(simulation_id)}
         sensors = {s["step"]: s for s in self.get_sensor_readings(simulation_id)}
         decisions = {d["step"]: d for d in self.get_decisions(simulation_id)}
@@ -158,164 +160,15 @@ class SimulationRepository:
         # snapshot.
         timeline = []
         for step in sorted(decisions):
-            timeline.append({
-                "step": step,
-                "state": states.get(step),
-                "sensor": sensors.get(step),
-                "controllers": outputs_by_step.get(step, []),
-                "vote": votes.get(step),
-                "decision": decisions.get(step),
-                "events": events_by_step.get(step, []),
-            })
+            timeline.append(
+                {
+                    "step": step,
+                    "state": states.get(step),
+                    "sensor": sensors.get(step),
+                    "controllers": outputs_by_step.get(step, []),
+                    "vote": votes.get(step),
+                    "decision": decisions.get(step),
+                    "events": events_by_step.get(step, []),
+                }
+            )
         return timeline
-
-    def _save_state(self, sim_id: str, s: VehicleState, conn=None) -> None:
-        c = conn or self.db.connect()
-        c.execute(
-            """INSERT OR REPLACE INTO vehicle_state
-            (simulation_id, step, timestamp, position_x, position_y, altitude,
-             velocity, heading, pitch, roll, system_mode, last_action)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                sim_id,
-                s.step,
-                s.timestamp,
-                s.position_x,
-                s.position_y,
-                s.altitude,
-                s.velocity,
-                s.heading,
-                s.pitch,
-                s.roll,
-                s.system_mode.value,
-                s.last_action.value if s.last_action else None,
-            ),
-        )
-        if conn is None:
-            c.commit()
-
-    def _save_sensor(self, sim_id: str, r: SensorReading, conn) -> None:
-        conn.execute(
-            """INSERT OR REPLACE INTO sensor_readings
-            (simulation_id, step, reading_id, altitude, velocity, heading,
-             pitch, roll, confidence, status, fault_flags)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                sim_id,
-                r.step,
-                r.reading_id,
-                r.altitude,
-                r.velocity,
-                r.heading,
-                r.pitch,
-                r.roll,
-                r.confidence,
-                r.status.value,
-                json.dumps(r.fault_flags),
-            ),
-        )
-
-    def _save_output(self, sim_id: str, o: ControllerOutput, conn) -> None:
-        conn.execute(
-            """INSERT OR REPLACE INTO controller_outputs
-            (simulation_id, step, controller_id, action, confidence,
-             reason_code, response_time_ms, valid)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                sim_id,
-                o.step,
-                o.controller_id,
-                o.action.value,
-                o.confidence,
-                o.reason_code,
-                o.response_time_ms,
-                int(o.valid),
-            ),
-        )
-
-    def _save_vote(self, sim_id: str, step: int, v: VoteResult, conn) -> None:
-        conn.execute(
-            """INSERT OR REPLACE INTO vote_results
-            (simulation_id, step, outcome, selected_action, agreeing, rejected, reason)
-            VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (
-                sim_id,
-                step,
-                v.outcome.value,
-                v.selected_action.value if v.selected_action else None,
-                json.dumps(v.agreeing_controllers),
-                json.dumps(v.rejected_controllers),
-                v.reason,
-            ),
-        )
-
-    def _save_decision(self, sim_id: str, d: SystemDecision, conn) -> None:
-        conn.execute(
-            """INSERT OR REPLACE INTO system_decisions
-            (simulation_id, step, final_action, system_mode, safe_mode_active,
-             justification, trusted, rejected)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                sim_id,
-                d.step,
-                d.final_action.value,
-                d.system_mode.value,
-                int(d.safe_mode_active),
-                d.justification,
-                json.dumps(d.trusted_controllers),
-                json.dumps(d.rejected_controllers),
-            ),
-        )
-
-    def _save_event(self, sim_id: str, e: Event, conn) -> None:
-        conn.execute(
-            """INSERT OR IGNORE INTO events
-            (event_id, simulation_id, step, timestamp, component, type,
-             severity, message, metadata)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (
-                e.event_id,
-                sim_id,
-                e.step,
-                e.timestamp,
-                e.component,
-                e.type.value,
-                e.severity.value,
-                e.message,
-                json.dumps(e.metadata),
-            ),
-        )
-
-    @staticmethod
-    def _event_row_to_dict(row) -> dict:
-        d = dict(row)
-        d["metadata"] = json.loads(d["metadata"])
-        return d
-
-    @staticmethod
-    def _fault_row(row) -> dict:
-        d = dict(row)
-        d["metadata"] = json.loads(d["metadata"])
-        d["active"] = bool(d["active"])
-        return d
-
-    @staticmethod
-    def _decision_row(row) -> dict:
-        d = dict(row)
-        d["trusted"] = json.loads(d["trusted"])
-        d["rejected"] = json.loads(d["rejected"])
-        d["safe_mode_active"] = bool(d["safe_mode_active"])
-        return d
-
-    @staticmethod
-    def _sensor_row(row) -> dict:
-        d = dict(row)
-        d["fault_flags"] = json.loads(d["fault_flags"])
-        return d
-
-    @staticmethod
-    def _vote_row(row) -> dict:
-        d = dict(row)
-        d["agreeing"] = json.loads(d["agreeing"])
-        d["rejected"] = json.loads(d["rejected"])
-        return d

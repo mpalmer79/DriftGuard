@@ -1,7 +1,5 @@
 import sqlite3
 from pathlib import Path
-from typing import Optional
-
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS simulations (
@@ -108,7 +106,7 @@ CREATE INDEX IF NOT EXISTS idx_events_sim_step ON events(simulation_id, step);
 class Database:
     def __init__(self, path: str = ":memory:") -> None:
         self.path = path
-        self._conn: Optional[sqlite3.Connection] = None
+        self._conn: sqlite3.Connection | None = None
 
     def connect(self) -> sqlite3.Connection:
         if self._conn is None:

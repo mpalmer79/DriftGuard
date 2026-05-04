@@ -64,7 +64,14 @@ def test_report_endpoints(client):
 
     js = client.get(f"/simulations/{sid}/report/json").json()
     assert js["simulation_id"] == sid
-    assert js["risk_assessment"]["level"] in {"NOMINAL", "LOW", "MODERATE", "ELEVATED", "HIGH", "UNKNOWN"}
+    assert js["risk_assessment"]["level"] in {
+        "NOMINAL",
+        "LOW",
+        "MODERATE",
+        "ELEVATED",
+        "HIGH",
+        "UNKNOWN",
+    }
 
     md = client.get(f"/simulations/{sid}/report/markdown").text
     assert "Mission Report" in md
