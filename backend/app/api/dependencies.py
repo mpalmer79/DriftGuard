@@ -1,17 +1,14 @@
-from typing import Dict
-
 from ..core.exceptions import NotFoundError
 from ..persistence.database import Database
 from ..persistence.repository import SimulationRepository
 from ..simulation.orchestrator import Simulation
 
-
-_simulations: Dict[str, Simulation] = {}
+_simulations: dict[str, Simulation] = {}
 _db = Database(path=":memory:")
 _repo = SimulationRepository(_db)
 
 
-def get_registry() -> Dict[str, Simulation]:
+def get_registry() -> dict[str, Simulation]:
     return _simulations
 
 

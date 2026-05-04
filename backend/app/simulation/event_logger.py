@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ..core.ids import event_id
 from ..domain.enums import EventSeverity, EventType
@@ -7,7 +7,7 @@ from ..domain.events import Event
 
 class EventLogger:
     def __init__(self) -> None:
-        self._events: List[Event] = []
+        self._events: list[Event] = []
 
     def log(
         self,
@@ -17,7 +17,7 @@ class EventLogger:
         type: EventType,
         severity: EventSeverity,
         message: str,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> Event:
         event = Event(
             event_id=event_id(),
@@ -32,8 +32,8 @@ class EventLogger:
         self._events.append(event)
         return event
 
-    def all(self) -> List[Event]:
+    def all(self) -> list[Event]:
         return list(self._events)
 
-    def since(self, step: int) -> List[Event]:
+    def since(self, step: int) -> list[Event]:
         return [e for e in self._events if e.step >= step]

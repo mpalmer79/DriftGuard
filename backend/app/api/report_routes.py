@@ -5,7 +5,6 @@ from ..core.exceptions import NotFoundError
 from ..reporting import build_report, render_markdown
 from . import dependencies as deps
 
-
 router = APIRouter()
 
 

@@ -1,6 +1,5 @@
 import json
 import time
-from typing import List
 
 from ..domain.models import FaultRecord
 from ..simulation.orchestrator import Simulation, StepRecord
@@ -67,7 +66,7 @@ class SimulationRepository:
         )
         conn.commit()
 
-    def list_events(self, simulation_id: str) -> List[dict]:
+    def list_events(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM events WHERE simulation_id = ? ORDER BY step ASC, event_id ASC",
@@ -83,21 +82,17 @@ class SimulationRepository:
         ).fetchone()
         return dict(row) if row else None
 
-    def list_simulations(self) -> List[dict]:
+    def list_simulations(self) -> list[dict]:
         conn = self.db.connect()
-        rows = conn.execute(
-            "SELECT * FROM simulations ORDER BY created_at DESC"
-        ).fetchall()
+        rows = conn.execute("SELECT * FROM simulations ORDER BY created_at DESC").fetchall()
         return [dict(r) for r in rows]
 
     def get_simulation(self, simulation_id: str) -> dict | None:
         conn = self.db.connect()
-        row = conn.execute(
-            "SELECT * FROM simulations WHERE id = ?", (simulation_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM simulations WHERE id = ?", (simulation_id,)).fetchone()
         return dict(row) if row else None
 
-    def get_step_records(self, simulation_id: str) -> List[dict]:
+    def get_step_records(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM vehicle_state WHERE simulation_id = ? ORDER BY step ASC",
@@ -105,7 +100,7 @@ class SimulationRepository:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def get_faults(self, simulation_id: str) -> List[dict]:
+    def get_faults(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM fault_records WHERE simulation_id = ? ORDER BY start_step ASC",
@@ -113,7 +108,7 @@ class SimulationRepository:
         ).fetchall()
         return [fault_row(r) for r in rows]
 
-    def get_decisions(self, simulation_id: str) -> List[dict]:
+    def get_decisions(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM system_decisions WHERE simulation_id = ? ORDER BY step ASC",
@@ -121,7 +116,7 @@ class SimulationRepository:
         ).fetchall()
         return [decision_row(r) for r in rows]
 
-    def get_sensor_readings(self, simulation_id: str) -> List[dict]:
+    def get_sensor_readings(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM sensor_readings WHERE simulation_id = ? ORDER BY step ASC",
@@ -129,7 +124,7 @@ class SimulationRepository:
         ).fetchall()
         return [sensor_row(r) for r in rows]
 
-    def get_controller_outputs(self, simulation_id: str) -> List[dict]:
+    def get_controller_outputs(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM controller_outputs WHERE simulation_id = ? ORDER BY step ASC, controller_id ASC",
@@ -137,7 +132,7 @@ class SimulationRepository:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def get_votes(self, simulation_id: str) -> List[dict]:
+    def get_votes(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM vote_results WHERE simulation_id = ? ORDER BY step ASC",
@@ -145,10 +140,10 @@ class SimulationRepository:
         ).fetchall()
         return [vote_row(r) for r in rows]
 
-    def get_events(self, simulation_id: str) -> List[dict]:
+    def get_events(self, simulation_id: str) -> list[dict]:
         return self.list_events(simulation_id)
 
-    def get_timeline(self, simulation_id: str) -> List[dict]:
+    def get_timeline(self, simulation_id: str) -> list[dict]:
         states = {s["step"]: s for s in self.get_step_records(simulation_id)}
         sensors = {s["step"]: s for s in self.get_sensor_readings(simulation_id)}
         decisions = {d["step"]: d for d in self.get_decisions(simulation_id)}
@@ -165,15 +160,15 @@ class SimulationRepository:
         # snapshot.
         timeline = []
         for step in sorted(decisions):
-            timeline.append({
-                "step": step,
-                "state": states.get(step),
-                "sensor": sensors.get(step),
-                "controllers": outputs_by_step.get(step, []),
-                "vote": votes.get(step),
-                "decision": decisions.get(step),
-                "events": events_by_step.get(step, []),
-            })
+            timeline.append(
+                {
+                    "step": step,
+                    "state": states.get(step),
+                    "sensor": sensors.get(step),
+                    "controllers": outputs_by_step.get(step, []),
+                    "vote": votes.get(step),
+                    "decision": decisions.get(step),
+                    "events": events_by_step.get(step, []),
+                }
+            )
         return timeline
-
-

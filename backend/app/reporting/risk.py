@@ -1,7 +1,4 @@
-from typing import Dict, List
-
-
-def assess_risk(decisions: List[dict], faults: List[dict], events: List[dict]) -> Dict[str, str]:
+def assess_risk(decisions: list[dict], faults: list[dict], events: list[dict]) -> dict[str, str]:
     if not decisions:
         return {"level": "UNKNOWN", "summary": "no decisions recorded"}
 
@@ -14,7 +11,9 @@ def assess_risk(decisions: List[dict], faults: List[dict], events: List[dict]) -
 
     if mode == "FAILED" or len(failed_steps) > 0:
         level = "HIGH"
-        summary = f"system entered FAILED on {len(failed_steps)} step(s); manual intervention required"
+        summary = (
+            f"system entered FAILED on {len(failed_steps)} step(s); manual intervention required"
+        )
     elif mode == "SAFE_MODE" or len(safe_steps) >= max(3, len(decisions) // 4):
         level = "ELEVATED"
         summary = f"safe-mode dwell of {len(safe_steps)} step(s) indicates loss of trust"

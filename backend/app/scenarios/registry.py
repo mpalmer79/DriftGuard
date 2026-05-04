@@ -1,5 +1,4 @@
 from collections import Counter
-from typing import Dict, List
 
 from ..core.exceptions import ScenarioError
 from ..core.ids import simulation_id as new_simulation_id
@@ -11,8 +10,7 @@ from .models import (
     ScenarioResult,
 )
 
-
-_SCENARIOS: Dict[str, Scenario] = {}
+_SCENARIOS: dict[str, Scenario] = {}
 
 
 def _register(scenario: Scenario) -> None:
@@ -23,7 +21,7 @@ for _factory in ALL_BUILTINS:
     _register(_factory())
 
 
-def all_scenarios() -> List[Scenario]:
+def all_scenarios() -> list[Scenario]:
     return list(_SCENARIOS.values())
 
 

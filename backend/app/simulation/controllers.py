@@ -1,11 +1,10 @@
 import random
 from abc import ABC, abstractmethod
-from typing import Iterable, List
+from collections.abc import Iterable
 
 from ..domain.enums import Action, SensorStatus
 from ..domain.models import ControllerOutput, FaultRecord, SensorReading
 from .controller_fault_application import aggregate_effects, overlay_action
-
 
 TARGET_ALTITUDE = 1000.0
 TARGET_VELOCITY = 120.0
@@ -19,8 +18,7 @@ class Controller(ABC):
         self._fault_rng = random.Random(hash(self.id) & 0xFFFFFFFF)
 
     @abstractmethod
-    def _decide(self, reading: SensorReading) -> tuple[Action, float, str]:
-        ...
+    def _decide(self, reading: SensorReading) -> tuple[Action, float, str]: ...
 
     def evaluate(
         self,
@@ -36,7 +34,9 @@ class Controller(ABC):
             self._fault_rng,
         )
 
-        response_time = fx.timeout_delay if fx.timeout or fx.applicable else self.base_response_time_ms
+        response_time = (
+            fx.timeout_delay if fx.timeout or fx.applicable else self.base_response_time_ms
+        )
 
         if fx.silent:
             return ControllerOutput(
@@ -146,5 +146,5 @@ class BalancedController(Controller):
         return Action.HOLD, 0.8, "NOMINAL"
 
 
-def default_controllers() -> List[Controller]:
+def default_controllers() -> list[Controller]:
     return [ConservativeController(), ResponsiveController(), BalancedController()]

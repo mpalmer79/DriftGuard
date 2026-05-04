@@ -1,5 +1,4 @@
 from dataclasses import asdict
-from typing import List
 
 from fastapi import APIRouter
 
@@ -7,22 +6,20 @@ from ..core.exceptions import ScenarioError
 from ..scenarios import all_scenarios, get_scenario, run_scenario
 from . import dependencies as deps
 
-
 router = APIRouter()
 
 
 def _scenario_to_dict(scenario) -> dict:
     d = asdict(scenario)
     d["faults"] = [
-        {**f, "type": f["type"].value, "severity": f["severity"].value}
-        for f in d["faults"]
+        {**f, "type": f["type"].value, "severity": f["severity"].value} for f in d["faults"]
     ]
     d["expected_final_modes"] = [m.value for m in scenario.expected_final_modes]
     return d
 
 
 @router.get("/scenarios")
-def list_scenarios() -> List[dict]:
+def list_scenarios() -> list[dict]:
     return [_scenario_to_dict(s) for s in all_scenarios()]
 
 

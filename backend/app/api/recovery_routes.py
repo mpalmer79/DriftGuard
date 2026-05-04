@@ -1,16 +1,13 @@
-from typing import List
-
 from fastapi import APIRouter
 
 from ..core.exceptions import NotFoundError
 from . import dependencies as deps
 
-
 router = APIRouter()
 
 
 @router.get("/simulations")
-def list_simulations() -> List[dict]:
+def list_simulations() -> list[dict]:
     return deps.get_repository().list_simulations()
 
 
@@ -33,7 +30,7 @@ def get_simulation(sim_id: str) -> dict:
 
 
 @router.get("/simulations/{sim_id}/decisions")
-def get_decisions(sim_id: str) -> List[dict]:
+def get_decisions(sim_id: str) -> list[dict]:
     repo = deps.get_repository()
     if repo.get_simulation(sim_id) is None:
         raise NotFoundError(f"simulation '{sim_id}' not found")
@@ -41,7 +38,7 @@ def get_decisions(sim_id: str) -> List[dict]:
 
 
 @router.get("/simulations/{sim_id}/faults")
-def get_faults(sim_id: str) -> List[dict]:
+def get_faults(sim_id: str) -> list[dict]:
     repo = deps.get_repository()
     if repo.get_simulation(sim_id) is None:
         raise NotFoundError(f"simulation '{sim_id}' not found")
@@ -49,7 +46,7 @@ def get_faults(sim_id: str) -> List[dict]:
 
 
 @router.get("/simulations/{sim_id}/timeline")
-def get_timeline(sim_id: str) -> List[dict]:
+def get_timeline(sim_id: str) -> list[dict]:
     repo = deps.get_repository()
     if repo.get_simulation(sim_id) is None:
         raise NotFoundError(f"simulation '{sim_id}' not found")

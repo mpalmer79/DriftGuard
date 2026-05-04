@@ -2,7 +2,6 @@ from dataclasses import asdict
 
 from fastapi import APIRouter, HTTPException
 
-from ..core.exceptions import ConflictError, NotFoundError, ValidationError
 from ..core.ids import simulation_id as new_simulation_id
 from ..simulation.orchestrator import Simulation
 from . import dependencies as deps
@@ -15,7 +14,6 @@ from .schemas import (
     StateResponse,
     StepResponse,
 )
-
 
 router = APIRouter()
 
@@ -39,7 +37,9 @@ def _serialize_step(record) -> StepResponse:
 
     vote = asdict(record.vote)
     vote["outcome"] = record.vote.outcome.value
-    vote["selected_action"] = record.vote.selected_action.value if record.vote.selected_action else None
+    vote["selected_action"] = (
+        record.vote.selected_action.value if record.vote.selected_action else None
+    )
 
     decision = asdict(record.decision)
     decision["final_action"] = record.decision.final_action.value
@@ -83,7 +83,9 @@ def inject_fault(sim_id: str, req: FaultRequest) -> FaultResponse:
     sim = _get_sim(sim_id)
     valid_targets = {"sensor", "controller_a", "controller_b", "controller_c"}
     if req.target not in valid_targets:
-        raise HTTPException(status_code=400, detail=f"invalid target; must be one of {sorted(valid_targets)}")
+        raise HTTPException(
+            status_code=400, detail=f"invalid target; must be one of {sorted(valid_targets)}"
+        )
     record = sim.inject_fault(
         fault_type=req.type,
         target=req.target,

@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 from ..core.config import DEFAULT_CONFIG, SimulationConfig
 from ..domain.enums import (
@@ -44,19 +43,19 @@ from .voting import vote
 class StepRecord:
     state: VehicleState
     sensor: SensorReading
-    outputs: List[ControllerOutput]
+    outputs: list[ControllerOutput]
     vote: VoteResult
     decision: SystemDecision
-    events: List[Event] = field(default_factory=list)
+    events: list[Event] = field(default_factory=list)
 
 
 class Simulation:
     def __init__(
         self,
         simulation_id: str,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         config: SimulationConfig = DEFAULT_CONFIG,
-        controllers: Optional[List[Controller]] = None,
+        controllers: list[Controller] | None = None,
     ) -> None:
         self.id = simulation_id
         self.seed = seed if seed is not None else config.default_seed
@@ -75,17 +74,17 @@ class Simulation:
         self.safe_mode = SafeModeManager(self.detector)
         self.trust = TrustDetector(latency_threshold_ms=config.latency_threshold_ms)
         self.events = EventLogger()
-        self.step_history: List[StepRecord] = []
-        self.last_decision: Optional[SystemDecision] = None
+        self.step_history: list[StepRecord] = []
+        self.last_decision: SystemDecision | None = None
 
     def inject_fault(
         self,
         fault_type: FaultType,
         target: str,
-        start_step: Optional[int] = None,
-        duration: Optional[int] = None,
+        start_step: int | None = None,
+        duration: int | None = None,
         severity: FaultSeverity = FaultSeverity.WARNING,
-        metadata: Optional[Dict] = None,
+        metadata: dict | None = None,
     ) -> FaultRecord:
         if start_step is None:
             start_step = self.state.step
@@ -121,7 +120,7 @@ class Simulation:
         sensor.step = next_step
         log_sensor(self.events, next_step, ts, sensor)
 
-        outputs: List[ControllerOutput] = []
+        outputs: list[ControllerOutput] = []
         for controller in self.controllers:
             out = controller.evaluate(sensor, active_faults)
             outputs.append(out)
@@ -160,7 +159,7 @@ class Simulation:
         self.last_decision = decision
         return record
 
-    def run(self, steps: int) -> List[StepRecord]:
+    def run(self, steps: int) -> list[StepRecord]:
         return [self.step() for _ in range(steps)]
 
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
-from typing import Dict, Any
+from typing import Any
 
-from .enums import EventType, EventSeverity
+from .enums import EventSeverity, EventType
 
 
 @dataclass
@@ -13,4 +13,4 @@ class Event:
     type: EventType
     severity: EventSeverity
     message: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)

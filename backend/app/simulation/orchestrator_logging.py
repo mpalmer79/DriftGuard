@@ -6,8 +6,6 @@ control loop reads as a sequence of named stages rather than a wall
 of `events.log(...)` calls.
 """
 
-from typing import List, Tuple
-
 from ..domain.enums import (
     EventSeverity,
     EventType,
@@ -56,7 +54,9 @@ def log_controller(events: EventLogger, step: int, ts: float, out: ControllerOut
 
 
 def log_vote(events: EventLogger, step: int, ts: float, vote: VoteResult) -> None:
-    severity = EventSeverity.INFO if vote.outcome == VoteOutcome.CONSENSUS else EventSeverity.WARNING
+    severity = (
+        EventSeverity.INFO if vote.outcome == VoteOutcome.CONSENSUS else EventSeverity.WARNING
+    )
     events.log(
         step=step,
         timestamp=ts,
@@ -76,10 +76,12 @@ def log_detector_warnings(
     events: EventLogger,
     step: int,
     ts: float,
-    warnings: List[Tuple[str, FaultSeverity, str]],
+    warnings: list[tuple[str, FaultSeverity, str]],
 ) -> None:
     for component, severity, message in warnings:
-        ev_sev = EventSeverity.CRITICAL if severity == FaultSeverity.CRITICAL else EventSeverity.WARNING
+        ev_sev = (
+            EventSeverity.CRITICAL if severity == FaultSeverity.CRITICAL else EventSeverity.WARNING
+        )
         events.log(
             step=step,
             timestamp=ts,
@@ -95,10 +97,14 @@ def log_trust_findings(
     events: EventLogger,
     step: int,
     ts: float,
-    findings: List[DetectionFinding],
+    findings: list[DetectionFinding],
 ) -> None:
     for finding in findings:
-        ev_sev = EventSeverity.CRITICAL if finding.severity.value == "CRITICAL" else EventSeverity.WARNING
+        ev_sev = (
+            EventSeverity.CRITICAL
+            if finding.severity.value == "CRITICAL"
+            else EventSeverity.WARNING
+        )
         events.log(
             step=step,
             timestamp=ts,
@@ -130,7 +136,9 @@ def log_mode_change(
 
 
 def log_decision(events: EventLogger, step: int, ts: float, decision: SystemDecision) -> None:
-    severity = EventSeverity.INFO if decision.system_mode == SystemMode.NORMAL else EventSeverity.WARNING
+    severity = (
+        EventSeverity.INFO if decision.system_mode == SystemMode.NORMAL else EventSeverity.WARNING
+    )
     events.log(
         step=step,
         timestamp=ts,

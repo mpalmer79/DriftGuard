@@ -1,10 +1,8 @@
-from typing import Dict
-
 from ..persistence.repository import SimulationRepository
 from . import risk, summary
 
 
-def build_report(repo: SimulationRepository, simulation_id: str) -> Dict:
+def build_report(repo: SimulationRepository, simulation_id: str) -> dict:
     sim = repo.get_simulation(simulation_id)
     if sim is None:
         raise ValueError(f"simulation '{simulation_id}' not found")
@@ -44,9 +42,9 @@ def build_report(repo: SimulationRepository, simulation_id: str) -> Dict:
     return report
 
 
-def render_markdown(report: Dict) -> str:
+def render_markdown(report: dict) -> str:
     lines = []
-    lines.append(f"# SentinelNav Mission Report")
+    lines.append("# SentinelNav Mission Report")
     lines.append("")
     lines.append(f"- **Simulation ID:** `{report['simulation_id']}`")
     lines.append(f"- **Seed:** `{report['seed']}`")
@@ -88,7 +86,9 @@ def render_markdown(report: Dict) -> str:
 
     lines.append("## Controller trust summary")
     for cid, t in report["controller_trust_summary"].items():
-        lines.append(f"- **{cid}** — valid_rate {t['valid_rate']}, avg_response_ms {t['avg_response_ms']}, actions {t['actions']}")
+        lines.append(
+            f"- **{cid}** — valid_rate {t['valid_rate']}, avg_response_ms {t['avg_response_ms']}, actions {t['actions']}"
+        )
     lines.append("")
 
     sh = report["sensor_health_summary"]

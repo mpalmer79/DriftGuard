@@ -1,5 +1,5 @@
 import random
-from typing import List, Iterable
+from collections.abc import Iterable
 
 from ..core.ids import reading_id as _new_reading_id
 from ..domain.enums import FaultType, SensorStatus
@@ -21,7 +21,7 @@ class SensorModel:
 
         confidence = 1.0
         status = SensorStatus.OK
-        flags: List[str] = []
+        flags: list[str] = []
 
         for fault in active_faults:
             if fault.target_component != "sensor":

@@ -1,13 +1,12 @@
 from collections import Counter
-from typing import List
 
-from ..domain.enums import Action, VoteOutcome
+from ..domain.enums import VoteOutcome
 from ..domain.models import ControllerOutput, VoteResult
 
 
-def vote(outputs: List[ControllerOutput], latency_threshold_ms: float) -> VoteResult:
-    rejected: List[str] = []
-    candidates: List[ControllerOutput] = []
+def vote(outputs: list[ControllerOutput], latency_threshold_ms: float) -> VoteResult:
+    rejected: list[str] = []
+    candidates: list[ControllerOutput] = []
 
     for out in outputs:
         if not out.valid:

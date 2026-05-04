@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 from ..core.ids import fault_id
 from ..domain.enums import FaultSeverity, FaultType
 from ..domain.models import FaultRecord
@@ -7,16 +5,16 @@ from ..domain.models import FaultRecord
 
 class FaultRegistry:
     def __init__(self) -> None:
-        self._faults: Dict[str, FaultRecord] = {}
+        self._faults: dict[str, FaultRecord] = {}
 
     def inject(
         self,
         fault_type: FaultType,
         target: str,
         start_step: int,
-        duration: Optional[int] = None,
+        duration: int | None = None,
         severity: FaultSeverity = FaultSeverity.WARNING,
-        metadata: Optional[Dict] = None,
+        metadata: dict | None = None,
     ) -> FaultRecord:
         fid = fault_id()
         end_step = start_step + duration if duration is not None else None
@@ -33,8 +31,8 @@ class FaultRegistry:
         self._faults[fid] = record
         return record
 
-    def active_at(self, step: int) -> List[FaultRecord]:
-        active: List[FaultRecord] = []
+    def active_at(self, step: int) -> list[FaultRecord]:
+        active: list[FaultRecord] = []
         for f in self._faults.values():
             if f.start_step > step:
                 continue
@@ -45,5 +43,5 @@ class FaultRegistry:
             active.append(f)
         return active
 
-    def all(self) -> List[FaultRecord]:
+    def all(self) -> list[FaultRecord]:
         return list(self._faults.values())

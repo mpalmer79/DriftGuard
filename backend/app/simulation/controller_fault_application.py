@@ -7,12 +7,11 @@ in one place.
 """
 
 import random
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, List
 
 from ..domain.enums import Action, FaultType
 from ..domain.models import FaultRecord, SensorReading
-
 
 _ACTION_OPPOSITES = {
     Action.ASCEND: Action.DESCEND,
@@ -63,7 +62,7 @@ def aggregate_effects(
 ) -> ControllerFaultEffect:
     fx = ControllerFaultEffect(timeout_delay=base_response_time_ms)
 
-    applicable: List[FaultRecord] = []
+    applicable: list[FaultRecord] = []
     for fault in active_faults:
         if fault.target_component != controller_id:
             continue

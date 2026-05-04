@@ -10,6 +10,7 @@ from app.simulation.orchestrator import Simulation
 
 def _reading(altitude=1000.0, status=SensorStatus.OK, confidence=1.0, step=1):
     from app.domain.models import SensorReading
+
     return SensorReading(
         reading_id="r",
         step=step,
@@ -29,7 +30,8 @@ def _fault(ftype, target, **meta):
         fault_id="f",
         type=ftype,
         target_component=target,
-        severity=meta.pop("severity", None) or __import__("app.domain.enums", fromlist=["FaultSeverity"]).FaultSeverity.WARNING,
+        severity=meta.pop("severity", None)
+        or __import__("app.domain.enums", fromlist=["FaultSeverity"]).FaultSeverity.WARNING,
         active=True,
         start_step=0,
         end_step=None,
@@ -95,13 +97,15 @@ def test_compound_fault_combines_effects():
     c = BalancedController()
     out = c.evaluate(
         _reading(altitude=1000.0),
-        [_fault(
-            FaultType.COMPOUND_FAULT,
-            "controller_c",
-            offset=200.0,
-            latency_ms=120.0,
-            confidence=0.5,
-        )],
+        [
+            _fault(
+                FaultType.COMPOUND_FAULT,
+                "controller_c",
+                offset=200.0,
+                latency_ms=120.0,
+                confidence=0.5,
+            )
+        ],
     )
     # Bias of +200 pushes the perceived altitude well above target,
     # and latency raises response time. Confidence is also scaled down.
@@ -133,8 +137,7 @@ def test_intermittent_pattern_alternates_effect():
     )
     records = sim.run(4)
     valids = [
-        next(o.valid for o in r.outputs if o.controller_id == "controller_a")
-        for r in records
+        next(o.valid for o in r.outputs if o.controller_id == "controller_a") for r in records
     ]
     # Pattern 1,0,1,0 -> invalid, valid, invalid, valid (assuming sensor OK).
     assert valids[0] is False

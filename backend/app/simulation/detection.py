@@ -1,6 +1,5 @@
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List
 
 from ..domain.enums import FaultSeverity, SensorStatus, VoteOutcome
 from ..domain.models import ControllerOutput, SensorReading, VoteResult
@@ -8,11 +7,11 @@ from ..domain.models import ControllerOutput, SensorReading, VoteResult
 
 @dataclass
 class FaultDetectionState:
-    invalid_counts: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
-    latency_counts: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    invalid_counts: dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    latency_counts: dict[str, int] = field(default_factory=lambda: defaultdict(int))
     disagreement_count: int = 0
     sensor_invalid_count: int = 0
-    last_warnings: List[str] = field(default_factory=list)
+    last_warnings: list[str] = field(default_factory=list)
 
 
 class FaultDetector:
@@ -33,11 +32,11 @@ class FaultDetector:
 
     def update(
         self,
-        outputs: List[ControllerOutput],
+        outputs: list[ControllerOutput],
         vote_result: VoteResult,
         sensor: SensorReading,
-    ) -> List[tuple[str, FaultSeverity, str]]:
-        warnings: List[tuple[str, FaultSeverity, str]] = []
+    ) -> list[tuple[str, FaultSeverity, str]]:
+        warnings: list[tuple[str, FaultSeverity, str]] = []
 
         for out in outputs:
             if not out.valid:
@@ -71,18 +70,22 @@ class FaultDetector:
         self.state.last_warnings = [f"{c}:{s.value}:{m}" for c, s, m in warnings]
         return warnings
 
-    def unhealthy_controllers(self) -> List[str]:
-        result: List[str] = []
-        for cid in set(list(self.state.invalid_counts.keys()) + list(self.state.latency_counts.keys())):
+    def unhealthy_controllers(self) -> list[str]:
+        result: list[str] = []
+        for cid in set(
+            list(self.state.invalid_counts.keys()) + list(self.state.latency_counts.keys())
+        ):
             inv = self.state.invalid_counts.get(cid, 0)
             lat = self.state.latency_counts.get(cid, 0)
             if inv >= self.inv_warn or lat >= self.inv_warn:
                 result.append(cid)
         return result
 
-    def critical_controllers(self) -> List[str]:
-        result: List[str] = []
-        for cid in set(list(self.state.invalid_counts.keys()) + list(self.state.latency_counts.keys())):
+    def critical_controllers(self) -> list[str]:
+        result: list[str] = []
+        for cid in set(
+            list(self.state.invalid_counts.keys()) + list(self.state.latency_counts.keys())
+        ):
             inv = self.state.invalid_counts.get(cid, 0)
             lat = self.state.latency_counts.get(cid, 0)
             if inv >= self.inv_crit or lat >= self.inv_crit:

@@ -1,9 +1,6 @@
-from typing import List, Tuple
-
 from ..domain.enums import Action, SensorStatus, SystemMode, VoteOutcome
 from ..domain.models import SensorReading, VoteResult
 from .detection import FaultDetector
-
 
 SAFE_ALLOWED_ACTIONS = {Action.HOLD, Action.STABILIZE, Action.DECELERATE, Action.ABORT}
 
@@ -17,7 +14,7 @@ class SafeModeManager:
         self,
         vote_result: VoteResult,
         sensor: SensorReading,
-    ) -> Tuple[SystemMode, str]:
+    ) -> tuple[SystemMode, str]:
         critical = self.detector.critical_controllers()
         unhealthy = self.detector.unhealthy_controllers()
         sensor_invalid = sensor.status == SensorStatus.INVALID
