@@ -1,6 +1,6 @@
 import json
-import time
 
+from ..core.time import Clock, SystemClock
 from ..domain.models import FaultRecord
 from ..simulation.orchestrator import Simulation, StepRecord
 from .database import Database
@@ -22,14 +22,15 @@ from .repository_writes import (
 
 
 class SimulationRepository:
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: Database, clock: Clock | None = None) -> None:
         self.db = db
+        self.clock: Clock = clock if clock is not None else SystemClock()
 
     def create_simulation(self, sim: Simulation) -> None:
         conn = self.db.connect()
         conn.execute(
             "INSERT OR REPLACE INTO simulations (id, seed, created_at) VALUES (?, ?, ?)",
-            (sim.id, sim.seed, time.time()),
+            (sim.id, sim.seed, self.clock.now()),
         )
         save_state(conn, sim.id, sim.state)
         conn.commit()
