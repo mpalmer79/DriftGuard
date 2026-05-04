@@ -68,9 +68,14 @@ class SimulationRepository:
         conn.commit()
 
     def list_events(self, simulation_id: str) -> list[dict]:
+        # Order by ROWID within a step so events come back in insertion
+        # order, not in the random order produced by sorting on the UUID
+        # event_id. Insertion order is meaningful (sensor -> controllers
+        # -> vote -> ... -> state) and is the order required for the
+        # replay-fingerprint canonicalization (Phase 1.3) to be stable.
         conn = self.db.connect()
         rows = conn.execute(
-            "SELECT * FROM events WHERE simulation_id = ? ORDER BY step ASC, event_id ASC",
+            "SELECT * FROM events WHERE simulation_id = ? ORDER BY step ASC, ROWID ASC",
             (simulation_id,),
         ).fetchall()
         return [event_row_to_dict(r) for r in rows]
