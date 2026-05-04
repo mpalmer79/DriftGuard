@@ -46,9 +46,8 @@ class SafeModeManager:
 
     @staticmethod
     def restrict_action(mode: SystemMode, action: Action) -> Action:
-        if mode in (SystemMode.SAFE_MODE, SystemMode.FAILED):
-            if action not in SAFE_ALLOWED_ACTIONS:
-                return Action.STABILIZE
+        if mode in (SystemMode.SAFE_MODE, SystemMode.FAILED) and action not in SAFE_ALLOWED_ACTIONS:
+            return Action.STABILIZE
         return action
 
     @staticmethod

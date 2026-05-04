@@ -11,7 +11,15 @@ extend-exclude = ["**/__pycache__"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "PT"]
-ignore = ["E501"]  # let formatter handle line length
+# UP042 (StrEnum migration) deferred — it's a meaningful behavior change
+# that needs a separate audit (pickle / JSON / equality semantics).
+# B007 / PT011 are test ergonomics we're keeping as-is for now.
+ignore = [
+    "E501",   # let formatter handle line length
+    "UP042",  # StrEnum migration deferred
+    "B007",   # unused loop var (intentional in some iteration helpers)
+    "PT011",  # broad pytest.raises; messages covered separately
+]
 
 [tool.ruff.format]
 quote-style = "double"

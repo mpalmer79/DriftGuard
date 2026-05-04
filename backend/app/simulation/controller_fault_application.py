@@ -6,6 +6,7 @@ on "given a sensor reading, decide an action," and the fault overlays
 in one place.
 """
 
+import contextlib
 import random
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -89,10 +90,8 @@ def aggregate_effects(
         elif ftype == FaultType.CONTROLLER_ACTION_BIAS:
             forced = meta.get("forced_action")
             if forced:
-                try:
+                with contextlib.suppress(ValueError):
                     fx.forced_action = Action(forced)
-                except ValueError:
-                    pass
         elif ftype == FaultType.CONTROLLER_SILENT_FAILURE:
             fx.silent = True
         elif ftype == FaultType.CONFLICTING_CONTROLLER:

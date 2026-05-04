@@ -93,7 +93,9 @@ def test_disagreement_window_tracks_recent_outcomes():
 def test_snapshot_contains_all_components():
     d = TrustDetector(latency_threshold_ms=50.0)
     snap = d.snapshot()
-    assert "controller_a" in snap and "controller_b" in snap and "controller_c" in snap
+    assert "controller_a" in snap
+    assert "controller_b" in snap
+    assert "controller_c" in snap
     assert "sensor" in snap
     assert "_global" in snap
 
