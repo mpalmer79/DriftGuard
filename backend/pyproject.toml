@@ -1,0 +1,57 @@
+[project]
+name = "sentinelnav-backend"
+version = "0.2.0"
+description = "Deterministic, fault-tolerant control system simulation."
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["**/__pycache__"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "PT"]
+ignore = ["E501"]  # let formatter handle line length
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_configs = true
+ignore_missing_imports = true
+# Strict mode is opt-in for new modules. Listed below are modules
+# already audited; add new files here as they are written or refactored.
+[[tool.mypy.overrides]]
+module = [
+    "app.core.exceptions",
+    "app.core.ids",
+    "app.core.time",
+    "app.domain.enums",
+    "app.domain.events",
+    "app.domain.models",
+]
+strict = true
+
+[tool.bandit]
+skips = ["B101"]  # assert is fine in test files
+exclude_dirs = ["app/tests"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["app/tests"]
+markers = [
+    "slow: long-running tests, excluded from default run",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/tests/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
