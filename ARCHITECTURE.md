@@ -363,3 +363,124 @@ Phase 5: polish
 - failures are handled correctly  
 - safe mode is justified  
 - decisions are traceable
+
+## 23. Execution Plan (Claude Code Directive)
+
+The system must be implemented in structured phases without pausing for clarification.
+
+### Global Rules
+
+- Do not ask the user for clarification during execution
+- Make reasonable engineering assumptions when necessary
+- Continue through all phases unless a blocking error occurs
+- Prefer completeness over perfection
+- Follow architecture constraints strictly
+- Maintain deterministic and testable design
+
+---
+
+### Phase 1: Domain Layer
+
+Create all core domain models and enums:
+
+- VehicleState
+- SensorReading
+- ControllerOutput
+- VoteResult
+- FaultRecord
+- SystemDecision
+
+Also define:
+
+- action enums
+- system mode enums
+- fault type enums
+
+---
+
+### Phase 2: Core Simulation Modules
+
+Implement:
+
+- vehicle state update logic
+- sensor model with noise injection
+- controller interface and 3 controller implementations
+- voting engine
+- fault injection system
+- fault detection engine
+- safe mode manager
+- event logger
+
+Each module must be isolated and testable.
+
+---
+
+### Phase 3: Simulation Orchestrator
+
+Create a central simulation service that:
+
+- executes the full control loop
+- coordinates all modules
+- enforces step ordering
+- handles fault application
+- produces system decisions
+
+---
+
+### Phase 4: API Layer
+
+Build FastAPI endpoints:
+
+- POST /simulations
+- POST /simulations/{id}/step
+- POST /simulations/{id}/faults
+- GET /simulations/{id}/state
+- GET /simulations/{id}/events
+
+---
+
+### Phase 5: Persistence Layer
+
+Implement SQLite integration:
+
+- schema creation
+- repositories for each domain model
+- persistence of simulation runs
+- event storage
+
+---
+
+### Phase 6: Testing
+
+Write tests for:
+
+- voting logic
+- controller determinism
+- fault detection
+- safe mode triggers
+- simulation flow
+
+Include both unit and integration tests.
+
+---
+
+### Phase 7: Validation
+
+Ensure:
+
+- simulation runs end-to-end
+- faults trigger expected behavior
+- safe mode activates correctly
+- outputs are deterministic
+
+---
+
+### Definition of Done
+
+The system is complete when:
+
+- all core modules are implemented
+- API endpoints function
+- simulation runs without manual intervention
+- faults can be injected and observed
+- tests pass for core logic
