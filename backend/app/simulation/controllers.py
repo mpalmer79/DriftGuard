@@ -1,3 +1,4 @@
+import random
 from abc import ABC, abstractmethod
 from typing import Iterable, List
 
@@ -9,9 +10,25 @@ TARGET_ALTITUDE = 1000.0
 TARGET_VELOCITY = 120.0
 
 
+_ACTION_OPPOSITES = {
+    Action.ASCEND: Action.DESCEND,
+    Action.DESCEND: Action.ASCEND,
+    Action.ACCELERATE: Action.DECELERATE,
+    Action.DECELERATE: Action.ACCELERATE,
+    Action.TURN_LEFT: Action.TURN_RIGHT,
+    Action.TURN_RIGHT: Action.TURN_LEFT,
+    Action.HOLD: Action.HOLD,
+    Action.STABILIZE: Action.STABILIZE,
+    Action.ABORT: Action.ABORT,
+}
+
+
 class Controller(ABC):
     id: str
     base_response_time_ms: float
+
+    def __init__(self) -> None:
+        self._fault_rng = random.Random(hash(self.id) & 0xFFFFFFFF)
 
     @abstractmethod
     def _decide(self, reading: SensorReading) -> tuple[Action, float, str]:
@@ -23,28 +40,74 @@ class Controller(ABC):
         active_faults: Iterable[FaultRecord],
     ) -> ControllerOutput:
         bias_offset = 0.0
+        confidence_scale = 1.0
+        forced_action = None
         timeout = False
+        timeout_delay = self.base_response_time_ms
         invalid_input = reading.status == SensorStatus.INVALID
+        force_invalid = False
+        silent = False
+        flip_action = False
 
+        applicable: List[FaultRecord] = []
         for fault in active_faults:
             if fault.target_component != self.id:
                 continue
-            if fault.type == FaultType.CONTROLLER_BIAS:
-                bias_offset = float(fault.metadata.get("offset", 40.0))
-            elif fault.type == FaultType.CONTROLLER_TIMEOUT:
+            if not _fault_active_this_step(fault, reading.step, self._fault_rng):
+                continue
+            applicable.append(fault)
+
+        for fault in applicable:
+            ftype = fault.type
+            if ftype == FaultType.CONTROLLER_BIAS:
+                bias_offset += float(fault.metadata.get("offset", 40.0))
+            elif ftype == FaultType.CONTROLLER_TIMEOUT:
                 timeout = True
+                timeout_delay = float(fault.metadata.get("delay_ms", 200.0))
+            elif ftype == FaultType.CONTROLLER_LATENCY:
+                # additive latency
+                timeout_delay = max(timeout_delay, float(fault.metadata.get("latency_ms", 75.0)))
+            elif ftype == FaultType.CONTROLLER_INVALID_OUTPUT:
+                force_invalid = True
+            elif ftype == FaultType.CONTROLLER_CONFIDENCE_DROP:
+                confidence_scale *= float(fault.metadata.get("confidence", 0.3))
+            elif ftype == FaultType.CONTROLLER_ACTION_BIAS:
+                forced = fault.metadata.get("forced_action")
+                if forced:
+                    try:
+                        forced_action = Action(forced)
+                    except ValueError:
+                        pass
+            elif ftype == FaultType.CONTROLLER_SILENT_FAILURE:
+                silent = True
+            elif ftype == FaultType.CONFLICTING_CONTROLLER:
+                flip_action = True
+            elif ftype == FaultType.COMPOUND_FAULT:
+                # union of bias + latency + confidence drop
+                bias_offset += float(fault.metadata.get("offset", 30.0))
+                timeout_delay = max(timeout_delay, float(fault.metadata.get("latency_ms", 60.0)))
+                confidence_scale *= float(fault.metadata.get("confidence", 0.5))
 
-        response_time = self.base_response_time_ms
-        if timeout:
-            response_time = float(fault.metadata.get("delay_ms", 200.0)) if fault.metadata else 200.0
+        response_time = timeout_delay if timeout or applicable else self.base_response_time_ms
 
-        if invalid_input:
+        if silent:
             return ControllerOutput(
                 controller_id=self.id,
                 step=reading.step,
                 action=Action.HOLD,
                 confidence=0.0,
-                reason_code="INVALID_INPUT",
+                reason_code="SILENT_FAILURE",
+                response_time_ms=response_time,
+                valid=False,
+            )
+
+        if force_invalid or invalid_input:
+            return ControllerOutput(
+                controller_id=self.id,
+                step=reading.step,
+                action=Action.HOLD,
+                confidence=0.0,
+                reason_code="INVALID_OUTPUT" if force_invalid else "INVALID_INPUT",
                 response_time_ms=response_time,
                 valid=False,
             )
@@ -63,6 +126,15 @@ class Controller(ABC):
         )
 
         action, confidence, reason = self._decide(biased)
+
+        if forced_action is not None:
+            action = forced_action
+            reason = "FORCED_ACTION"
+        elif flip_action:
+            action = _ACTION_OPPOSITES.get(action, action)
+            reason = f"CONFLICTING({reason})"
+
+        confidence = max(0.0, min(1.0, confidence * confidence_scale))
         valid = reading.confidence > 0.0
         return ControllerOutput(
             controller_id=self.id,
@@ -73,6 +145,20 @@ class Controller(ABC):
             response_time_ms=response_time,
             valid=valid,
         )
+
+
+def _fault_active_this_step(fault: FaultRecord, step: int, rng: random.Random) -> bool:
+    pattern = fault.metadata.get("intermittent_pattern")
+    if pattern:
+        idx = (step - fault.start_step) % len(pattern)
+        return bool(pattern[idx])
+    p = fault.metadata.get("probability")
+    if p is not None:
+        try:
+            return rng.random() < float(p)
+        except (TypeError, ValueError):
+            return True
+    return True
 
 
 class ConservativeController(Controller):
