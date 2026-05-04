@@ -3,7 +3,6 @@ from typing import Dict, List, Optional
 
 from ..core.config import DEFAULT_CONFIG, SimulationConfig
 from ..domain.enums import (
-    Action,
     EventSeverity,
     EventType,
     FaultSeverity,
@@ -25,6 +24,16 @@ from .detection import FaultDetector
 from .event_logger import EventLogger
 from .faults import FaultRegistry
 from .health import TrustDetector
+from .orchestrator_logging import (
+    log_controller,
+    log_decision,
+    log_detector_warnings,
+    log_mode_change,
+    log_sensor,
+    log_state,
+    log_trust_findings,
+    log_vote,
+)
 from .safe_mode import SafeModeManager
 from .sensors import SensorModel
 from .vehicle import apply_action, initial_state
@@ -105,139 +114,39 @@ class Simulation:
 
     def step(self) -> StepRecord:
         next_step = self.state.step + 1
+        ts = self.state.timestamp + 1.0
         active_faults = self.faults.active_at(next_step)
 
         sensor = self.sensors.read(self.state, active_faults)
-        # Align reading and downstream artifacts with the step we are about to commit.
         sensor.step = next_step
-        self.events.log(
-            step=next_step,
-            timestamp=self.state.timestamp + 1.0,
-            component="sensor",
-            type=EventType.SENSOR,
-            severity=EventSeverity.WARNING if sensor.fault_flags else EventSeverity.INFO,
-            message=f"sensor status {sensor.status.value}",
-            metadata={"flags": sensor.fault_flags, "confidence": sensor.confidence},
-        )
+        log_sensor(self.events, next_step, ts, sensor)
 
         outputs: List[ControllerOutput] = []
         for controller in self.controllers:
             out = controller.evaluate(sensor, active_faults)
             outputs.append(out)
-            self.events.log(
-                step=next_step,
-                timestamp=self.state.timestamp + 1.0,
-                component=controller.id,
-                type=EventType.CONTROLLER,
-                severity=EventSeverity.INFO if out.valid else EventSeverity.WARNING,
-                message=f"{controller.id} -> {out.action.value} ({out.reason_code})",
-                metadata={
-                    "valid": out.valid,
-                    "response_time_ms": out.response_time_ms,
-                    "confidence": out.confidence,
-                },
-            )
+            log_controller(self.events, next_step, ts, out)
 
         vote_result = vote(outputs, latency_threshold_ms=self.config.latency_threshold_ms)
-        self.events.log(
-            step=next_step,
-            timestamp=self.state.timestamp + 1.0,
-            component="voting",
-            type=EventType.VOTE,
-            severity=EventSeverity.INFO if vote_result.outcome == VoteOutcome.CONSENSUS else EventSeverity.WARNING,
-            message=f"vote {vote_result.outcome.value}: {vote_result.reason}",
-            metadata={
-                "selected": vote_result.selected_action.value if vote_result.selected_action else None,
-                "agreeing": vote_result.agreeing_controllers,
-                "rejected": vote_result.rejected_controllers,
-            },
-        )
+        log_vote(self.events, next_step, ts, vote_result)
 
         warnings = self.detector.update(outputs, vote_result, sensor)
-        for component, severity, message in warnings:
-            self.events.log(
-                step=next_step,
-                timestamp=self.state.timestamp + 1.0,
-                component=component,
-                type=EventType.FAULT,
-                severity=EventSeverity.CRITICAL if severity == FaultSeverity.CRITICAL else EventSeverity.WARNING,
-                message=message,
-                metadata={"detected_severity": severity.value},
-            )
+        log_detector_warnings(self.events, next_step, ts, warnings)
 
         findings = self.trust.update(outputs, vote_result, sensor)
-        for finding in findings:
-            self.events.log(
-                step=next_step,
-                timestamp=self.state.timestamp + 1.0,
-                component=finding.component,
-                type=EventType.FAULT,
-                severity=EventSeverity.CRITICAL if finding.severity.value == "CRITICAL" else EventSeverity.WARNING,
-                message=finding.message,
-                metadata={"health": finding.severity.value, **finding.metadata},
-            )
+        log_trust_findings(self.events, next_step, ts, findings)
 
         new_mode, justification = self.safe_mode.evaluate(vote_result, sensor)
-        mode_changed = self.safe_mode.transition(new_mode)
-        if mode_changed:
-            self.events.log(
-                step=next_step,
-                timestamp=self.state.timestamp + 1.0,
-                component="state_manager",
-                type=EventType.MODE_CHANGE,
-                severity=EventSeverity.CRITICAL if new_mode == SystemMode.FAILED else EventSeverity.WARNING,
-                message=f"mode -> {new_mode.value}",
-                metadata={"justification": justification},
-            )
+        if self.safe_mode.transition(new_mode):
+            log_mode_change(self.events, next_step, ts, new_mode, justification)
 
-        if vote_result.outcome == VoteOutcome.CONSENSUS and vote_result.selected_action is not None:
-            chosen = vote_result.selected_action
-        else:
-            chosen = SafeModeManager.fallback_action(new_mode)
+        decision = _build_decision(next_step, vote_result, new_mode, justification)
+        log_decision(self.events, next_step, ts, decision)
 
-        final_action = SafeModeManager.restrict_action(new_mode, chosen)
-
-        decision = SystemDecision(
-            step=next_step,
-            final_action=final_action,
-            system_mode=new_mode,
-            safe_mode_active=new_mode in (SystemMode.SAFE_MODE, SystemMode.FAILED),
-            justification=justification,
-            trusted_controllers=vote_result.agreeing_controllers,
-            rejected_controllers=vote_result.rejected_controllers,
-        )
-        self.events.log(
-            step=next_step,
-            timestamp=self.state.timestamp + 1.0,
-            component="orchestrator",
-            type=EventType.DECISION,
-            severity=EventSeverity.INFO if new_mode == SystemMode.NORMAL else EventSeverity.WARNING,
-            message=f"final action {final_action.value}",
-            metadata={
-                "mode": new_mode.value,
-                "safe_mode_active": decision.safe_mode_active,
-                "justification": justification,
-            },
-        )
-
-        new_state = apply_action(self.state, final_action)
+        new_state = apply_action(self.state, decision.final_action)
         new_state.system_mode = new_mode
         self.state = new_state
-
-        self.events.log(
-            step=next_step,
-            timestamp=self.state.timestamp,
-            component="vehicle",
-            type=EventType.STATE,
-            severity=EventSeverity.INFO,
-            message="state updated",
-            metadata={
-                "altitude": self.state.altitude,
-                "velocity": self.state.velocity,
-                "heading": self.state.heading,
-                "mode": new_mode.value,
-            },
-        )
+        log_state(self.events, self.state.timestamp, self.state)
 
         record = StepRecord(
             state=self.state,
@@ -253,3 +162,25 @@ class Simulation:
 
     def run(self, steps: int) -> List[StepRecord]:
         return [self.step() for _ in range(steps)]
+
+
+def _build_decision(
+    step: int,
+    vote_result: VoteResult,
+    new_mode: SystemMode,
+    justification: str,
+) -> SystemDecision:
+    if vote_result.outcome == VoteOutcome.CONSENSUS and vote_result.selected_action is not None:
+        chosen = vote_result.selected_action
+    else:
+        chosen = SafeModeManager.fallback_action(new_mode)
+    final_action = SafeModeManager.restrict_action(new_mode, chosen)
+    return SystemDecision(
+        step=step,
+        final_action=final_action,
+        system_mode=new_mode,
+        safe_mode_active=new_mode in (SystemMode.SAFE_MODE, SystemMode.FAILED),
+        justification=justification,
+        trusted_controllers=vote_result.agreeing_controllers,
+        rejected_controllers=vote_result.rejected_controllers,
+    )
