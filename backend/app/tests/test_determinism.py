@@ -61,7 +61,9 @@ def test_ten_replays_are_identical():
     deadline=None,
     suppress_health_check=[HealthCheck.too_slow],
 )
-@given(seed=st.integers(min_value=0, max_value=10_000), steps=st.integers(min_value=1, max_value=10))
+@given(
+    seed=st.integers(min_value=0, max_value=10_000), steps=st.integers(min_value=1, max_value=10)
+)
 def test_property_same_seed_same_history(seed, steps):
     """Property: any seed in [0, 10000] reproduces across two runs."""
 
@@ -92,9 +94,7 @@ def test_cross_process_equivalence(tmp_path):
 
     import os
 
-    backend_path = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    )
+    backend_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     scenario = "nominal_cruise"
 
     sim, _ = run_scenario(scenario)
