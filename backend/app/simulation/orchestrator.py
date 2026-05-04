@@ -67,7 +67,9 @@ class Simulation:
             rng=self.rng.child("sensor"),
             noise_std=config.sensor_noise_std,
         )
-        self.controllers = controllers if controllers is not None else default_controllers()
+        self.controllers = (
+            controllers if controllers is not None else default_controllers(rng=self.rng)
+        )
         self.faults = FaultRegistry()
         self.detector = FaultDetector(
             latency_threshold_ms=config.latency_threshold_ms,
