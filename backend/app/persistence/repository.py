@@ -13,6 +13,13 @@ from ..domain.models import (
 )
 from ..simulation.orchestrator import Simulation, StepRecord
 from .database import Database
+from .repository_serialization import (
+    decision_row,
+    event_row_to_dict,
+    fault_row,
+    sensor_row,
+    vote_row,
+)
 
 
 class SimulationRepository:
@@ -66,7 +73,7 @@ class SimulationRepository:
             "SELECT * FROM events WHERE simulation_id = ? ORDER BY step ASC, event_id ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._event_row_to_dict(r) for r in rows]
+        return [event_row_to_dict(r) for r in rows]
 
     def get_latest_state(self, simulation_id: str) -> dict | None:
         conn = self.db.connect()
@@ -104,7 +111,7 @@ class SimulationRepository:
             "SELECT * FROM fault_records WHERE simulation_id = ? ORDER BY start_step ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._fault_row(r) for r in rows]
+        return [fault_row(r) for r in rows]
 
     def get_decisions(self, simulation_id: str) -> List[dict]:
         conn = self.db.connect()
@@ -112,7 +119,7 @@ class SimulationRepository:
             "SELECT * FROM system_decisions WHERE simulation_id = ? ORDER BY step ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._decision_row(r) for r in rows]
+        return [decision_row(r) for r in rows]
 
     def get_sensor_readings(self, simulation_id: str) -> List[dict]:
         conn = self.db.connect()
@@ -120,7 +127,7 @@ class SimulationRepository:
             "SELECT * FROM sensor_readings WHERE simulation_id = ? ORDER BY step ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._sensor_row(r) for r in rows]
+        return [sensor_row(r) for r in rows]
 
     def get_controller_outputs(self, simulation_id: str) -> List[dict]:
         conn = self.db.connect()
@@ -136,7 +143,7 @@ class SimulationRepository:
             "SELECT * FROM vote_results WHERE simulation_id = ? ORDER BY step ASC",
             (simulation_id,),
         ).fetchall()
-        return [self._vote_row(r) for r in rows]
+        return [vote_row(r) for r in rows]
 
     def get_events(self, simulation_id: str) -> List[dict]:
         return self.list_events(simulation_id)
@@ -286,36 +293,3 @@ class SimulationRepository:
             ),
         )
 
-    @staticmethod
-    def _event_row_to_dict(row) -> dict:
-        d = dict(row)
-        d["metadata"] = json.loads(d["metadata"])
-        return d
-
-    @staticmethod
-    def _fault_row(row) -> dict:
-        d = dict(row)
-        d["metadata"] = json.loads(d["metadata"])
-        d["active"] = bool(d["active"])
-        return d
-
-    @staticmethod
-    def _decision_row(row) -> dict:
-        d = dict(row)
-        d["trusted"] = json.loads(d["trusted"])
-        d["rejected"] = json.loads(d["rejected"])
-        d["safe_mode_active"] = bool(d["safe_mode_active"])
-        return d
-
-    @staticmethod
-    def _sensor_row(row) -> dict:
-        d = dict(row)
-        d["fault_flags"] = json.loads(d["fault_flags"])
-        return d
-
-    @staticmethod
-    def _vote_row(row) -> dict:
-        d = dict(row)
-        d["agreeing"] = json.loads(d["agreeing"])
-        d["rejected"] = json.loads(d["rejected"])
-        return d
