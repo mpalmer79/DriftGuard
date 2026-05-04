@@ -1,6 +1,6 @@
-import uuid
 from typing import Dict, List, Optional
 
+from ..core.ids import fault_id
 from ..domain.enums import FaultSeverity, FaultType
 from ..domain.models import FaultRecord
 
@@ -18,10 +18,10 @@ class FaultRegistry:
         severity: FaultSeverity = FaultSeverity.WARNING,
         metadata: Optional[Dict] = None,
     ) -> FaultRecord:
-        fault_id = str(uuid.uuid4())
+        fid = fault_id()
         end_step = start_step + duration if duration is not None else None
         record = FaultRecord(
-            fault_id=fault_id,
+            fault_id=fid,
             type=fault_type,
             target_component=target,
             severity=severity,
@@ -30,7 +30,7 @@ class FaultRegistry:
             end_step=end_step,
             metadata=metadata or {},
         )
-        self._faults[fault_id] = record
+        self._faults[fid] = record
         return record
 
     def active_at(self, step: int) -> List[FaultRecord]:

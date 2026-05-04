@@ -24,6 +24,7 @@ from .controllers import Controller, default_controllers
 from .detection import FaultDetector
 from .event_logger import EventLogger
 from .faults import FaultRegistry
+from .health import TrustDetector
 from .safe_mode import SafeModeManager
 from .sensors import SensorModel
 from .vehicle import apply_action, initial_state
@@ -63,6 +64,7 @@ class Simulation:
             invalid_critical=config.invalid_critical_threshold,
         )
         self.safe_mode = SafeModeManager(self.detector)
+        self.trust = TrustDetector(latency_threshold_ms=config.latency_threshold_ms)
         self.events = EventLogger()
         self.step_history: List[StepRecord] = []
         self.last_decision: Optional[SystemDecision] = None
@@ -106,6 +108,8 @@ class Simulation:
         active_faults = self.faults.active_at(next_step)
 
         sensor = self.sensors.read(self.state, active_faults)
+        # Align reading and downstream artifacts with the step we are about to commit.
+        sensor.step = next_step
         self.events.log(
             step=next_step,
             timestamp=self.state.timestamp + 1.0,
@@ -159,6 +163,18 @@ class Simulation:
                 severity=EventSeverity.CRITICAL if severity == FaultSeverity.CRITICAL else EventSeverity.WARNING,
                 message=message,
                 metadata={"detected_severity": severity.value},
+            )
+
+        findings = self.trust.update(outputs, vote_result, sensor)
+        for finding in findings:
+            self.events.log(
+                step=next_step,
+                timestamp=self.state.timestamp + 1.0,
+                component=finding.component,
+                type=EventType.FAULT,
+                severity=EventSeverity.CRITICAL if finding.severity.value == "CRITICAL" else EventSeverity.WARNING,
+                message=finding.message,
+                metadata={"health": finding.severity.value, **finding.metadata},
             )
 
         new_mode, justification = self.safe_mode.evaluate(vote_result, sensor)

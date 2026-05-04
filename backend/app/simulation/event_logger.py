@@ -1,6 +1,6 @@
-import uuid
 from typing import Any, Dict, List, Optional
 
+from ..core.ids import event_id
 from ..domain.enums import EventSeverity, EventType
 from ..domain.events import Event
 
@@ -20,7 +20,7 @@ class EventLogger:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Event:
         event = Event(
-            event_id=str(uuid.uuid4()),
+            event_id=event_id(),
             step=step,
             timestamp=timestamp,
             component=component,

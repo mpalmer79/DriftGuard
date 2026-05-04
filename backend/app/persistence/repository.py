@@ -76,6 +76,99 @@ class SimulationRepository:
         ).fetchone()
         return dict(row) if row else None
 
+    def list_simulations(self) -> List[dict]:
+        conn = self.db.connect()
+        rows = conn.execute(
+            "SELECT * FROM simulations ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_simulation(self, simulation_id: str) -> dict | None:
+        conn = self.db.connect()
+        row = conn.execute(
+            "SELECT * FROM simulations WHERE id = ?", (simulation_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def get_step_records(self, simulation_id: str) -> List[dict]:
+        conn = self.db.connect()
+        rows = conn.execute(
+            "SELECT * FROM vehicle_state WHERE simulation_id = ? ORDER BY step ASC",
+            (simulation_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_faults(self, simulation_id: str) -> List[dict]:
+        conn = self.db.connect()
+        rows = conn.execute(
+            "SELECT * FROM fault_records WHERE simulation_id = ? ORDER BY start_step ASC",
+            (simulation_id,),
+        ).fetchall()
+        return [self._fault_row(r) for r in rows]
+
+    def get_decisions(self, simulation_id: str) -> List[dict]:
+        conn = self.db.connect()
+        rows = conn.execute(
+            "SELECT * FROM system_decisions WHERE simulation_id = ? ORDER BY step ASC",
+            (simulation_id,),
+        ).fetchall()
+        return [self._decision_row(r) for r in rows]
+
+    def get_sensor_readings(self, simulation_id: str) -> List[dict]:
+        conn = self.db.connect()
+        rows = conn.execute(
+            "SELECT * FROM sensor_readings WHERE simulation_id = ? ORDER BY step ASC",
+            (simulation_id,),
+        ).fetchall()
+        return [self._sensor_row(r) for r in rows]
+
+    def get_controller_outputs(self, simulation_id: str) -> List[dict]:
+        conn = self.db.connect()
+        rows = conn.execute(
+            "SELECT * FROM controller_outputs WHERE simulation_id = ? ORDER BY step ASC, controller_id ASC",
+            (simulation_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_votes(self, simulation_id: str) -> List[dict]:
+        conn = self.db.connect()
+        rows = conn.execute(
+            "SELECT * FROM vote_results WHERE simulation_id = ? ORDER BY step ASC",
+            (simulation_id,),
+        ).fetchall()
+        return [self._vote_row(r) for r in rows]
+
+    def get_events(self, simulation_id: str) -> List[dict]:
+        return self.list_events(simulation_id)
+
+    def get_timeline(self, simulation_id: str) -> List[dict]:
+        states = {s["step"]: s for s in self.get_step_records(simulation_id)}
+        sensors = {s["step"]: s for s in self.get_sensor_readings(simulation_id)}
+        decisions = {d["step"]: d for d in self.get_decisions(simulation_id)}
+        votes = {v["step"]: v for v in self.get_votes(simulation_id)}
+        outputs_by_step: dict[int, list] = {}
+        for o in self.get_controller_outputs(simulation_id):
+            outputs_by_step.setdefault(o["step"], []).append(o)
+        events_by_step: dict[int, list] = {}
+        for e in self.get_events(simulation_id):
+            events_by_step.setdefault(e["step"], []).append(e)
+
+        # A timeline entry only exists where a decision was made; the initial
+        # pre-step state is excluded so each entry has a complete control-loop
+        # snapshot.
+        timeline = []
+        for step in sorted(decisions):
+            timeline.append({
+                "step": step,
+                "state": states.get(step),
+                "sensor": sensors.get(step),
+                "controllers": outputs_by_step.get(step, []),
+                "vote": votes.get(step),
+                "decision": decisions.get(step),
+                "events": events_by_step.get(step, []),
+            })
+        return timeline
+
     def _save_state(self, sim_id: str, s: VehicleState, conn=None) -> None:
         c = conn or self.db.connect()
         c.execute(
@@ -197,4 +290,32 @@ class SimulationRepository:
     def _event_row_to_dict(row) -> dict:
         d = dict(row)
         d["metadata"] = json.loads(d["metadata"])
+        return d
+
+    @staticmethod
+    def _fault_row(row) -> dict:
+        d = dict(row)
+        d["metadata"] = json.loads(d["metadata"])
+        d["active"] = bool(d["active"])
+        return d
+
+    @staticmethod
+    def _decision_row(row) -> dict:
+        d = dict(row)
+        d["trusted"] = json.loads(d["trusted"])
+        d["rejected"] = json.loads(d["rejected"])
+        d["safe_mode_active"] = bool(d["safe_mode_active"])
+        return d
+
+    @staticmethod
+    def _sensor_row(row) -> dict:
+        d = dict(row)
+        d["fault_flags"] = json.loads(d["fault_flags"])
+        return d
+
+    @staticmethod
+    def _vote_row(row) -> dict:
+        d = dict(row)
+        d["agreeing"] = json.loads(d["agreeing"])
+        d["rejected"] = json.loads(d["rejected"])
         return d

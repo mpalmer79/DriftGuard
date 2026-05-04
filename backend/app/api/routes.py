@@ -1,12 +1,11 @@
-import uuid
 from dataclasses import asdict
-from typing import Dict
 
 from fastapi import APIRouter, HTTPException
 
-from ..persistence.database import Database
-from ..persistence.repository import SimulationRepository
+from ..core.exceptions import ConflictError, NotFoundError, ValidationError
+from ..core.ids import simulation_id as new_simulation_id
 from ..simulation.orchestrator import Simulation
+from . import dependencies as deps
 from .schemas import (
     CreateSimulationRequest,
     CreateSimulationResponse,
@@ -20,13 +19,9 @@ from .schemas import (
 
 router = APIRouter()
 
-_simulations: Dict[str, Simulation] = {}
-_db = Database(path=":memory:")
-_repo = SimulationRepository(_db)
-
 
 def _get_sim(sim_id: str) -> Simulation:
-    sim = _simulations.get(sim_id)
+    sim = deps.get_registry().get(sim_id)
     if sim is None:
         raise HTTPException(status_code=404, detail="simulation not found")
     return sim
@@ -66,12 +61,12 @@ def _serialize_step(record) -> StepResponse:
 
 @router.post("/simulations", response_model=CreateSimulationResponse, status_code=201)
 def create_simulation(req: CreateSimulationRequest) -> CreateSimulationResponse:
-    sim_id = req.simulation_id or str(uuid.uuid4())
-    if sim_id in _simulations:
+    sim_id = req.simulation_id or new_simulation_id()
+    if sim_id in deps.get_registry():
         raise HTTPException(status_code=409, detail="simulation already exists")
     sim = Simulation(simulation_id=sim_id, seed=req.seed)
-    _simulations[sim_id] = sim
-    _repo.create_simulation(sim)
+    deps.get_registry()[sim_id] = sim
+    deps.get_repository().create_simulation(sim)
     return CreateSimulationResponse(simulation_id=sim.id, seed=sim.seed)
 
 
@@ -79,7 +74,7 @@ def create_simulation(req: CreateSimulationRequest) -> CreateSimulationResponse:
 def step_simulation(sim_id: str) -> StepResponse:
     sim = _get_sim(sim_id)
     record = sim.step()
-    _repo.save_step(sim_id, record)
+    deps.get_repository().save_step(sim_id, record)
     return _serialize_step(record)
 
 
@@ -97,7 +92,7 @@ def inject_fault(sim_id: str, req: FaultRequest) -> FaultResponse:
         severity=req.severity,
         metadata=req.metadata,
     )
-    _repo.save_fault(sim_id, record)
+    deps.get_repository().save_fault(sim_id, record)
     return FaultResponse(
         fault_id=record.fault_id,
         type=record.type,
@@ -148,4 +143,4 @@ def get_events(sim_id: str) -> list[EventResponse]:
 
 
 def reset_state_for_tests() -> None:
-    _simulations.clear()
+    deps.reset_state_for_tests()
