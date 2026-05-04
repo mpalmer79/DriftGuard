@@ -34,6 +34,7 @@ def test_frozen_clock_sequence_persists_distinct_timestamps():
 
     a = repo.get_simulation("a")
     b = repo.get_simulation("b")
-    assert a is not None and b is not None
+    assert a is not None
+    assert b is not None
     assert a["created_at"] == 100.0
     assert b["created_at"] == 200.0
