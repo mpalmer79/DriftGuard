@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from ..core.canonical import fingerprint
 from ..core.exceptions import NotFoundError
 from . import dependencies as deps
 
@@ -51,3 +52,25 @@ def get_timeline(sim_id: str) -> list[dict]:
     if repo.get_simulation(sim_id) is None:
         raise NotFoundError(f"simulation '{sim_id}' not found")
     return repo.get_timeline(sim_id)
+
+
+@router.get("/simulations/{sim_id}/replay-fingerprint")
+def get_replay_fingerprint(sim_id: str) -> dict:
+    """Return the canonical SHA-256 fingerprint of the persisted timeline.
+
+    Per RESEARCH.md §7 the kernel produces evidence and the UI reads
+    it. The fingerprint is computed from the SQLite-backed timeline,
+    not from any in-memory state, so two replays of the same scenario
+    must agree even if the originating Simulation has been GC'd.
+    """
+
+    repo = deps.get_repository()
+    if repo.get_simulation(sim_id) is None:
+        raise NotFoundError(f"simulation '{sim_id}' not found")
+    timeline = repo.get_timeline(sim_id)
+    return {
+        "simulation_id": sim_id,
+        "step_count": len(timeline),
+        "fingerprint": fingerprint(timeline),
+        "algorithm": "sha256",
+    }

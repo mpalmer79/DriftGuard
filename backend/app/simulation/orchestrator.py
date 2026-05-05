@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from ..core.config import DEFAULT_CONFIG, SimulationConfig
+from ..core.rng import RngService
 from ..domain.enums import (
     EventSeverity,
     EventType,
@@ -60,9 +61,15 @@ class Simulation:
         self.id = simulation_id
         self.seed = seed if seed is not None else config.default_seed
         self.config = config
+        self.rng = RngService(self.seed)
         self.state = initial_state(simulation_id)
-        self.sensors = SensorModel(seed=self.seed, noise_std=config.sensor_noise_std)
-        self.controllers = controllers if controllers is not None else default_controllers()
+        self.sensors = SensorModel(
+            rng=self.rng.child("sensor"),
+            noise_std=config.sensor_noise_std,
+        )
+        self.controllers = (
+            controllers if controllers is not None else default_controllers(rng=self.rng)
+        )
         self.faults = FaultRegistry()
         self.detector = FaultDetector(
             latency_threshold_ms=config.latency_threshold_ms,

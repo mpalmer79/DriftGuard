@@ -2,6 +2,7 @@ import random
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 
+from ..core.rng import RngService
 from ..domain.enums import Action, SensorStatus
 from ..domain.models import ControllerOutput, FaultRecord, SensorReading
 from .controller_fault_application import aggregate_effects, overlay_action
@@ -14,8 +15,13 @@ class Controller(ABC):
     id: str
     base_response_time_ms: float
 
-    def __init__(self) -> None:
-        self._fault_rng = random.Random(hash(self.id) & 0xFFFFFFFF)
+    def __init__(self, fault_rng: random.Random | None = None) -> None:
+        # Per ADR 0006, controllers should be fed by RngService.child(...).
+        # The fallback preserves the legacy in-process behavior for unit
+        # tests that construct controllers directly without a service.
+        if fault_rng is None:
+            fault_rng = random.Random(hash(self.id) & 0xFFFFFFFF)
+        self._fault_rng = fault_rng
 
     @abstractmethod
     def _decide(self, reading: SensorReading) -> tuple[Action, float, str]: ...
@@ -146,5 +152,19 @@ class BalancedController(Controller):
         return Action.HOLD, 0.8, "NOMINAL"
 
 
-def default_controllers() -> list[Controller]:
-    return [ConservativeController(), ResponsiveController(), BalancedController()]
+def default_controllers(rng: RngService | None = None) -> list[Controller]:
+    """Build the standard A/B/C controller set.
+
+    When given an RngService, each controller's fault-activation RNG
+    is sourced from a named child (`{controller_id}.fault`), so the
+    full simulation reproduces across processes (ADR 0006).
+    """
+
+    def fault_rng_for(cid: str) -> random.Random | None:
+        return rng.child(f"{cid}.fault") if rng is not None else None
+
+    return [
+        ConservativeController(fault_rng=fault_rng_for(ConservativeController.id)),
+        ResponsiveController(fault_rng=fault_rng_for(ResponsiveController.id)),
+        BalancedController(fault_rng=fault_rng_for(BalancedController.id)),
+    ]

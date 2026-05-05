@@ -1,6 +1,6 @@
 import json
-import time
 
+from ..core.time import Clock, SystemClock
 from ..domain.models import FaultRecord
 from ..simulation.orchestrator import Simulation, StepRecord
 from .database import Database
@@ -22,14 +22,15 @@ from .repository_writes import (
 
 
 class SimulationRepository:
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: Database, clock: Clock | None = None) -> None:
         self.db = db
+        self.clock: Clock = clock if clock is not None else SystemClock()
 
     def create_simulation(self, sim: Simulation) -> None:
         conn = self.db.connect()
         conn.execute(
             "INSERT OR REPLACE INTO simulations (id, seed, created_at) VALUES (?, ?, ?)",
-            (sim.id, sim.seed, time.time()),
+            (sim.id, sim.seed, self.clock.now()),
         )
         save_state(conn, sim.id, sim.state)
         conn.commit()
@@ -67,9 +68,14 @@ class SimulationRepository:
         conn.commit()
 
     def list_events(self, simulation_id: str) -> list[dict]:
+        # Order by ROWID within a step so events come back in insertion
+        # order, not in the random order produced by sorting on the UUID
+        # event_id. Insertion order is meaningful (sensor -> controllers
+        # -> vote -> ... -> state) and is the order required for the
+        # replay-fingerprint canonicalization (Phase 1.3) to be stable.
         conn = self.db.connect()
         rows = conn.execute(
-            "SELECT * FROM events WHERE simulation_id = ? ORDER BY step ASC, event_id ASC",
+            "SELECT * FROM events WHERE simulation_id = ? ORDER BY step ASC, ROWID ASC",
             (simulation_id,),
         ).fetchall()
         return [event_row_to_dict(r) for r in rows]

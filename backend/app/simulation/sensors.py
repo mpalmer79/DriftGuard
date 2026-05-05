@@ -7,8 +7,14 @@ from ..domain.models import FaultRecord, SensorReading, VehicleState
 
 
 class SensorModel:
-    def __init__(self, seed: int, noise_std: float):
-        self._rng = random.Random(seed)
+    """Per-step sensor reader.
+
+    The RNG is injected so that the simulation can route every random
+    consumer through `core.rng.RngService.child("sensor")`. See ADR 0006.
+    """
+
+    def __init__(self, rng: random.Random, noise_std: float):
+        self._rng = rng
         self._noise = noise_std
         self._drift_acc = 0.0
 
