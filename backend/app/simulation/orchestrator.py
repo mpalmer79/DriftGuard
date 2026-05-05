@@ -106,9 +106,7 @@ class Simulation:
         from ..core.exceptions import CapacityError
 
         if len(self.faults.all()) >= self.MAX_FAULTS:
-            raise CapacityError(
-                f"per-simulation fault cap of {self.MAX_FAULTS} reached"
-            )
+            raise CapacityError(f"per-simulation fault cap of {self.MAX_FAULTS} reached")
         if start_step is None:
             start_step = self.state.step
         record = self.faults.inject(
@@ -138,9 +136,7 @@ class Simulation:
         from ..core.exceptions import CapacityError
 
         if self.state.step >= self.MAX_STEPS:
-            raise CapacityError(
-                f"per-simulation step cap of {self.MAX_STEPS} reached"
-            )
+            raise CapacityError(f"per-simulation step cap of {self.MAX_STEPS} reached")
         t = tracer()
         with t.start_as_current_span(
             "step", attributes={"sim.id": self.id, "step": self.state.step + 1}
