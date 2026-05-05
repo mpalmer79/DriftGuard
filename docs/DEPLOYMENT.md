@@ -44,6 +44,34 @@ The frontend container is wired to point at the backend service.
   fine for demos and resets between processes. To persist runs, point
   the `Database(path=...)` to a mounted volume.
 
+### Rate limiting (Phase 8.2)
+
+A small in-process sliding-window limiter is installed by
+`install_rate_limiter` in `app/api/rate_limit.py`. Defaults:
+
+- 60 requests/min per client IP for `POST`/`DELETE`/`PUT`/`PATCH`
+- 600 requests/min per client IP for everything else
+- `/metrics` is exempt so Prometheus scrapers can poll continuously
+
+Tunable via:
+
+- `SENTINEL_RATE_LIMIT_WRITE_PER_MIN` (default 60)
+- `SENTINEL_RATE_LIMIT_READ_PER_MIN` (default 600)
+- `SENTINEL_RATE_LIMIT_DISABLED=1` short-circuits all checks. The
+  test suite sets this in `conftest.py` to avoid coupling to
+  wall-clock timing; production deployments should leave it unset.
+
+Read and write buckets are tracked separately, so a flood of
+`POST` requests does not consume read capacity. Hitting either cap
+returns `429` with body
+`{"error": {"code": "rate_limited", "message": "..."}}` and a
+`retry-after: 60` header.
+
+The limiter is in-process: it does not coordinate across replicas.
+For horizontally-scaled deployments, terminate rate limiting at the
+edge (nginx, Envoy, an API gateway) and treat this layer as a
+defense-in-depth backstop.
+
 ### CORS allowlist (Phase 8.5)
 
 Set `SENTINEL_CORS_ORIGINS` to a comma-separated list of allowed
@@ -91,3 +119,22 @@ And in `app/api/dependencies.py`:
   through the read endpoints.
 
 Hitting any cap returns `429` with code `capacity_exceeded`.
+
+### Security scanning in CI (Phase 8.7)
+
+The backend CI workflow runs two security gates on every push and PR:
+
+- `bandit -q -r app -c pyproject.toml` — static analysis for common
+  Python security smells. `B311` (non-crypto `random`) is skipped
+  by configuration: deterministic Mersenne-Twister RNG is a
+  load-bearing project property (replay, fuzz reproducibility, ADR
+  0006), and cryptographic randomness would actively break the
+  simulation contract.
+- `pip-audit -r requirements.txt -r requirements-dev.txt` — checks
+  installed dependencies against the PyPI advisory database.
+  We use `pip-audit` (PyPA-maintained, no auth required) instead of
+  `safety`, which now requires an account for non-trivial use; the
+  acceptance criterion "safety clean" is satisfied by an equivalent
+  vulnerability gate.
+
+Both steps are mandatory — failure breaks the build.

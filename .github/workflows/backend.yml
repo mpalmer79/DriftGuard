@@ -37,6 +37,8 @@ jobs:
       - name: ruff format check
         run: ruff format --check app
       - name: bandit
-        run: bandit -q -r app -c pyproject.toml || true
+        run: bandit -q -r app -c pyproject.toml
+      - name: pip-audit
+        run: pip-audit -r requirements.txt -r requirements-dev.txt
       - name: pytest
         run: pytest --cov=app --cov-report=term-missing

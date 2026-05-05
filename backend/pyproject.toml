@@ -43,7 +43,11 @@ module = [
 strict = true
 
 [tool.bandit]
-skips = ["B101"]  # assert is fine in test files
+# B101: assert is fine in test files
+# B311: deterministic non-crypto RNG is a load-bearing design property
+#       (replay, fuzz reproducibility, ADR 0006). Cryptographic randomness
+#       would actively break the simulation contract.
+skips = ["B101", "B311"]
 exclude_dirs = ["app/tests"]
 
 [tool.pytest.ini_options]
