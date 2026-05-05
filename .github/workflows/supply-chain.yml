@@ -65,17 +65,21 @@ jobs:
         target:
           - { name: backend, path: backend }
           - { name: frontend, path: frontend }
-    env:
-      TRIVY_VERSION: "0.57.1"
     steps:
       # actions/checkout v4.1.7
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
 
+      # Use trivy's official install script, which resolves the latest
+      # release and picks the correct linux_amd64 asset. We deliberately
+      # do *not* pin a version: this is a vulnerability scanner, and
+      # weekly cron + per-PR runs benefit from a fresh CVE database. If
+      # we ever need reproducibility, switch to a pinned tag once the
+      # exact upstream release naming is verified.
       - name: install trivy
         run: |
           set -euo pipefail
-          curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
-            | sudo tar -xz -C /usr/local/bin trivy
+          curl -fsSL "https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh" \
+            | sudo sh -s -- -b /usr/local/bin
           trivy --version
 
       - name: trivy filesystem scan
