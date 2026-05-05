@@ -42,3 +42,27 @@ jobs:
           name: sbom-${{ matrix.target.name }}
           path: sbom-${{ matrix.target.name }}.cdx.json
           retention-days: 30
+
+  scan:
+    name: trivy (${{ matrix.target.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { name: backend, path: backend }
+          - { name: frontend, path: frontend }
+    steps:
+      # actions/checkout v4.1.7
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+
+      # aquasecurity/trivy-action 0.28.0
+      - name: trivy filesystem scan
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0
+        with:
+          scan-type: fs
+          scan-ref: ${{ matrix.target.path }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
