@@ -1,8 +1,10 @@
-"""Liveness and readiness endpoints (Phase 4.4).
+"""Liveness, readiness, and metrics endpoints (Phase 4.4 / 4.2).
 
 `/health` is the liveness probe — the process is up and serving HTTP.
 `/ready` is the readiness probe — the dependencies the application
 needs (SQLite connection, scenario registry) are usable.
+`/metrics` returns the Prometheus exposition format payload from
+the dedicated CollectorRegistry in `core/metrics.py`.
 
 Kept in a separate router so middleware (request id, future auth)
 can opt in or out per route group later.
@@ -10,8 +12,9 @@ can opt in or out per route group later.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 
+from ..core import metrics
 from ..scenarios import all_scenarios
 from . import dependencies as deps
 
@@ -21,6 +24,15 @@ router = APIRouter()
 @router.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@router.get("/metrics")
+def get_metrics() -> Response:
+    """Prometheus exposition format. Content-type comes from the
+    prom-client constant so scrapers parse it correctly."""
+
+    payload, content_type = metrics.render()
+    return Response(content=payload, media_type=content_type)
 
 
 @router.get("/ready")
