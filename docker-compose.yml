@@ -46,6 +46,14 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_BASE=http://localhost:8000
+      # Phase 6.3 auth proxy. The proxy lives in the Next.js
+      # process, so it dials the backend on its internal-DNS
+      # hostname (`backend`) rather than the browser-facing
+      # localhost URL. Set SENTINEL_API_TOKEN at deploy time to
+      # actually exercise the bearer guard; left unset, the proxy
+      # forwards without an Authorization header (dev mode).
+      - SENTINEL_BACKEND_URL=http://backend:8000
+      - SENTINEL_API_TOKEN=${SENTINEL_API_TOKEN:-}
     depends_on:
       backend:
         condition: service_healthy

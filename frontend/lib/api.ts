@@ -14,6 +14,19 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
+// Phase 6.3: state-mutating calls go through the same-origin
+// `/api/proxy/<path>` handler so the bearer token can be injected
+// server-side. Reads stay on the public NEXT_PUBLIC_API_BASE — they
+// don't need the token and adding a hop would just slow them down.
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function targetFor(path: string, method: string): string {
+  if (WRITE_METHODS.has(method.toUpperCase())) {
+    return `/api/proxy${path}`;
+  }
+  return `${API_BASE}${path}`;
+}
+
 class ApiError extends Error {
   status: number;
   body: unknown;
@@ -25,9 +38,11 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const url = targetFor(path, method);
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
+    res = await fetch(url, {
       cache: "no-store",
       headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
       ...init,
@@ -131,7 +146,9 @@ export const api = {
   },
 
   createScenario: async (yamlBody: string) => {
-    const res = await fetch(`${API_BASE}/scenarios`, {
+    // YAML upload — content-type is preserved by the proxy
+    // (Phase 6.3) so the FastAPI parse_yaml branch still fires.
+    const res = await fetch(targetFor("/scenarios", "POST"), {
       method: "POST",
       headers: { "Content-Type": "text/yaml" },
       body: yamlBody,

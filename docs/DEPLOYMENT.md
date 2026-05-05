@@ -167,6 +167,36 @@ The supplied token is compared against the expected token using
 time regardless of how many leading bytes match. This guards against
 the byte-by-byte timing side-channel that a plain `==` would expose.
 
+#### Frontend auth proxy (Phase 6.3)
+
+The Next.js dashboard never sees the bearer token. Mutating API
+calls go through a same-origin route handler at `/api/proxy/<path>`
+that runs server-side and injects `Authorization: Bearer <token>`
+before forwarding to FastAPI. Read traffic still goes direct to
+`NEXT_PUBLIC_API_BASE` since reads are not gated by the token.
+
+Frontend env vars:
+
+```bash
+# Server-side only. Read by the proxy route handler, never sent
+# to the browser. Leave unset for dev demos.
+SENTINEL_API_TOKEN="$(openssl rand -hex 32)"
+
+# Optional override for where the proxy dials the backend. Useful
+# in Compose where the browser sees localhost but the proxy needs
+# the internal-DNS hostname.
+SENTINEL_BACKEND_URL="http://backend:8000"
+
+# Browser-visible. Used by the read calls in lib/api.ts.
+NEXT_PUBLIC_API_BASE="http://localhost:8000"
+```
+
+`docker-compose.yml` wires `SENTINEL_BACKEND_URL=http://backend:8000`
+on the frontend service and forwards `SENTINEL_API_TOKEN` from the
+host environment. With the token set on **both** services, the UI
+reaches every write endpoint end-to-end without exposing the token
+to the browser.
+
 ### Resource caps (Phase 8.4)
 
 Compile-time constants in `app/simulation/orchestrator.py`:
