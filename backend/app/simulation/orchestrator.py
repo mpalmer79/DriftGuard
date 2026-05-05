@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 
 from ..core.config import DEFAULT_CONFIG, SimulationConfig
 from ..core.rng import RngService
+from ..core.tracing import tracer
 from ..domain.enums import (
     EventSeverity,
     EventType,
@@ -120,43 +121,55 @@ class Simulation:
         return record
 
     def step(self) -> StepRecord:
+        t = tracer()
+        with t.start_as_current_span(
+            "step", attributes={"sim.id": self.id, "step": self.state.step + 1}
+        ):
+            return self._run_step(t)
+
+    def _run_step(self, t) -> StepRecord:
         wall_start = time.monotonic()
         next_step = self.state.step + 1
         ts = self.state.timestamp + 1.0
         active_faults = self.faults.active_at(next_step)
 
-        sensor = self.sensors.read(self.state, active_faults)
-        sensor.step = next_step
-        log_sensor(self.events, next_step, ts, sensor)
+        with t.start_as_current_span("sensor"):
+            sensor = self.sensors.read(self.state, active_faults)
+            sensor.step = next_step
+            log_sensor(self.events, next_step, ts, sensor)
 
         outputs: list[ControllerOutput] = []
-        for controller in self.controllers:
-            out = controller.evaluate(sensor, active_faults)
-            outputs.append(out)
-            log_controller(self.events, next_step, ts, out)
+        with t.start_as_current_span("controllers"):
+            for controller in self.controllers:
+                with t.start_as_current_span(controller.id):
+                    out = controller.evaluate(sensor, active_faults)
+                    outputs.append(out)
+                    log_controller(self.events, next_step, ts, out)
 
-        vote_result = vote(outputs, latency_threshold_ms=self.config.latency_threshold_ms)
-        log_vote(self.events, next_step, ts, vote_result)
-        record_vote(vote_result)
+        with t.start_as_current_span("vote"):
+            vote_result = vote(outputs, latency_threshold_ms=self.config.latency_threshold_ms)
+            log_vote(self.events, next_step, ts, vote_result)
+            record_vote(vote_result)
 
-        warnings = self.detector.update(outputs, vote_result, sensor)
-        log_detector_warnings(self.events, next_step, ts, warnings)
+        with t.start_as_current_span("detection"):
+            warnings = self.detector.update(outputs, vote_result, sensor)
+            log_detector_warnings(self.events, next_step, ts, warnings)
+            findings = self.trust.update(outputs, vote_result, sensor)
+            log_trust_findings(self.events, next_step, ts, findings)
 
-        findings = self.trust.update(outputs, vote_result, sensor)
-        log_trust_findings(self.events, next_step, ts, findings)
+        with t.start_as_current_span("decision"):
+            new_mode, justification = self.safe_mode.evaluate(vote_result, sensor)
+            if self.safe_mode.transition(new_mode):
+                log_mode_change(self.events, next_step, ts, new_mode, justification)
+            decision = build_decision(next_step, vote_result, new_mode, justification)
+            log_decision(self.events, next_step, ts, decision)
+            record_decision(decision)
 
-        new_mode, justification = self.safe_mode.evaluate(vote_result, sensor)
-        if self.safe_mode.transition(new_mode):
-            log_mode_change(self.events, next_step, ts, new_mode, justification)
-
-        decision = build_decision(next_step, vote_result, new_mode, justification)
-        log_decision(self.events, next_step, ts, decision)
-        record_decision(decision)
-
-        new_state = apply_action(self.state, decision.final_action)
-        new_state.system_mode = new_mode
-        self.state = new_state
-        log_state(self.events, self.state.timestamp, self.state)
+        with t.start_as_current_span("persistence"):
+            new_state = apply_action(self.state, decision.final_action)
+            new_state.system_mode = new_mode
+            self.state = new_state
+            log_state(self.events, self.state.timestamp, self.state)
 
         record_post_step(
             simulation_id=self.id,
@@ -165,7 +178,6 @@ class Simulation:
             active_faults=active_faults,
             duration_seconds=time.monotonic() - wall_start,
         )
-
         record = StepRecord(
             state=self.state,
             sensor=sensor,
