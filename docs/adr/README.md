@@ -15,5 +15,6 @@ changes, supersede it with a new ADR and mark the old one accordingly.
 | 0007 | 3-DOF dynamics layered under the legacy kinematic update | Accepted (Phase 2.1/2.2) |
 | 0008 | Direct NORMAL → FAILED transitions are permitted | Accepted (Phase 3.1) |
 | 0009 | The anomaly detector is advisory only | Accepted (Phase 6.2) |
+| 0010 | Wire INS / GPS / EKF into the orchestrator step loop | Proposed (Phase 1) |
 
 Use `0000-template.md` as the starting point.
