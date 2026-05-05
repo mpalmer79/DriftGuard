@@ -32,7 +32,7 @@ ADR pins the firewall.
 ## Decision
 
 The anomaly detector is implemented in
-`backend/app/simulation/detection/anomaly.py` as a self-contained
+`backend/app/simulation/anomaly.py` as a self-contained
 isolation forest. It exposes one public effect on the system:
 
 - It emits structured events (`component="anomaly"`,
@@ -120,7 +120,7 @@ exists to enforce.
 
 ## References
 
-- Code: `backend/app/simulation/detection/anomaly.py`
+- Code: `backend/app/simulation/anomaly.py`
 - Tests: `backend/app/tests/test_anomaly_detector.py`,
   `backend/app/tests/test_anomaly_firewall.py`
 - Related: ADR 0001 (dual fault detectors), ADR 0004 (determinism),
