@@ -3,6 +3,20 @@
 SentinelNav is a small two-process system: a FastAPI backend and a
 Next.js frontend. Both ship with Dockerfiles.
 
+## Deployment targets
+
+This project supports two deployment topologies:
+
+1. **Local Docker Compose** (this document, below). Single-host,
+   intended for development and reviewer-driven local runs.
+2. **Railway** (`docs/RAILWAY_DEPLOY.md`). Cloud-hosted two-service
+   deployment, intended for portfolio demonstrations and live
+   reviewer access.
+
+The two share the same Dockerfiles. The differences are entirely in
+the orchestration layer (Compose `services:` vs Railway services +
+volume + env vars).
+
 ## Local development
 
 Backend:
