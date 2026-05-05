@@ -82,13 +82,25 @@ the run deterministically.
 
 - **In-memory SQLite by default** — the demo resets between processes.
   A volume-mounted DB is one config flip away.
-- **No auth / open CORS** — this is a portfolio demo, not a
-  production-fronted service.
+- **Auth + rate-limit are opt-in** — the bearer-token write guard and
+  sliding-window limiter exist (Phases 8.2, 8.3) but default off so
+  the demo can be poked freely. Production would set
+  `SENTINEL_WRITE_TOKEN` and re-enable the limiter.
 - **Two detectors, not one** — the older counter-based detector still
-  drives the safe-mode manager so existing behavior and tests stay
+  drives the safe-mode manager so existing behaviour and tests stay
   stable; the new trust detector layers on top with health states.
   A future cleanup would consolidate them.
+- **Anomaly detector is advisory only** — the isolation-forest
+  sidecar (ADR 0009) does not gate the deterministic decision. That
+  keeps the safety-critical path explainable but means the ML signal
+  surfaces in the report, not the loop.
 - **Simple physics** — the goal was control flow, not flight modeling.
+  Vehicle dynamics are deliberately first-order (`apply_action`
+  applies bounded deltas) so behaviour stays inspectable.
+- **Trivy uses `latest` rather than a pinned version.** The supply-
+  chain workflow runs weekly, so fresh CVE signatures are the desired
+  behaviour; reproducibility for a CVE scanner was always
+  "whatever was current at scan time".
 
 ## What I would improve next
 
@@ -101,15 +113,61 @@ the run deterministically.
 - Switch the SQLite default to a project-local file, so demos retain
   state between restarts.
 
+## Beyond the basics
+
+The first pass of this project shipped the simulation, the API, the
+dashboard, and the report. The work since then has been about turning
+that prototype into something a senior reviewer can actually inspect:
+
+- **Formal model and property tests.** A TLA+ specification of the
+  mode-transition state machine is mirrored by an exhaustive Python
+  checker, and the runtime is exercised by `hypothesis`-driven
+  invariant tests covering I1–I9 (no escape from `FAILED`, monotone
+  controller-trust descent under repeated faults, etc.). 1000-step
+  soak runs cross every scenario; a subprocess fuzz harness hunts
+  for safe-mode escapes.
+- **Replay equivalence as a falsifiable claim.** Every step record
+  is canonicalised (UUIDs scrubbed, floats rounded) and hashed into
+  a SHA-256 run fingerprint. Two independent runs of the same seed
+  must agree byte-for-byte; the property is exposed at
+  `/simulations/{id}/replay-fingerprint`.
+- **Observability wired through the step loop.** Prometheus metrics,
+  OpenTelemetry traces, structured JSON logs, and an SSE stream all
+  carry the same `simulation_id` / `step` correlators
+  ([`docs/OBSERVABILITY.md`](OBSERVABILITY.md)).
+- **Anomaly detector as a non-authoritative sidecar.** An isolation
+  forest scores each step's feature vector. Scores are persisted and
+  surfaced in the report, but never gate the deterministic decision
+  (ADR 0009) — keeping the safety-critical path explainable.
+- **Operational hardening.** Optional bearer-token guard on writes,
+  sliding-window rate limiter, env-driven CORS allowlist, per-sim
+  step + fault caps, LRU eviction on the in-memory registry, YAML
+  size + nesting caps.
+- **Supply-chain CI.** `ruff`, `bandit`, `pip-audit` run on every
+  push; weekly Trivy filesystem scans and CycloneDX SBOMs for both
+  the backend and frontend. Hardened multi-stage Dockerfiles and
+  compose healthchecks ([`docs/DEPLOYMENT.md`](DEPLOYMENT.md)).
+
 ## Skills demonstrated
 
 - System design with clear separation of concerns and explicit
   contracts.
-- Deterministic simulation engineering.
-- Test-driven backend development (≈ 65 pytest cases at handoff).
-- FastAPI with typed schemas, error handling, and CORS.
+- Deterministic simulation engineering, with a falsifiable replay
+  claim backed by canonical-fingerprint hashing.
+- Property-based, fuzz, and soak testing in addition to unit tests
+  (538 backend tests at handoff, 97% line coverage).
+- Formal-spec mirroring: TLA+ → Python checker, with invariants
+  pinned from both sides.
+- FastAPI with typed schemas, an error taxonomy, CORS allowlist,
+  bearer auth, rate limiting, and resource caps.
+- Observability discipline: Prometheus metrics, OpenTelemetry traces,
+  structured logs, and an SSE stream all sharing correlators.
 - Persistence design: schema, repository, recovery from disk.
-- Time-windowed monitoring with escalation/recovery semantics.
+- Time-windowed monitoring with escalation/recovery semantics and
+  per-component health states.
+- Supply-chain hygiene: SBOMs, vulnerability scans, Docker hardening.
 - Frontend integration: typed API client, server-readable timeline,
-  replay control.
-- Documentation as a first-class deliverable.
+  replay control, charts, scenario authoring, print-friendly report.
+- Documentation as a first-class deliverable — architecture, API,
+  scenarios, fault model, deployment, observability, invariants,
+  ADRs.
