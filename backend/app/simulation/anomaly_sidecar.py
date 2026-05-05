@@ -20,7 +20,7 @@ import random
 from dataclasses import dataclass, field
 
 from ..domain.enums import EventSeverity
-from .anomaly import IsolationForest, features_from_step
+from .anomaly import IsolationForest
 
 # Score-to-severity bands. Tuned so a no-fault scenario stays at
 # INFO (the small warm-up window in this project produces a narrow
@@ -104,6 +104,40 @@ def emit_advisory_event(events, sidecar, step: int, ts: float, outputs, sensor) 
         message=f"anomaly score {score.score:.3f}",
         metadata={"score": score.score, "advisory": True},
     )
+
+
+def features_from_step(
+    sensor_altitude: float,
+    sensor_velocity: float,
+    sensor_confidence: float,
+    response_times_ms: list[float],
+    confidences: list[float],
+    valid_flags: list[bool],
+) -> list[float]:
+    """Pack a step's salient signals into a fixed-size feature vector.
+
+    Order is stable so warm-up rows and live rows match. Includes:
+    sensor altitude / velocity / confidence; mean and max controller
+    response time; mean controller confidence; invalid-output count.
+    """
+
+    if response_times_ms:
+        mean_rt = sum(response_times_ms) / len(response_times_ms)
+        max_rt = max(response_times_ms)
+    else:
+        mean_rt = 0.0
+        max_rt = 0.0
+    mean_conf = sum(confidences) / len(confidences) if confidences else 0.0
+    invalid = float(sum(1 for v in valid_flags if not v))
+    return [
+        sensor_altitude,
+        sensor_velocity,
+        sensor_confidence,
+        mean_rt,
+        max_rt,
+        mean_conf,
+        invalid,
+    ]
 
 
 def features_for(record_outputs, sensor) -> list[float]:

@@ -3,7 +3,8 @@
 import pytest
 
 from app.core.rng import RngService
-from app.simulation.anomaly import IsolationForest, features_from_step
+from app.simulation.anomaly import IsolationForest
+from app.simulation.anomaly_sidecar import features_from_step
 
 
 def _normal_rows(n: int = 64, rng=None) -> list[list[float]]:

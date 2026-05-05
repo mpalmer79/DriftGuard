@@ -1,21 +1,14 @@
 """Isolation-forest anomaly detector (Phase 6).
 
-A deliberately small, dependency-free implementation. After
-``fit`` consumes ``warmup_size`` step feature vectors, ``score``
-returns an anomaly score in [0, 1] for any subsequent vector.
-Higher scores indicate the point sits in shorter average path
-lengths across the trees, which is the isolation-forest signal
-for "atypical."
+Dependency-free. After ``fit``, ``score`` returns a value in
+[0, 1] combining the standard isolation-forest path-length
+signal with a range-deviation bonus for features outside the
+warm-up envelope (so zero-variance features still surface).
 
-ADR 0009 is the firewall: the score is observability only. This
-module never imports the safe-mode manager, voting engine, or any
-detector that does affect decisions, and it is forbidden to be
-imported from those modules.
+ADR 0009 is the firewall: decision-path modules cannot import
+this module, and this module never imports them.
 
-Determinism: the RNG is supplied by the caller (per ADR 0006). For
-the same seed the same warm-up data produces the same forest, so
-two simulations with the same seed produce the same per-step
-scores byte-for-byte.
+Determinism: the RNG is supplied by the caller (per ADR 0006).
 """
 
 from __future__ import annotations
@@ -101,6 +94,10 @@ class IsolationForest:
         self.max_depth = max_depth or max(1, int(math.ceil(math.log2(max(2, sample_size)))))
         self._trees: list[_Node] = []
         self._fitted = False
+        self._mean: list[float] = []
+        self._std: list[float] = []
+        self._mins: list[float] = []
+        self._maxs: list[float] = []
 
     @property
     def fitted(self) -> bool:
@@ -112,22 +109,39 @@ class IsolationForest:
         n_features = len(rows[0])
         if any(len(r) != n_features for r in rows):
             raise ValueError("IsolationForest.fit rows must be the same length")
+        # Standardize per-feature so heterogeneous magnitudes
+        # (altitude ~1000 vs invalid count ~3) do not dominate the
+        # random splits of the isolation forest.
+        self._mean, self._std = _column_stats(rows)
+        self._mins = [min(r[i] for r in rows) for i in range(n_features)]
+        self._maxs = [max(r[i] for r in rows) for i in range(n_features)]
+        normalized = [_standardize(r, self._mean, self._std) for r in rows]
         self._trees = []
         for _ in range(self.n_trees):
-            sample = _sample_with_replacement(rows, self.sample_size, self._rng)
+            sample = _sample_with_replacement(normalized, self.sample_size, self._rng)
             self._trees.append(_build_tree(sample, self._rng, 0, self.max_depth))
         self._fitted = True
 
     def score(self, x: list[float]) -> float:
-        """Anomaly score in [0, 1]. Higher = more anomalous."""
+        """Anomaly score in [0, 1]. Higher = more anomalous.
+
+        Combines the standard isolation-forest path-length score
+        with a range-deviation bonus: features that fall outside
+        the warm-up min/max envelope add to the score, since
+        zero-variance features otherwise collapse to leaves and
+        the forest cannot detect their deviation. The bonus is
+        capped so a single out-of-range feature cannot saturate
+        the score — multiple corroborating features still matter.
+        """
 
         if not self._fitted:
             raise RuntimeError("IsolationForest.score called before fit")
-        avg_path = sum(_path_length(t, x) for t in self._trees) / len(self._trees)
+        x_norm = _standardize(x, self._mean, self._std)
+        avg_path = sum(_path_length(t, x_norm) for t in self._trees) / len(self._trees)
         c = _c_factor(self.sample_size)
-        if c <= 0.0:
-            return 0.0
-        return float(2.0 ** (-avg_path / c))
+        base = float(2.0 ** (-avg_path / c)) if c > 0.0 else 0.0
+        bonus = _range_bonus(x, self._mins, self._maxs, self._std)
+        return min(1.0, base + bonus)
 
 
 def _sample_with_replacement(
@@ -138,38 +152,47 @@ def _sample_with_replacement(
     return [rng.choice(rows) for _ in range(k)]
 
 
-def features_from_step(
-    sensor_altitude: float,
-    sensor_velocity: float,
-    sensor_confidence: float,
-    response_times_ms: list[float],
-    confidences: list[float],
-    valid_flags: list[bool],
-) -> list[float]:
-    """Pack a step's salient signals into a fixed-size feature vector.
+def _column_stats(rows: list[list[float]]) -> tuple[list[float], list[float]]:
+    n_cols = len(rows[0])
+    n = len(rows)
+    means = [sum(r[i] for r in rows) / n for i in range(n_cols)]
+    stds = []
+    for i in range(n_cols):
+        var = sum((r[i] - means[i]) ** 2 for r in rows) / max(1, n - 1)
+        # Floor at a tiny positive number so identical-column features
+        # do not blow up the standardize call.
+        stds.append(max(math.sqrt(var), 1e-9))
+    return means, stds
 
-    Order is stable so warm-up rows and live rows match. Includes:
 
-    - sensor_altitude, sensor_velocity, sensor_confidence
-    - mean / max controller response time
-    - mean controller confidence
-    - count of invalid controller outputs
+def _standardize(row: list[float], mean: list[float], std: list[float]) -> list[float]:
+    return [(row[i] - mean[i]) / std[i] for i in range(len(row))]
+
+
+def _range_bonus(
+    row: list[float],
+    mins: list[float],
+    maxs: list[float],
+    std: list[float],
+    per_feature: float = 0.06,
+    sigma_tolerance: float = 2.0,
+) -> float:
+    """Score bonus for features clearly outside the warm-up envelope.
+
+    A feature is "out of range" only when it is more than
+    ``sigma_tolerance`` standard deviations beyond min or max — a
+    cushion so per-step noise on a low-variance feature does not
+    register as anomalous. Capped at 0.4 so a single saturated
+    feature cannot drive the score to 1.0 by itself.
     """
 
-    if response_times_ms:
-        mean_rt = sum(response_times_ms) / len(response_times_ms)
-        max_rt = max(response_times_ms)
-    else:
-        mean_rt = 0.0
-        max_rt = 0.0
-    mean_conf = sum(confidences) / len(confidences) if confidences else 0.0
-    invalid = float(sum(1 for v in valid_flags if not v))
-    return [
-        sensor_altitude,
-        sensor_velocity,
-        sensor_confidence,
-        mean_rt,
-        max_rt,
-        mean_conf,
-        invalid,
-    ]
+    out = 0
+    for i, value in enumerate(row):
+        tolerance = max(std[i] * sigma_tolerance, 1e-9)
+        if value < mins[i] - tolerance or value > maxs[i] + tolerance:
+            out += 1
+    return min(0.4, out * per_feature)
+
+
+# features_from_step lives in anomaly_sidecar.py — see that module.
+# Keeping it here would push anomaly.py over the 200-line ceiling.
