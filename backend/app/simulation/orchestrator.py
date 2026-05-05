@@ -19,6 +19,7 @@ from ..domain.models import (
     VehicleState,
     VoteResult,
 )
+from .anomaly_sidecar import AnomalySidecar, emit_advisory_event
 from .controllers import Controller, default_controllers
 from .detection import FaultDetector
 from .event_logger import EventLogger
@@ -82,6 +83,7 @@ class Simulation:
         )
         self.safe_mode = SafeModeManager(self.detector)
         self.trust = TrustDetector(latency_threshold_ms=config.latency_threshold_ms)
+        self.anomaly = AnomalySidecar(rng=self.rng.child("anomaly"))
         self.events = EventLogger(simulation_id=self.id)
         self.step_history: list[StepRecord] = []
         self.last_decision: SystemDecision | None = None
@@ -170,6 +172,8 @@ class Simulation:
             new_state.system_mode = new_mode
             self.state = new_state
             log_state(self.events, self.state.timestamp, self.state)
+
+        emit_advisory_event(self.events, self.anomaly, next_step, ts, outputs, sensor)
 
         record_post_step(
             simulation_id=self.id,
