@@ -6,3 +6,7 @@ out
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 
+# Playwright (Phase 6.2b)
+playwright-report
+test-results
+
