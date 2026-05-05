@@ -9,6 +9,7 @@ from .api.report_routes import router as report_router
 from .api.routes import router
 from .api.scenario_routes import router as scenario_router
 from .api.stream_routes import router as stream_router
+from .core.cors import allowed_origins
 
 
 def create_app() -> FastAPI:
@@ -20,7 +21,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=allowed_origins(),
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
