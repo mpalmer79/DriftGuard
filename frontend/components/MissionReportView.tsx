@@ -3,10 +3,7 @@
 import type { MissionReport } from "@/types/api";
 import { Card } from "./Card";
 import { SystemModeBadge } from "./SystemModeBadge";
-import {
-  DecisionsByModeBar,
-  VoteOutcomeDonut,
-} from "./charts/ReportCharts";
+import { DecisionsByModeBar, VoteOutcomeDonut } from "./charts/ReportCharts";
 import { Button } from "./ui/Button";
 
 interface Props {
@@ -41,7 +38,7 @@ export function MissionReportView({ report, markdown, decisions = [] }: Props) {
     if (typeof window !== "undefined") window.print();
   }
 
-  const cmp = (report as any).anomaly_vs_deterministic ?? null;
+  const cmp = report.anomaly_vs_deterministic ?? null;
 
   return (
     <div className="space-y-6 print:space-y-3">
@@ -84,17 +81,16 @@ export function MissionReportView({ report, markdown, decisions = [] }: Props) {
       {cmp && (
         <Card title="Anomaly detector vs deterministic system">
           <p className="text-sm">
-            ML alerted on {cmp.anomaly_alert_steps?.length ?? 0} step(s);
-            deterministic alerted on {cmp.deterministic_alert_steps?.length ?? 0} step(s).
+            ML alerted on {cmp.anomaly_alert_steps?.length ?? 0} step(s); deterministic alerted on{" "}
+            {cmp.deterministic_alert_steps?.length ?? 0} step(s).
           </p>
           <p className="text-sm text-gray-400 mt-1">
-            Agreement on {cmp.agreement_steps?.length ?? 0} step(s) (rate{" "}
-            {cmp.agreement_rate ?? 0}). Average score{" "}
-            {cmp.average_anomaly_score ?? 0}.
+            Agreement on {cmp.agreement_steps?.length ?? 0} step(s) (rate {cmp.agreement_rate ?? 0}
+            ). Average score {cmp.average_anomaly_score ?? 0}.
           </p>
           <p className="text-xs text-gray-500 mt-2">
-            The anomaly detector is advisory only (ADR 0009); these
-            numbers describe agreement, not control.
+            The anomaly detector is advisory only (ADR 0009); these numbers describe agreement, not
+            control.
           </p>
         </Card>
       )}
