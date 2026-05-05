@@ -1,10 +1,11 @@
 from dataclasses import asdict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..core.ids import simulation_id as new_simulation_id
 from ..simulation.orchestrator import Simulation
 from . import dependencies as deps
+from .auth import require_write_auth
 from .schemas import (
     CreateSimulationRequest,
     CreateSimulationResponse,
@@ -59,7 +60,12 @@ def _serialize_step(record) -> StepResponse:
     )
 
 
-@router.post("/simulations", response_model=CreateSimulationResponse, status_code=201)
+@router.post(
+    "/simulations",
+    response_model=CreateSimulationResponse,
+    status_code=201,
+    dependencies=[Depends(require_write_auth)],
+)
 def create_simulation(req: CreateSimulationRequest) -> CreateSimulationResponse:
     sim_id = req.simulation_id or new_simulation_id()
     if sim_id in deps.get_registry():
@@ -70,7 +76,11 @@ def create_simulation(req: CreateSimulationRequest) -> CreateSimulationResponse:
     return CreateSimulationResponse(simulation_id=sim.id, seed=sim.seed)
 
 
-@router.post("/simulations/{sim_id}/step", response_model=StepResponse)
+@router.post(
+    "/simulations/{sim_id}/step",
+    response_model=StepResponse,
+    dependencies=[Depends(require_write_auth)],
+)
 def step_simulation(sim_id: str) -> StepResponse:
     sim = _get_sim(sim_id)
     record = sim.step()
@@ -78,7 +88,12 @@ def step_simulation(sim_id: str) -> StepResponse:
     return _serialize_step(record)
 
 
-@router.post("/simulations/{sim_id}/faults", response_model=FaultResponse, status_code=201)
+@router.post(
+    "/simulations/{sim_id}/faults",
+    response_model=FaultResponse,
+    status_code=201,
+    dependencies=[Depends(require_write_auth)],
+)
 def inject_fault(sim_id: str, req: FaultRequest) -> FaultResponse:
     sim = _get_sim(sim_id)
     valid_targets = {"sensor", "controller_a", "controller_b", "controller_c"}

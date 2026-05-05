@@ -1,7 +1,7 @@
 from dataclasses import asdict
 
 import yaml
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, ValidationError
 
@@ -14,6 +14,7 @@ from ..scenarios.registry import (
     unregister_user_scenario,
 )
 from . import dependencies as deps
+from .auth import require_write_auth
 
 
 class ScenarioRunOverrides(BaseModel):
@@ -52,7 +53,12 @@ def get_scenario_detail(name: str) -> dict:
     return out
 
 
-@router.post("/scenarios", status_code=201, response_model=None)
+@router.post(
+    "/scenarios",
+    status_code=201,
+    response_model=None,
+    dependencies=[Depends(require_write_auth)],
+)
 async def create_scenario(request: Request) -> dict | JSONResponse:
     """Register a new scenario from a YAML body (Phase 5.3).
 
@@ -78,7 +84,12 @@ async def create_scenario(request: Request) -> dict | JSONResponse:
     return out
 
 
-@router.delete("/scenarios/{name}", status_code=204, response_model=None)
+@router.delete(
+    "/scenarios/{name}",
+    status_code=204,
+    response_model=None,
+    dependencies=[Depends(require_write_auth)],
+)
 def delete_scenario(name: str) -> JSONResponse:
     """Remove a user-registered scenario. Built-ins are immutable."""
 
@@ -86,12 +97,15 @@ def delete_scenario(name: str) -> JSONResponse:
     return JSONResponse(status_code=204, content=None)
 
 
-@router.post("/scenarios/{name}/run")
+@router.post("/scenarios/{name}/run", dependencies=[Depends(require_write_auth)])
 def run_scenario_default(name: str, overrides: ScenarioRunOverrides | None = None) -> dict:
     return _execute(name, None, overrides)
 
 
-@router.post("/scenarios/{name}/run/{steps}")
+@router.post(
+    "/scenarios/{name}/run/{steps}",
+    dependencies=[Depends(require_write_auth)],
+)
 def run_scenario_with_steps(
     name: str,
     steps: int,

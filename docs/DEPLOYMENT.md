@@ -43,7 +43,98 @@ The frontend container is wired to point at the backend service.
 - The default repository uses an in-memory SQLite database, which is
   fine for demos and resets between processes. To persist runs, point
   the `Database(path=...)` to a mounted volume.
-- The backend exposes CORS for any origin so the frontend works in
-  any environment. Tighten this for production.
-- The backend has no auth. Run it behind your own gateway when
-  exposing to the internet.
+
+### Rate limiting (Phase 8.2)
+
+A small in-process sliding-window limiter is installed by
+`install_rate_limiter` in `app/api/rate_limit.py`. Defaults:
+
+- 60 requests/min per client IP for `POST`/`DELETE`/`PUT`/`PATCH`
+- 600 requests/min per client IP for everything else
+- `/metrics` is exempt so Prometheus scrapers can poll continuously
+
+Tunable via:
+
+- `SENTINEL_RATE_LIMIT_WRITE_PER_MIN` (default 60)
+- `SENTINEL_RATE_LIMIT_READ_PER_MIN` (default 600)
+- `SENTINEL_RATE_LIMIT_DISABLED=1` short-circuits all checks. The
+  test suite sets this in `conftest.py` to avoid coupling to
+  wall-clock timing; production deployments should leave it unset.
+
+Read and write buckets are tracked separately, so a flood of
+`POST` requests does not consume read capacity. Hitting either cap
+returns `429` with body
+`{"error": {"code": "rate_limited", "message": "..."}}` and a
+`retry-after: 60` header.
+
+The limiter is in-process: it does not coordinate across replicas.
+For horizontally-scaled deployments, terminate rate limiting at the
+edge (nginx, Envoy, an API gateway) and treat this layer as a
+defense-in-depth backstop.
+
+### CORS allowlist (Phase 8.5)
+
+Set `SENTINEL_CORS_ORIGINS` to a comma-separated list of allowed
+origins:
+
+```bash
+export SENTINEL_CORS_ORIGINS="https://app.example.com,https://staging.example.com"
+```
+
+Default is `http://localhost:3000,http://127.0.0.1:3000` (dev). The
+literal `*` is permitted as an explicit wildcard but should never
+ship to production.
+
+### Bearer-token auth on writes (Phase 8.3)
+
+Set `SENTINEL_API_TOKEN` to require an `Authorization: Bearer <token>`
+header on every state-mutating request (`POST /simulations`,
+`POST /simulations/{id}/step`, `POST /simulations/{id}/faults`,
+`POST /scenarios`, `POST /scenarios/{name}/run[/{steps}]`,
+`DELETE /scenarios/{name}`).
+
+```bash
+export SENTINEL_API_TOKEN="$(openssl rand -hex 32)"
+```
+
+When unset, the API is open (dev mode). Read endpoints (`GET /...`)
+are never gated by the token — observability tools are expected to
+scrape without auth.
+
+Failed auth returns `401` with body
+`{"error": {"code": "unauthorized", "message": "..."}}` per the
+Phase 8.6 error taxonomy.
+
+### Resource caps (Phase 8.4)
+
+Compile-time constants in `app/simulation/orchestrator.py`:
+
+- `Simulation.MAX_STEPS = 10_000`
+- `Simulation.MAX_FAULTS = 100`
+
+And in `app/api/dependencies.py`:
+
+- `MAX_REGISTRY_SIZE = 100` — LRU eviction on the in-memory
+  simulation registry. Persisted simulations remain accessible
+  through the read endpoints.
+
+Hitting any cap returns `429` with code `capacity_exceeded`.
+
+### Security scanning in CI (Phase 8.7)
+
+The backend CI workflow runs two security gates on every push and PR:
+
+- `bandit -q -r app -c pyproject.toml` — static analysis for common
+  Python security smells. `B311` (non-crypto `random`) is skipped
+  by configuration: deterministic Mersenne-Twister RNG is a
+  load-bearing project property (replay, fuzz reproducibility, ADR
+  0006), and cryptographic randomness would actively break the
+  simulation contract.
+- `pip-audit -r requirements.txt -r requirements-dev.txt` — checks
+  installed dependencies against the PyPI advisory database.
+  We use `pip-audit` (PyPA-maintained, no auth required) instead of
+  `safety`, which now requires an account for non-trivial use; the
+  acceptance criterion "safety clean" is satisfied by an equivalent
+  vulnerability gate.
+
+Both steps are mandatory — failure breaks the build.

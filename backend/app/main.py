@@ -4,11 +4,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api.errors import install_error_handlers
 from .api.health_routes import router as health_router
 from .api.middleware import install_request_id_middleware
+from .api.rate_limit import install_rate_limiter
 from .api.recovery_routes import router as recovery_router
 from .api.report_routes import router as report_router
 from .api.routes import router
 from .api.scenario_routes import router as scenario_router
 from .api.stream_routes import router as stream_router
+from .core.cors import allowed_origins
 
 
 def create_app() -> FastAPI:
@@ -20,13 +22,14 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=allowed_origins(),
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
     install_request_id_middleware(app)
+    install_rate_limiter(app)
     install_error_handlers(app)
     app.include_router(health_router)
     app.include_router(router)
