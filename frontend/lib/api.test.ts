@@ -83,3 +83,48 @@ describe("api client error contract", () => {
     });
   });
 });
+
+describe("api client routing (Phase 6.3 auth proxy)", () => {
+  it("routes write calls through /api/proxy", async () => {
+    const calls: string[] = [];
+    stubFetch(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      calls.push(url);
+      return jsonResponse(201, { simulation_id: "sim-x", seed: 1 });
+    });
+
+    await api.createSimulation(1);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toBe("/api/proxy/simulations");
+  });
+
+  it("routes read calls direct to NEXT_PUBLIC_API_BASE", async () => {
+    const calls: string[] = [];
+    stubFetch(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      calls.push(url);
+      return jsonResponse(200, []);
+    });
+
+    await api.listScenarios();
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).not.toMatch(/^\/api\/proxy/);
+    expect(calls[0]).toMatch(/\/scenarios$/);
+  });
+
+  it("routes YAML scenario uploads through the proxy too", async () => {
+    const calls: string[] = [];
+    stubFetch(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      calls.push(url);
+      return jsonResponse(201, { name: "demo" });
+    });
+
+    await api.createScenario("name: demo\nseed: 1\n");
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toBe("/api/proxy/scenarios");
+  });
+});
