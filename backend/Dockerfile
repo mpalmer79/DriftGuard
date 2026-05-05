@@ -45,11 +45,13 @@ RUN chown -R sentinel:sentinel /app
 USER sentinel
 EXPOSE 8000
 
-# Readiness probe — fails fast (503) until SQLite + the scenario
-# registry are usable. Phase 7.1 swapped this from /health (liveness)
-# to /readyz so Compose / Kubernetes correctly hold off traffic until
-# the dependencies the API actually needs are reachable.
+# Readiness probe. Railway sets $PORT at runtime; the local Compose
+# default is 8000 (set in docker-compose.yml). The shell-form CMD
+# expands the variable; the JSON-array form does not.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz',timeout=2).status==200 else 1)"
+    CMD python -c "import os,urllib.request,sys; p=os.environ.get('PORT','8000'); sys.exit(0 if urllib.request.urlopen(f'http://127.0.0.1:{p}/readyz',timeout=2).status==200 else 1)"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Bind to $PORT (Railway-assigned) or 8000 (local default). The
+# shell form is required so the variable is expanded by /bin/sh
+# before uvicorn sees it.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
