@@ -106,6 +106,22 @@ class SimulationRepository:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    def get_trajectory(self, simulation_id: str) -> list[dict]:
+        """Position-vs-time trajectory for plotting (Phase 2.7).
+
+        Returns one dict per persisted step with the minimum data
+        the frontend trajectory chart needs: step, timestamp, x, y,
+        altitude, and system_mode (for color-coding the trail).
+        """
+
+        conn = self.db.connect()
+        rows = conn.execute(
+            "SELECT step, timestamp, position_x, position_y, altitude, system_mode "
+            "FROM vehicle_state WHERE simulation_id = ? ORDER BY step ASC",
+            (simulation_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     def get_faults(self, simulation_id: str) -> list[dict]:
         conn = self.db.connect()
         rows = conn.execute(

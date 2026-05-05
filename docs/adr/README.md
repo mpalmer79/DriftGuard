@@ -12,5 +12,6 @@ changes, supersede it with a new ADR and mark the old one accordingly.
 | 0004 | Determinism enforced through seed propagation | Accepted (RNG paragraph superseded by 0006) |
 | 0005 | FastAPI + Next.js, not a single full-stack framework | Accepted |
 | 0006 | Centralized seeded RNG service with named children | Accepted (Phase 1.1) |
+| 0007 | 3-DOF dynamics layered under the legacy kinematic update | Accepted (Phase 2.1/2.2) |
 
 Use `0000-template.md` as the starting point.

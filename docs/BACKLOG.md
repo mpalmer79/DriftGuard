@@ -7,6 +7,13 @@ band.
 
 ## Open
 
+- [ ] Wire missions into the controller decision logic so the
+      orchestrator can run in MISSION mode with waypoint-error inputs.
+      Phase 2.6 ships the model and the tracker; the controller-side
+      integration crosses orchestrator + controllers + scenario
+      registry and was deferred to keep the Phase 2 PR atomic.
+- [ ] Add a `/missions` listing endpoint and register the three
+      built-in missions through the same machinery as scenarios.
 - [ ] Generate `frontend/types/api.ts` from the OpenAPI schema instead
       of hand-writing it. (Source: ADR 0005 tradeoff.)
 - [ ] Replace `_fault_active_this_step` and `_intermittent_active`
