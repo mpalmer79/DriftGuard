@@ -21,11 +21,19 @@ export function VoteResultCard({ vote }: { vote: VoteResult | null }) {
       <div className="mt-3 grid grid-cols-2 gap-4 text-xs">
         <div>
           <div className="text-gray-400 mb-1">agreeing</div>
-          <ul>{vote.agreeing_controllers.map((c) => <li key={c}>{c}</li>)}</ul>
+          <ul>
+            {vote.agreeing_controllers.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
         </div>
         <div>
           <div className="text-gray-400 mb-1">rejected</div>
-          <ul>{vote.rejected_controllers.map((c) => <li key={c}>{c}</li>)}</ul>
+          <ul>
+            {vote.rejected_controllers.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ul>
         </div>
       </div>
     </Card>

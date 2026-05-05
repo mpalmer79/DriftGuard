@@ -111,3 +111,89 @@ def test_repeat_count_speeds_up_escalation():
     d.update([_out(valid=False)], _vote(), _reading())
     h = d.state.components["controller_a"]
     assert h.repeat_count >= 1
+
+
+# --- Phase 5.3: renamed component-level helpers + readability ---
+
+
+def test_unhealthy_components_includes_sensor_when_degraded():
+    """Phase 5.3: TrustDetector tracks the sensor too, so the helper
+    is named `unhealthy_components` (not `unhealthy_controllers`).
+
+    Co-named methods on FaultDetector return a controller-only set;
+    the rename + docstring make the semantic difference explicit.
+    """
+
+    d = TrustDetector(
+        latency_threshold_ms=50.0,
+        suspect_threshold=1,
+        degraded_threshold=2,
+        critical_threshold=3,
+    )
+    # Push the sensor into DEGRADED via repeated low-confidence reads.
+    for _ in range(2):
+        d.update([_out()], _vote(), _reading(status=SensorStatus.INVALID, confidence=0.0))
+    components = d.unhealthy_components()
+    assert "sensor" in components
+
+
+def test_critical_components_includes_sensor_when_critical():
+    d = TrustDetector(
+        latency_threshold_ms=50.0,
+        suspect_threshold=1,
+        degraded_threshold=2,
+        critical_threshold=3,
+    )
+    for _ in range(3):
+        d.update([_out()], _vote(), _reading(status=SensorStatus.INVALID, confidence=0.0))
+    assert "sensor" in d.critical_components()
+
+
+def test_renamed_methods_distinguish_controllers_from_components():
+    """Sanity: the controller-only helper and the component-level
+    helper are reachable side-by-side. Both names live on the class."""
+
+    d = TrustDetector(latency_threshold_ms=50.0)
+    # `degraded_controllers` is the controller-only legacy helper.
+    assert d.degraded_controllers() == []
+    # `unhealthy_components` and `critical_components` are the new,
+    # accurately-named component-level helpers.
+    assert d.unhealthy_components() == []
+    assert d.critical_components() == []
+
+
+def test_recovery_gate_or_clause_handles_suspect_and_recovering():
+    """Phase 5.3 readability: the (and ... or ... and) gate that
+    promotes SUSPECT or long-RECOVERING components back to HEALTHY
+    is now parenthesised explicitly. Pin the behaviour both ways:
+
+    - A controller that hits SUSPECT and stays clean for
+      recovery_steps must promote to HEALTHY.
+    - A controller that hits CRITICAL must transit RECOVERING and
+      stay clean for ``2 * recovery_steps`` to reach HEALTHY.
+    """
+
+    d = TrustDetector(
+        latency_threshold_ms=50.0,
+        suspect_threshold=1,
+        degraded_threshold=2,
+        critical_threshold=3,
+        recovery_steps=2,
+    )
+    # SUSPECT path
+    d.update([_out(valid=False)], _vote(), _reading())
+    assert d.state.components["controller_a"].status == HealthStatus.SUSPECT
+    for _ in range(2):
+        d.update([_out(valid=True)], _vote(), _reading())
+    assert d.state.components["controller_a"].status == HealthStatus.HEALTHY
+
+    # CRITICAL → RECOVERING → HEALTHY path (needs 2 * recovery_steps)
+    for _ in range(3):
+        d.update([_out(valid=False)], _vote(), _reading())
+    assert d.state.components["controller_a"].status == HealthStatus.CRITICAL
+    for _ in range(2):
+        d.update([_out(valid=True)], _vote(), _reading())
+    assert d.state.components["controller_a"].status == HealthStatus.RECOVERING
+    for _ in range(2):
+        d.update([_out(valid=True)], _vote(), _reading())
+    assert d.state.components["controller_a"].status == HealthStatus.HEALTHY

@@ -136,15 +136,11 @@ export default function NewScenarioPage() {
             <code>backend/app/scenarios/schema.yaml</code>.
           </li>
           <li>
-            Fault metadata supports the{" "}
-            <code>{"{ ramp: [from, to, steps] }"}</code> DSL term.
+            Fault metadata supports the <code>{"{ ramp: [from, to, steps] }"}</code> DSL term.
           </li>
+          <li>Built-in scenario names are immutable. Pick a fresh name.</li>
           <li>
-            Built-in scenario names are immutable. Pick a fresh name.
-          </li>
-          <li>
-            <em>validate</em> registers, then deletes so you can iterate
-            without collisions.
+            <em>validate</em> registers, then deletes so you can iterate without collisions.
           </li>
         </ul>
       </Card>

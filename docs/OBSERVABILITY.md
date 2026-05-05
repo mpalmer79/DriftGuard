@@ -106,18 +106,50 @@ The tracer is **observability evidence**, never on the decision
 path. Adding a real collector (OTLP gRPC, Jaeger, etc.) is a
 deployment-time concern; the spans exist regardless.
 
-## Health and readiness (Phase 4.4)
+## Health and readiness (Phase 4.4 / 7.1)
 
-| Endpoint   | Returns | Use                               |
-| ---------- | ------- | --------------------------------- |
-| `/health`  | `{"status":"ok"}` | Liveness probe — process is up   |
-| `/ready`   | `{"status":"ready", "checks":{...}}` | Readiness probe — DB + scenarios usable |
-| `/metrics` | Prometheus text   | Scrape target                    |
+| Endpoint   | Status code            | Use                                                    |
+| ---------- | ---------------------- | ------------------------------------------------------ |
+| `/healthz` | `200` (always)         | Kubernetes-style liveness probe                        |
+| `/readyz`  | `200` ready / `503` not | Kubernetes-style readiness probe                       |
+| `/health`  | `200` (always)         | Operator-friendly liveness alias                       |
+| `/ready`   | `200` always; body has `status` | Operator-friendly readiness alias                |
+| `/metrics` | `200`                  | Prometheus scrape target                               |
 
-`/ready` returns `200` either way; the body's `status` field
-distinguishes `ready` from `not_ready`. Operator dashboards key on
-the body so a partial degradation is visible (e.g. SQLite up,
-scenarios missing).
+Phase 7.1 split the liveness and readiness probes into the
+Kubernetes-style `/healthz` and `/readyz` endpoints so an
+orchestrator can distinguish "restart the pod" (liveness fails)
+from "stop sending traffic" (readiness fails). `/readyz` returns
+**503** when SQLite is unreachable or the scenario registry is
+empty, which is what pod orchestrators expect.
+
+The legacy `/health` and `/ready` paths stay reachable as
+operator-friendly aliases — `/ready` always returns 200 with a
+`status` field in the body, so existing dashboards that key on the
+body keep working. The Compose and Docker healthchecks both probe
+`/readyz` (Phase 7.1).
+
+## Known limits
+
+These are the operability boundaries of the current single-replica
+deployment. They are intentional — the project is portfolio-scoped —
+but worth knowing before you put a real load on it.
+
+- **In-memory simulation registry.** `app/api/dependencies.py` keeps
+  active simulations in a per-process dict (LRU-evicted at
+  `MAX_REGISTRY_SIZE = 100`). A multi-replica deployment shards
+  simulations across replicas; the registry is **not** consistent
+  between them. Persisted SQLite is single-writer.
+- **In-memory rate limiter.** `app/api/rate_limit.py` is per-process.
+  Multi-replica deployments need a shared store (Redis) for the
+  bucket counters to be effective. Today's value is dev-grade DoS
+  protection on a single replica.
+- **Prometheus `simulation_id` cardinality.** Bounded by
+  `MAX_REGISTRY_SIZE = 100` in-process plus all persisted simulation
+  IDs. If you keep simulations forever, the cardinality grows
+  monotonically. The mitigation pattern (bucket by scenario name)
+  is sketched in `core/metrics.py`; today the cardinality is small
+  enough that we have not paid the engineering cost yet.
 
 ## Request id (Phase 4.5)
 

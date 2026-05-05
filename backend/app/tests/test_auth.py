@@ -77,3 +77,21 @@ def test_delete_scenario_blocked_without_token(guarded_client):
     r = guarded_client.delete("/scenarios/nominal_cruise")
     # 401 first because the auth dep runs before the immutability check.
     assert r.status_code == 401
+
+
+def test_token_compare_uses_constant_time(monkeypatch):
+    """Phase 5.1 — guard against ``==``-based timing leak.
+
+    A real timing test is flaky; a structural test that the auth path
+    actually uses ``hmac.compare_digest`` is enough to keep a future
+    refactor honest.
+    """
+
+    import inspect
+
+    from app.api import auth
+
+    src = inspect.getsource(auth)
+    assert "hmac.compare_digest" in src
+    # And `supplied != expected` should not be the comparison anymore.
+    assert "supplied != expected" not in src

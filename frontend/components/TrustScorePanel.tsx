@@ -1,11 +1,27 @@
 import { Card } from "./Card";
 
-export function TrustScorePanel({ snapshot }: { snapshot: Record<string, any> }) {
+interface TrustEntry {
+  status?: string;
+  trust?: number;
+  fault_streak?: number;
+  clean_streak?: number;
+}
+
+interface GlobalTrust {
+  disagreement_rate?: number;
+}
+
+type TrustSnapshot = Record<string, TrustEntry | GlobalTrust>;
+
+export function TrustScorePanel({ snapshot }: { snapshot: TrustSnapshot }) {
   if (!snapshot) {
     return null;
   }
-  const entries = Object.entries(snapshot).filter(([k]) => k !== "_global");
-  const global = snapshot._global;
+  const entries = Object.entries(snapshot).filter(([k]) => k !== "_global") as [
+    string,
+    TrustEntry,
+  ][];
+  const global = snapshot._global as GlobalTrust | undefined;
   return (
     <Card title="Trust snapshot">
       <table className="w-full text-xs">
@@ -31,9 +47,7 @@ export function TrustScorePanel({ snapshot }: { snapshot: Record<string, any> })
         </tbody>
       </table>
       {global && (
-        <p className="text-xs text-gray-400 mt-2">
-          disagreement rate: {global.disagreement_rate}
-        </p>
+        <p className="text-xs text-gray-400 mt-2">disagreement rate: {global.disagreement_rate}</p>
       )}
     </Card>
   );

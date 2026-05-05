@@ -83,3 +83,87 @@ def test_keys_are_independent():
     assert limiter.hit("a", limit=1, now=0.1) is False
     # Different key has its own bucket.
     assert limiter.hit("b", limit=1, now=0.1) is True
+
+
+# --- Phase 5.1: trusted-proxy gate on x-forwarded-for ---
+
+
+class _StubClient:
+    def __init__(self, host: str) -> None:
+        self.host = host
+
+
+class _StubRequest:
+    """Minimal Request-like stub for unit-testing _client_ip."""
+
+    def __init__(self, peer: str, headers: dict[str, str] | None = None) -> None:
+        self.client = _StubClient(peer)
+        self.headers = headers or {}
+
+
+def test_xff_ignored_when_trusted_proxies_unset(monkeypatch):
+    """Default behaviour: untrusted env, x-forwarded-for is ignored.
+
+    Before Phase 5.1 the limiter blindly trusted x-forwarded-for, so a
+    hostile client could exhaust any peer's per-key budget. Now the
+    peer's own IP is used unless SENTINEL_TRUSTED_PROXIES says otherwise.
+    """
+
+    from app.api.rate_limit import _client_ip
+
+    monkeypatch.delenv("SENTINEL_TRUSTED_PROXIES", raising=False)
+    req = _StubRequest(peer="203.0.113.5", headers={"x-forwarded-for": "1.2.3.4"})
+    assert _client_ip(req) == "203.0.113.5"
+
+
+def test_xff_honored_when_peer_in_trusted_cidr(monkeypatch):
+    from app.api.rate_limit import _client_ip
+
+    monkeypatch.setenv("SENTINEL_TRUSTED_PROXIES", "10.0.0.0/8")
+    req = _StubRequest(peer="10.1.2.3", headers={"x-forwarded-for": "198.51.100.7"})
+    assert _client_ip(req) == "198.51.100.7"
+
+
+def test_xff_ignored_when_peer_outside_trusted_cidr(monkeypatch):
+    from app.api.rate_limit import _client_ip
+
+    monkeypatch.setenv("SENTINEL_TRUSTED_PROXIES", "10.0.0.0/8")
+    req = _StubRequest(peer="203.0.113.99", headers={"x-forwarded-for": "1.1.1.1"})
+    assert _client_ip(req) == "203.0.113.99"
+
+
+def test_xff_first_entry_only_when_trusted(monkeypatch):
+    """A trusted proxy chain still pins the *first* hop's IP (the
+    originating client), not the last one in the chain."""
+
+    from app.api.rate_limit import _client_ip
+
+    monkeypatch.setenv("SENTINEL_TRUSTED_PROXIES", "10.0.0.0/8")
+    req = _StubRequest(
+        peer="10.0.0.5",
+        headers={"x-forwarded-for": "203.0.113.10, 10.0.0.5"},
+    )
+    assert _client_ip(req) == "203.0.113.10"
+
+
+def test_malformed_trusted_proxies_silently_dropped(monkeypatch):
+    """Garbage in the env is treated as 'no trusted proxies' rather
+    than crashing. Safer default: untrusted-by-default."""
+
+    from app.api.rate_limit import _client_ip
+
+    monkeypatch.setenv("SENTINEL_TRUSTED_PROXIES", "not-a-cidr,also-not")
+    req = _StubRequest(peer="10.1.2.3", headers={"x-forwarded-for": "1.2.3.4"})
+    assert _client_ip(req) == "10.1.2.3"
+
+
+def test_anonymous_when_no_peer_or_proxy(monkeypatch):
+    from app.api.rate_limit import _client_ip
+
+    monkeypatch.delenv("SENTINEL_TRUSTED_PROXIES", raising=False)
+
+    class _NoClient:
+        client = None
+        headers: dict[str, str] = {}
+
+    assert _client_ip(_NoClient()) == "anonymous"

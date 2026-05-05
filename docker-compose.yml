@@ -11,12 +11,22 @@ services:
       # Production deployments override these via env_file or
       # orchestrator secrets. The defaults give a working dev stack.
       - SENTINEL_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      # Phase 4.2: persist SQLite to the named volume so simulations
+      # survive container restart. The container is read_only:true,
+      # so /data is the only writable mount apart from /tmp tmpfs.
+      - SENTINEL_DB_PATH=/data/sentinelnav.db
+    volumes:
+      - sentinel-data:/data
     healthcheck:
+      # Phase 7.1: probe readiness, not just liveness. /readyz
+      # returns 503 until SQLite + the scenario registry are
+      # reachable; Compose holds the dependent frontend service
+      # until it goes 200.
       test:
         - CMD
         - python
         - -c
-        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=2).status==200 else 1)"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz',timeout=2).status==200 else 1)"
       interval: 30s
       timeout: 3s
       start_period: 5s
@@ -42,6 +52,14 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_BASE=http://localhost:8000
+      # Phase 6.3 auth proxy. The proxy lives in the Next.js
+      # process, so it dials the backend on its internal-DNS
+      # hostname (`backend`) rather than the browser-facing
+      # localhost URL. Set SENTINEL_API_TOKEN at deploy time to
+      # actually exercise the bearer guard; left unset, the proxy
+      # forwards without an Authorization header (dev mode).
+      - SENTINEL_BACKEND_URL=http://backend:8000
+      - SENTINEL_API_TOKEN=${SENTINEL_API_TOKEN:-}
     depends_on:
       backend:
         condition: service_healthy
@@ -62,3 +80,10 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+
+volumes:
+  # Phase 4.2: backend persistence. WAL-mode SQLite (Phase 4.1)
+  # lives at /data/sentinelnav.db inside the backend container.
+  # To back up:
+  #   docker run --rm -v sentinel-data:/data alpine tar c /data > backup.tar
+  sentinel-data:

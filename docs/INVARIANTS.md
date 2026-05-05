@@ -141,9 +141,29 @@ out as the windowed detector's reason to exist.
 
 **Enforcement.** `simulation/health.py::TrustDetector._observe`.
 
+## I11 — Safe-mode hysteresis on de-escalation
+
+**Statement.** Once a step's `decision.system_mode` is set to a
+more-severe mode (`NORMAL < DEGRADED < SAFE_MODE < FAILED`), no
+later step may set `decision.system_mode` to a strictly less-severe
+mode unless at least `safe_mode_recovery_steps` consecutive steps
+have proposed the less-severe (or even-less-severe) mode since the
+most-severe mode was last entered. Escalations remain immediate.
+
+**Why.** A borderline fault should not flap the system mode (NORMAL →
+SAFE_MODE → NORMAL → SAFE_MODE) on noisy inputs. The asymmetric
+policy — immediate escalation, cooled-off recovery — is the textbook
+fail-safe pattern. ADR 0011 captures the rationale and the trade-offs.
+
+**Enforcement.** `simulation/safe_mode.py::SafeModeManager.evaluate`
+(post Phase 3.2). The pure proposed-mode function
+(`_evaluate_proposed`) is what the TLA+ spec models; the hysteresis
+wrapper is checked by the property test
+`tests/properties/test_invariant_11_hysteresis.py` (added in PR 3.2).
+
 ## Adding new invariants
 
-1. Append to this document with a stable number (`I11`, `I12`, ...).
+1. Append to this document with a stable number (`I12`, `I13`, ...).
 2. Add a property test file `tests/properties/test_invariant_NN_*.py`.
 3. Reference it from `docs/INVARIANTS.md` and from any ADR that
    explains the underlying decision.

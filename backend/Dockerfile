@@ -45,8 +45,11 @@ RUN chown -R sentinel:sentinel /app
 USER sentinel
 EXPOSE 8000
 
-# Liveness probe hits the same endpoint Kubernetes/Compose would use.
+# Readiness probe — fails fast (503) until SQLite + the scenario
+# registry are usable. Phase 7.1 swapped this from /health (liveness)
+# to /readyz so Compose / Kubernetes correctly hold off traffic until
+# the dependencies the API actually needs are reachable.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=2).status==200 else 1)"
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz',timeout=2).status==200 else 1)"
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

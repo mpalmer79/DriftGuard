@@ -116,16 +116,19 @@ class TrustDetector:
         elif h.fault_streak >= scaled:
             new_status = HealthStatus.SUSPECT
 
-        # de-escalate via recovery cooldown
+        # de-escalate via recovery cooldown.
+        #
+        # The two and/or-clauses below are independent recovery gates;
+        # parens are explicit to make the precedence unambiguous (the
+        # semantics are unchanged from the unparenthesised form because
+        # Python's `and` already binds tighter than `or`, but a reader
+        # should not have to reach for the language reference).
         if not misbehaving and h.clean_streak >= self.recovery_steps:
             if h.status in (HealthStatus.CRITICAL, HealthStatus.DEGRADED):
                 new_status = HealthStatus.RECOVERING
             elif (
-                h.status == HealthStatus.RECOVERING
-                and h.clean_streak >= self.recovery_steps * 2
-                or h.status == HealthStatus.SUSPECT
-                and h.clean_streak >= self.recovery_steps
-            ):
+                h.status == HealthStatus.RECOVERING and h.clean_streak >= self.recovery_steps * 2
+            ) or (h.status == HealthStatus.SUSPECT and h.clean_streak >= self.recovery_steps):
                 new_status = HealthStatus.HEALTHY
 
         h.status = new_status
@@ -151,19 +154,34 @@ class TrustDetector:
             self.state.disagreement_window
         )
 
-    def unhealthy_controllers(self) -> list[str]:
+    def unhealthy_components(self) -> list[str]:
+        """Components in `SUSPECT`, `DEGRADED`, or `RECOVERING`.
+
+        Includes the sensor as well as the three controllers — the
+        TrustDetector tracks all of them, so "components" rather than
+        "controllers" is the accurate name. **Not** the same set as
+        ``FaultDetector.unhealthy_controllers()``: that one is a
+        counter-based threshold over the live step's invalid /
+        latency events on controllers only, and is what
+        ``SafeModeManager`` actually consumes today (ADR 0001).
+        """
+
         return [
             cid
-            for cid in CONTROLLER_IDS
-            if self.state.components[cid].status
-            in (HealthStatus.SUSPECT, HealthStatus.DEGRADED, HealthStatus.RECOVERING)
+            for cid, h in self.state.components.items()
+            if h.status in (HealthStatus.SUSPECT, HealthStatus.DEGRADED, HealthStatus.RECOVERING)
         ]
 
-    def critical_controllers(self) -> list[str]:
+    def critical_components(self) -> list[str]:
+        """Components currently in `CRITICAL` health.
+
+        Includes the sensor. **Not** the same set as
+        ``FaultDetector.critical_controllers()`` — see ADR 0001 for
+        why the two detectors coexist.
+        """
+
         return [
-            cid
-            for cid in CONTROLLER_IDS
-            if self.state.components[cid].status == HealthStatus.CRITICAL
+            cid for cid, h in self.state.components.items() if h.status == HealthStatus.CRITICAL
         ]
 
     def degraded_controllers(self) -> list[str]:

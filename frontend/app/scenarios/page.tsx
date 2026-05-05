@@ -11,7 +11,10 @@ export default function ScenariosPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.listScenarios().then(setScenarios).catch((e) => setError(e.message));
+    api
+      .listScenarios()
+      .then(setScenarios)
+      .catch((e) => setError(e.message));
   }, []);
 
   return (
@@ -20,8 +23,8 @@ export default function ScenariosPage() {
         <div>
           <h1 className="text-2xl font-semibold">Scenarios</h1>
           <p className="text-gray-400 text-sm mt-1">
-            Each scenario is deterministic. Same seed plus same fault schedule
-            produces the same decisions and events.
+            Each scenario is deterministic. Same seed plus same fault schedule produces the same
+            decisions and events.
           </p>
         </div>
         <Link
