@@ -57,7 +57,9 @@ def _random_metadata(rng: random.Random) -> dict:
             ["HOLD", "ASCEND", "DESCEND", "ABORT", "STABILIZE", "WAT"]
         )  # WAT is on purpose; the orchestrator must tolerate junk
     if rng.random() < 0.1:
-        meta["affected_fields"] = rng.sample(["altitude", "velocity", "heading"], k=rng.randint(1, 3))
+        meta["affected_fields"] = rng.sample(
+            ["altitude", "velocity", "heading"], k=rng.randint(1, 3)
+        )
     return meta
 
 
