@@ -43,7 +43,10 @@ mode, decide action, advance state, log.
 - **Vehicle state engine** — pure-function transformation per action
   with bounds; no hidden global state.
 - **Sensor model** — Gaussian noise plus fault hooks that can drift,
-  spike, dropout, or invalidate.
+  spike, dropout, or invalidate. The repo also ships INS / GPS / EKF
+  reference modules with their own unit tests; today they live as
+  side modules and are not on the live orchestrator path. Wiring is
+  tracked in ADR 0010.
 - **Controllers** — three implementations with intentionally different
   decision boundaries so they actually disagree under stress:
   - **A: Conservative** — wide deadbands, slower response.
@@ -62,8 +65,12 @@ mode, decide action, advance state, log.
 - Safe mode restricts the action set to `{HOLD, STABILIZE,
   DECELERATE, ABORT}`.
 - Failed mode forces `ABORT` as the fallback action.
-- Recovery requires sustained healthy behavior; one good step is not
-  enough to leave a degraded state.
+- Per-component recovery requires sustained healthy behavior — the
+  trust detector enforces a multi-step clean streak before a
+  component returns to `HEALTHY`. System-mode hysteresis is a
+  separate property tracked in ADR 0011; today
+  `safe_mode_recovery_steps` is config plumbing waiting on that
+  wiring.
 
 ## Fault handling
 

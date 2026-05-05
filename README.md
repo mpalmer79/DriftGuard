@@ -54,12 +54,20 @@ flowchart LR
 ### Core simulation
 - Three differing controllers (Conservative, Responsive, Balanced)
 - Deterministic vehicle state engine + Gaussian sensor model
-- INS / GPS / EKF filtering pipeline with GPS-denied handling
+- INS / GPS / EKF reference implementations with dedicated unit tests;
+  not on the live orchestrator path today (wiring is tracked in
+  ADR 0010)
+- Continuous-time dynamics integrator available as an alternative to
+  the discrete kinematic update; opt-in (see ADR 0007), default off
+  to keep replay fingerprints stable
 - Majority voting with invalid/late exclusion
 - Counter-based + time-windowed trust detection with per-component
   health states (`HEALTHY` → `SUSPECT` → `DEGRADED` → `CRITICAL` →
-  `RECOVERING`)
-- Safe-mode escalation with action restriction and recovery cooldown
+  `RECOVERING`); the trust detector is what carries the recovery
+  cooldown
+- Safe-mode escalation with action restriction. (System-mode
+  hysteresis is tracked separately — `safe_mode_recovery_steps` is
+  config plumbing today; ADR 0011 covers the planned wiring.)
 - 15 fault types (sensor and controller, with intermittent patterns
   and a metadata DSL that supports linear ramps)
 - 6 built-in scenarios plus a YAML scenario authoring surface with
