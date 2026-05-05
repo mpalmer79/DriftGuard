@@ -1,0 +1,36 @@
+name: fuzz
+
+on:
+  schedule:
+    # Nightly at 06:00 UTC. Random fault injection runs against every
+    # FaultType / target with a configurable budget; uncaught
+    # exceptions fail the workflow.
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      # actions/checkout v4.1.7
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      # actions/setup-python v5.1.1
+      - uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+      - name: install
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      - name: fuzz
+        env:
+          SENTINEL_FUZZ_SECONDS: "300"
+          SENTINEL_FUZZ_SEED: "0"
+        run: pytest -q -m slow app/tests/fuzz

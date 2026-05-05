@@ -47,10 +47,10 @@ skips = ["B101"]  # assert is fine in test files
 exclude_dirs = ["app/tests"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = ["-q", "-m", "not slow"]
 testpaths = ["app/tests"]
 markers = [
-    "slow: long-running tests, excluded from default run",
+    "slow: long-running tests (fuzz, soak); excluded from default run. Run with `pytest -m slow`.",
 ]
 
 [tool.coverage.run]
