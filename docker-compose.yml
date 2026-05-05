@@ -12,11 +12,15 @@ services:
       # orchestrator secrets. The defaults give a working dev stack.
       - SENTINEL_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
     healthcheck:
+      # Phase 7.1: probe readiness, not just liveness. /readyz
+      # returns 503 until SQLite + the scenario registry are
+      # reachable; Compose holds the dependent frontend service
+      # until it goes 200.
       test:
         - CMD
         - python
         - -c
-        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=2).status==200 else 1)"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz',timeout=2).status==200 else 1)"
       interval: 30s
       timeout: 3s
       start_period: 5s
