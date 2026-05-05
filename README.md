@@ -187,7 +187,11 @@ Open http://localhost:3000.
 docker compose up --build
 ```
 
-See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+A named `sentinel-data` volume is mounted at `/data` so simulations
+survive container restart — the backend writes a WAL-mode SQLite
+database at `/data/sentinelnav.db`. See
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full env-var
+matrix, backup commands, and the smoke-test recipe.
 
 ## Tests
 
