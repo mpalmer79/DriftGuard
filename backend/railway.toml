@@ -1,0 +1,27 @@
+# Railway service config for the SentinelNav backend.
+#
+# Railway reads this file when the service's root directory is set to
+# `backend/` in the Railway dashboard. The Dockerfile-based builder
+# uses ./Dockerfile relative to that root.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Readiness probe. /readyz returns 200 when SQLite + scenario
+# registry are usable, 503 otherwise. Railway gates incoming traffic
+# on this; while it is 503 the service stays out of rotation.
+healthcheckPath = "/readyz"
+healthcheckTimeout = 30
+
+# Restart on crash, with a bounded backoff. Stateless API; safe to
+# kill and restart without coordination.
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# One replica. The in-memory simulation registry and rate limiter
+# are per-process (documented as a known limit in
+# docs/OBSERVABILITY.md). Multi-replica deployment is intentionally
+# out of scope until those move to a shared store.
+numReplicas = 1

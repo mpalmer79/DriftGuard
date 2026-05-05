@@ -1,0 +1,21 @@
+# Railway service config for the SentinelNav frontend.
+#
+# Railway reads this file when the service's root directory is set to
+# `frontend/` in the Railway dashboard. The Dockerfile-based builder
+# uses ./Dockerfile relative to that root.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Liveness probe — the Next.js standalone server is up if "/" is
+# reachable. There is no Next-side dependency check; backend
+# readiness is the backend's concern.
+healthcheckPath = "/"
+healthcheckTimeout = 30
+
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+numReplicas = 1
