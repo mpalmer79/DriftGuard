@@ -25,6 +25,7 @@ from .detection import FaultDetector
 from .event_logger import EventLogger
 from .faults import FaultRegistry
 from .health import TrustDetector
+from .navigation import NavigationPipeline
 from .orchestrator_decision import build_decision
 from .orchestrator_logging import (
     log_controller,
@@ -69,6 +70,15 @@ class Simulation:
         self.sensors = SensorModel(
             rng=self.rng.child("sensor"),
             noise_std=config.sensor_noise_std,
+        )
+        # ADR 0010: opt-in navigation pipeline. Constructed unconditionally
+        # so the field is always present (simplifies tests + persistence
+        # serialisation), but only consulted when the flag is set.
+        self.navigation = NavigationPipeline(
+            sensor_rng=self.rng.child("nav_sensor"),
+            ins_rng=self.rng.child("ins"),
+            gps_rng=self.rng.child("gps"),
+            sensor_noise_std=config.sensor_noise_std,
         )
         self.controllers = (
             controllers if controllers is not None else default_controllers(rng=self.rng)
@@ -150,7 +160,11 @@ class Simulation:
         active_faults = self.faults.active_at(next_step)
 
         with t.start_as_current_span("sensor"):
-            sensor = self.sensors.read(self.state, active_faults)
+            if self.config.navigation_pipeline_enabled:
+                nav_output = self.navigation.step(self.state, active_faults)
+                sensor = nav_output.to_sensor_reading()
+            else:
+                sensor = self.sensors.read(self.state, active_faults)
             sensor.step = next_step
             log_sensor(self.events, next_step, ts, sensor)
 

@@ -11,6 +11,12 @@ class SimulationConfig:
     invalid_critical_threshold: int = 4
     safe_mode_recovery_steps: int = 5
     default_seed: int = 42
+    # When True, the orchestrator routes the controller-facing sensor
+    # feed through the INS+GPS+EKF NavigationPipeline. Default `False`
+    # in PR 1.2 (the wiring lands; existing tests are untouched).
+    # Flipped to True in PR 1.3 with explicit loosening on the
+    # tolerances that change under EKF smoothing. See ADR 0010.
+    navigation_pipeline_enabled: bool = False
 
 
 DEFAULT_CONFIG = SimulationConfig()
