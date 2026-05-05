@@ -90,6 +90,8 @@ class Simulation:
             disagreement_critical=config.disagreement_critical_threshold,
             invalid_warning=config.invalid_warning_threshold,
             invalid_critical=config.invalid_critical_threshold,
+            latency_warning=config.latency_warning_threshold,
+            latency_critical=config.latency_critical_threshold,
         )
         self.safe_mode = SafeModeManager(self.detector)
         self.trust = TrustDetector(latency_threshold_ms=config.latency_threshold_ms)
