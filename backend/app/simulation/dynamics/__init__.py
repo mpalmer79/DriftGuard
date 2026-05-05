@@ -94,9 +94,7 @@ def step_roll(current_roll_deg: float, target_roll_deg: float, lag: float, dt: f
     return clamp(new, -MAX_ROLL_DEG, MAX_ROLL_DEG)
 
 
-def horizontal_displacement(
-    velocity: float, heading_deg: float, dt: float
-) -> tuple[float, float]:
+def horizontal_displacement(velocity: float, heading_deg: float, dt: float) -> tuple[float, float]:
     """Displacement in the East / North plane for the given step.
 
     Returns ``(dx_east, dy_north)``. Heading 0 is east; heading 90 is
