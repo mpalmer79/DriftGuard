@@ -203,6 +203,14 @@ database at `/data/sentinelnav.db`. See
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full env-var
 matrix, backup commands, and the smoke-test recipe.
 
+### Deploying to Railway
+
+A complete deployment runbook lives at
+[`docs/RAILWAY_DEPLOY.md`](docs/RAILWAY_DEPLOY.md). It covers the
+two-service topology (backend + frontend), the persistent volume,
+the cross-service env wiring, and the smoke test. Expected total
+time: under 10 minutes from a fresh Railway account.
+
 ## Tests
 
 ```bash
@@ -235,7 +243,9 @@ out the operational boundaries that follow from them:
   shard simulations across replicas (the registry isn't consistent
   between them) and need a shared store like Redis for the rate
   limiter to be effective. Single-process is the right size for a
-  portfolio demo.
+  portfolio demo. Railway deploys are pinned to one replica per
+  service in `railway.toml` for the same reason; moving to a shared
+  store is the next step for production-grade scale.
 - **PostgreSQL backend.** The persistence layer is single-writer
   SQLite with WAL. Switching to Postgres earns nothing the demo
   can show; the schema and repository would need migrations,
