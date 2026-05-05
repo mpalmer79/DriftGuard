@@ -3,7 +3,7 @@ from dataclasses import asdict
 import yaml
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from ..core.exceptions import ScenarioError
 from ..scenarios import all_scenarios, get_scenario, run_scenario
@@ -14,6 +14,19 @@ from ..scenarios.registry import (
     unregister_user_scenario,
 )
 from . import dependencies as deps
+
+
+class ScenarioRunOverrides(BaseModel):
+    """Optional run-time override block (Phase 5.4).
+
+    seed: replace the scenario's root seed for this run.
+    fault_metadata: index -> {key: value} merged over each fault's
+                    declared metadata.
+    """
+
+    seed: int | None = Field(default=None, ge=0)
+    fault_metadata: dict[int, dict] = Field(default_factory=dict)
+
 
 router = APIRouter()
 
@@ -74,19 +87,28 @@ def delete_scenario(name: str) -> JSONResponse:
 
 
 @router.post("/scenarios/{name}/run")
-def run_scenario_default(name: str) -> dict:
-    return _execute(name, None)
+def run_scenario_default(name: str, overrides: ScenarioRunOverrides | None = None) -> dict:
+    return _execute(name, None, overrides)
 
 
 @router.post("/scenarios/{name}/run/{steps}")
-def run_scenario_with_steps(name: str, steps: int) -> dict:
+def run_scenario_with_steps(
+    name: str,
+    steps: int,
+    overrides: ScenarioRunOverrides | None = None,
+) -> dict:
     if steps <= 0 or steps > 500:
         raise ScenarioError("steps must be between 1 and 500")
-    return _execute(name, steps)
+    return _execute(name, steps, overrides)
 
 
-def _execute(name: str, steps: int | None) -> dict:
-    sim, result = run_scenario(name, steps)
+def _execute(name: str, steps: int | None, overrides: ScenarioRunOverrides | None) -> dict:
+    sim, result = run_scenario(
+        name,
+        steps,
+        seed_override=overrides.seed if overrides else None,
+        fault_metadata_overrides=overrides.fault_metadata if overrides else None,
+    )
     deps.get_registry()[sim.id] = sim
     repo = deps.get_repository()
     repo.create_simulation(sim)
