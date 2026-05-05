@@ -94,7 +94,10 @@ class Simulation:
             latency_warning=config.latency_warning_threshold,
             latency_critical=config.latency_critical_threshold,
         )
-        self.safe_mode = SafeModeManager(self.detector)
+        self.safe_mode = SafeModeManager(
+            self.detector,
+            recovery_steps=config.safe_mode_recovery_steps,
+        )
         self.trust = TrustDetector(latency_threshold_ms=config.latency_threshold_ms)
         self.anomaly = AnomalySidecar(rng=self.rng.child("anomaly"))
         self.events = EventLogger(simulation_id=self.id)

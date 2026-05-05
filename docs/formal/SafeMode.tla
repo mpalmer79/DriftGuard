@@ -2,12 +2,30 @@
 (*
   TLA+ specification of SentinelNav's safe-mode transition function.
 
-  This is the function `SafeModeManager.evaluate` in
-  `backend/app/simulation/safe_mode.py`. The spec models the four
-  modes, the inputs that drive the transition, and the policy
-  expressed as a series of guarded clauses. The invariants from
+  This spec models the *proposed* mode the manager would emit given
+  the current step's inputs — the pure function
+  `SafeModeManager._evaluate_proposed` in
+  `backend/app/simulation/safe_mode.py`. The invariants from
   `docs/INVARIANTS.md` are stated as TLA+ theorems and are checked
-  by an accompanying Python exhaustive checker.
+  by an accompanying Python exhaustive checker
+  (`backend/app/tests/properties/test_transition_exhaustive.py`).
+
+  --- Boundary: hysteresis is out-of-band ---
+
+  ADR 0011 introduces a recovery-hysteresis layer on top of the pure
+  function: `SafeModeManager.evaluate` may delay a strict
+  de-escalation by up to `safe_mode_recovery_steps` consecutive
+  clean-streak steps. That history-dependent behaviour is *not*
+  modelled here. The reason is purpose-of-spec: this module pins the
+  proposed-mode policy given a single step's inputs; mixing in a
+  cross-step counter would expand the input space by
+  `|Modes| × (recovery_steps + 1)` without strengthening any
+  property the property test does not already cover.
+
+  Invariant I11 (the hysteresis property) is enforced separately by
+  `tests/properties/test_invariant_11_hysteresis.py`. The TLA+ ↔
+  Python mirror that this spec anchors covers `_evaluate_proposed`
+  on both sides.
 
   Reading order: constants, the mode enum, the transition function,
   the invariants.
