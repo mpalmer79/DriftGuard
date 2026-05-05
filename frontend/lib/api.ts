@@ -109,10 +109,35 @@ export const api = {
 
   getScenario: (name: string) => request<Scenario>(`/scenarios/${name}`),
 
-  runScenario: (name: string, steps?: number) => {
+  runScenario: (name: string, steps?: number, overrides?: Record<string, unknown>) => {
     const path = steps ? `/scenarios/${name}/run/${steps}` : `/scenarios/${name}/run`;
-    return request<ScenarioResult>(path, { method: "POST" });
+    return request<ScenarioResult>(path, {
+      method: "POST",
+      body: overrides ? JSON.stringify(overrides) : undefined,
+    });
   },
+
+  createScenario: async (yamlBody: string) => {
+    const res = await fetch(`${API_BASE}/scenarios`, {
+      method: "POST",
+      headers: { "Content-Type": "text/yaml" },
+      body: yamlBody,
+      cache: "no-store",
+    });
+    const text = await res.text();
+    const body = text ? safeJson(text) : null;
+    if (!res.ok) {
+      throw new ApiError(
+        res.status,
+        body,
+        (body as any)?.detail ? `validation: ${JSON.stringify((body as any).detail)}` : `failed: ${res.status}`,
+      );
+    }
+    return body as Scenario;
+  },
+
+  deleteScenario: (name: string) =>
+    request<void>(`/scenarios/${name}`, { method: "DELETE" }),
 
   getReport: (id: string) => request<MissionReport>(`/simulations/${id}/report`),
 
