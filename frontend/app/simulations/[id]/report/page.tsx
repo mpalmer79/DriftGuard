@@ -37,11 +37,5 @@ export default function ReportPage() {
     );
   }
 
-  return (
-    <MissionReportView
-      report={report}
-      markdown={markdown}
-      decisions={decisions.data ?? []}
-    />
-  );
+  return <MissionReportView report={report} markdown={markdown} decisions={decisions.data ?? []} />;
 }

@@ -22,6 +22,7 @@ from ..domain.models import (
 from .anomaly_sidecar import AnomalySidecar, emit_advisory_event
 from .controllers import Controller, default_controllers
 from .detection import FaultDetector
+from .dynamics.integrator import integrate_action
 from .event_logger import EventLogger
 from .faults import FaultRegistry
 from .health import TrustDetector
@@ -90,8 +91,13 @@ class Simulation:
             disagreement_critical=config.disagreement_critical_threshold,
             invalid_warning=config.invalid_warning_threshold,
             invalid_critical=config.invalid_critical_threshold,
+            latency_warning=config.latency_warning_threshold,
+            latency_critical=config.latency_critical_threshold,
         )
-        self.safe_mode = SafeModeManager(self.detector)
+        self.safe_mode = SafeModeManager(
+            self.detector,
+            recovery_steps=config.safe_mode_recovery_steps,
+        )
         self.trust = TrustDetector(latency_threshold_ms=config.latency_threshold_ms)
         self.anomaly = AnomalySidecar(rng=self.rng.child("anomaly"))
         self.events = EventLogger(simulation_id=self.id)
@@ -196,7 +202,17 @@ class Simulation:
             record_decision(decision)
 
         with t.start_as_current_span("persistence"):
-            new_state = apply_action(self.state, decision.final_action)
+            if self.config.use_substep_integrator:
+                # Phase 2.1: opt-in continuous-time integrator. Default
+                # off — see ADR 0007. The legacy `apply_action` is
+                # what the replay-fingerprint contract pins.
+                new_state = integrate_action(
+                    self.state,
+                    decision.final_action,
+                    substeps=self.config.integrator_substeps,
+                )
+            else:
+                new_state = apply_action(self.state, decision.final_action)
             new_state.system_mode = new_mode
             self.state = new_state
             log_state(self.events, self.state.timestamp, self.state)

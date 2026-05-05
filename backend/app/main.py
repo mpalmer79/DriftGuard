@@ -17,7 +17,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="SentinelNav",
         description="Deterministic, fault-tolerant control system simulation.",
-        version="0.2.0",
+        version="0.3.0",
     )
 
     app.add_middleware(

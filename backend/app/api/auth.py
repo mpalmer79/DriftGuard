@@ -12,6 +12,7 @@ without auth.
 
 from __future__ import annotations
 
+import hmac
 import os
 
 from fastapi import Request
@@ -45,5 +46,7 @@ def require_write_auth(request: Request) -> None:
     if not raw or not raw.lower().startswith(_PREFIX):
         raise AuthError("missing or malformed Authorization header")
     supplied = raw[len(_PREFIX) :].strip()
-    if supplied != expected:
+    # Constant-time compare so a timing side-channel does not leak the
+    # token byte-by-byte. The cost over `==` is negligible at our QPS.
+    if not hmac.compare_digest(supplied.encode("utf-8"), expected.encode("utf-8")):
         raise AuthError("invalid bearer token")

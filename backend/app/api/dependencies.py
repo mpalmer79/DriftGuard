@@ -4,10 +4,18 @@ Phase 8.4 caps the in-memory simulation registry at MAX_REGISTRY_SIZE
 entries with LRU eviction. Persisted simulations are unaffected — the
 SQLite read paths still serve the timeline, decisions, etc., for any
 sim that's been evicted from memory.
+
+Phase 4.1: ``SENTINEL_DB_PATH`` overrides the SQLite path. Default is
+``":memory:"`` so the test suite stays hermetic; production
+deployments set it to a filesystem path mounted on a persistent
+volume. The Database connection is initialised lazily on first
+access so a test that monkey-patches ``SENTINEL_DB_PATH`` and then
+calls ``reset_state_for_tests()`` picks up the override.
 """
 
 from __future__ import annotations
 
+import os
 from collections import OrderedDict
 from collections.abc import Iterator, MutableMapping
 
@@ -62,9 +70,17 @@ class _LRURegistry(MutableMapping[str, Simulation]):
         self._data.clear()
 
 
+def _resolved_db_path() -> str:
+    """Read SENTINEL_DB_PATH each time so tests that monkeypatch the
+    env var pick up the new value on the next reset_state_for_tests."""
+
+    raw = os.environ.get("SENTINEL_DB_PATH", "").strip()
+    return raw or ":memory:"
+
+
 _simulations: _LRURegistry = _LRURegistry()
-_db = Database(path=":memory:")
-_repo = SimulationRepository(_db)
+_db: Database | None = None
+_repo: SimulationRepository | None = None
 
 
 def get_registry() -> _LRURegistry:
@@ -72,10 +88,16 @@ def get_registry() -> _LRURegistry:
 
 
 def get_db() -> Database:
+    global _db
+    if _db is None:
+        _db = Database(path=_resolved_db_path())
     return _db
 
 
 def get_repository() -> SimulationRepository:
+    global _repo
+    if _repo is None:
+        _repo = SimulationRepository(get_db())
     return _repo
 
 
@@ -89,6 +111,7 @@ def get_simulation(sim_id: str) -> Simulation:
 def reset_state_for_tests() -> None:
     global _db, _repo
     _simulations.clear()
-    _db.close()
-    _db = Database(path=":memory:")
-    _repo = SimulationRepository(_db)
+    if _db is not None:
+        _db.close()
+    _db = None
+    _repo = None

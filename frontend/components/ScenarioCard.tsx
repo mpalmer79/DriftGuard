@@ -27,9 +27,7 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
   return (
     <Card title={scenario.name}>
       <p className="text-sm mb-1">{scenario.description}</p>
-      <p className="text-xs text-gray-400 mb-3">
-        Expected: {scenario.expected_behavior}
-      </p>
+      <p className="text-xs text-gray-400 mb-3">Expected: {scenario.expected_behavior}</p>
       <div className="flex gap-2 mb-3">
         <button
           onClick={() => run()}

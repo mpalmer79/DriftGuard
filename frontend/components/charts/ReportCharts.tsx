@@ -87,9 +87,7 @@ export function DecisionsByModeBar({ decisions }: DecisionsByModeBarProps) {
     byActionByMode[d.final_action][d.system_mode] =
       (byActionByMode[d.final_action][d.system_mode] ?? 0) + 1;
   }
-  const modes = Array.from(
-    new Set(decisions.map((d) => d.system_mode)),
-  ).sort();
+  const modes = Array.from(new Set(decisions.map((d) => d.system_mode))).sort();
   const data = Object.entries(byActionByMode).map(([action, modeCounts]) => ({
     action,
     ...modeCounts,
@@ -140,9 +138,7 @@ export function TrustSparkline({ trustByStep }: TrustSparklineProps) {
   if (!trustByStep || trustByStep.length === 0) {
     return null;
   }
-  const controllers = Array.from(
-    new Set(trustByStep.flatMap((s) => Object.keys(s.values))),
-  ).sort();
+  const controllers = Array.from(new Set(trustByStep.flatMap((s) => Object.keys(s.values)))).sort();
   const data = trustByStep.map((s) => ({ step: s.step, ...s.values }));
 
   return (

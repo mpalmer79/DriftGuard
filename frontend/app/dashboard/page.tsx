@@ -149,8 +149,8 @@ export default function DashboardPage() {
           <VehicleStateCard state={state} />
           {latest && (
             <>
-              <ControllerOutputTable outputs={latest.controllers as any} />
-              <VoteResultCard vote={latest.vote as any} />
+              <ControllerOutputTable outputs={latest.controllers} />
+              <VoteResultCard vote={latest.vote} />
             </>
           )}
         </div>

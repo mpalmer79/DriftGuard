@@ -91,3 +91,35 @@ happening.
 - Tests: `backend/app/tests/test_dynamics_*.py`, `backend/app/tests/test_simulation.py` (legacy path still green).
 - Related: ADR 0004 (determinism), ADR 0006 (RNG service — both paths consume the same RNG).
 - Successor: an ADR for the orchestrator's "realistic mode" config switch when that lands.
+
+## Status update — Phase 2.1 (PR 2.1, 2026-05-05)
+
+The orchestrator-level config switch this ADR's "successor" bullet
+deferred has now landed:
+
+- `SimulationConfig.use_substep_integrator: bool = False`
+- `SimulationConfig.integrator_substeps: int = 10`
+
+The default stays **False** — the legacy `apply_action` is what the
+replay-fingerprint contract pins (ADR 0004, Phase 9.2). Flipping the
+default would invalidate every committed fingerprint without buying
+anything observable from the demo runs. The flag is opt-in for
+scenarios that legitimately want continuous-time pitch/roll lag,
+GPS-denied EKF studies (ADR 0010), or any future "realistic mode"
+that wants the integrator's first-order attitude response.
+
+Tests pinning the wiring live in
+`backend/app/tests/test_dynamics_integration.py` (Phase 2.1):
+
+- the default config still rides `apply_action`,
+- with the flag set, an `ASCEND` command produces the lag-bounded
+  pitch the integrator's `PITCH_LAG_S = 0.5` time-constant predicts
+  (legacy snaps to +3°; the integrator reaches a fraction of the
+  commanded +10° in the same 1s window),
+- `integrator_substeps` is honoured (substeps=1 vs substeps=10
+  produce different attitudes for the same command).
+
+This ADR's "Status" remains `Accepted`; the successor-ADR slot is
+filled by this status update rather than a new ADR, since the
+decision (legacy default + opt-in flag) does not contradict
+anything here.

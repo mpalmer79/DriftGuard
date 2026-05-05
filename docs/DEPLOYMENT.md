@@ -75,9 +75,58 @@ plus npm coverage).
 
 ## Production notes
 
-- The default repository uses an in-memory SQLite database, which is
-  fine for demos and resets between processes. To persist runs, point
-  the `Database(path=...)` to a mounted volume.
+### Persistence (Phase 4.1 / 4.2)
+
+By default the backend uses an in-memory SQLite database, which is
+fine for unit tests but resets every container restart. To persist
+runs across restarts, set `SENTINEL_DB_PATH` to a path on a mounted
+volume:
+
+```bash
+export SENTINEL_DB_PATH=/data/sentinelnav.db
+```
+
+`docker-compose.yml` wires this up automatically — the backend
+service mounts a named volume `sentinel-data` at `/data` and sets
+`SENTINEL_DB_PATH=/data/sentinelnav.db`. The container stays
+`read_only: true`; `/data` is the only writable mount apart from
+the existing `/tmp` tmpfs.
+
+When `SENTINEL_DB_PATH` resolves to a filesystem path, the
+`Database` connection enables `journal_mode=WAL` and
+`synchronous=NORMAL` on first connect. WAL allows concurrent reads
+alongside the single writer, which is the standard pattern for
+SQLite under a read-mostly FastAPI workload.
+
+**Persistence guarantee.** Single-process SQLite with WAL.
+Survives container restart when the volume is mounted.
+Multi-replica deployment is not supported by the in-memory
+simulation registry — see [`docs/OBSERVABILITY.md`](OBSERVABILITY.md)
+for the known-limits enumeration.
+
+#### Backup
+
+```bash
+# Snapshot the volume to a tar:
+docker run --rm -v sentinel-data:/data alpine \
+    tar c /data > sentinelnav-backup.tar
+
+# Restore:
+docker run --rm -v sentinel-data:/data -i alpine \
+    tar x -C / < sentinelnav-backup.tar
+```
+
+#### Smoke test the persistence guarantee
+
+```bash
+docker compose up -d
+SID=$(curl -s -X POST http://localhost:8000/simulations \
+        -H 'Content-Type: application/json' -d '{"seed": 42}' | jq -r .simulation_id)
+curl -s -X POST http://localhost:8000/simulations/$SID/step >/dev/null
+docker compose restart backend
+curl -s http://localhost:8000/simulations/$SID/timeline | jq length
+# expect: 1
+```
 
 ### Rate limiting (Phase 8.2)
 
@@ -106,6 +155,28 @@ The limiter is in-process: it does not coordinate across replicas.
 For horizontally-scaled deployments, terminate rate limiting at the
 edge (nginx, Envoy, an API gateway) and treat this layer as a
 defense-in-depth backstop.
+
+#### Trusted proxy gate (Phase 5.1)
+
+`x-forwarded-for` is **ignored by default**. A hostile client can
+otherwise forge any IP and exhaust the rate-limit budget for that
+address. To re-enable XFF parsing when the app is fronted by a
+known proxy, set `SENTINEL_TRUSTED_PROXIES` to a comma-separated
+CIDR list:
+
+```bash
+# Trust XFF only when the immediate peer is in the listed network(s).
+export SENTINEL_TRUSTED_PROXIES="10.0.0.0/8,192.168.0.0/16"
+```
+
+Behaviour:
+
+- Empty/unset → use `request.client.host` always; XFF is ignored.
+- Set → XFF's first hop is honoured iff the immediate peer lives
+  inside one of the listed CIDRs. Outside-CIDR peers fall back to
+  `request.client.host`.
+- Malformed CIDR tokens are silently dropped (safe default:
+  treat as untrusted).
 
 ### CORS allowlist (Phase 8.5)
 
@@ -139,6 +210,41 @@ scrape without auth.
 Failed auth returns `401` with body
 `{"error": {"code": "unauthorized", "message": "..."}}` per the
 Phase 8.6 error taxonomy.
+
+The supplied token is compared against the expected token using
+`hmac.compare_digest` (Phase 5.1) so the comparison takes constant
+time regardless of how many leading bytes match. This guards against
+the byte-by-byte timing side-channel that a plain `==` would expose.
+
+#### Frontend auth proxy (Phase 6.3)
+
+The Next.js dashboard never sees the bearer token. Mutating API
+calls go through a same-origin route handler at `/api/proxy/<path>`
+that runs server-side and injects `Authorization: Bearer <token>`
+before forwarding to FastAPI. Read traffic still goes direct to
+`NEXT_PUBLIC_API_BASE` since reads are not gated by the token.
+
+Frontend env vars:
+
+```bash
+# Server-side only. Read by the proxy route handler, never sent
+# to the browser. Leave unset for dev demos.
+SENTINEL_API_TOKEN="$(openssl rand -hex 32)"
+
+# Optional override for where the proxy dials the backend. Useful
+# in Compose where the browser sees localhost but the proxy needs
+# the internal-DNS hostname.
+SENTINEL_BACKEND_URL="http://backend:8000"
+
+# Browser-visible. Used by the read calls in lib/api.ts.
+NEXT_PUBLIC_API_BASE="http://localhost:8000"
+```
+
+`docker-compose.yml` wires `SENTINEL_BACKEND_URL=http://backend:8000`
+on the frontend service and forwards `SENTINEL_API_TOKEN` from the
+host environment. With the token set on **both** services, the UI
+reaches every write endpoint end-to-end without exposing the token
+to the browser.
 
 ### Resource caps (Phase 8.4)
 

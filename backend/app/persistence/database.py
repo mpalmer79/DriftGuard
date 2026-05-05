@@ -114,6 +114,13 @@ class Database:
                 Path(self.path).parent.mkdir(parents=True, exist_ok=True)
             self._conn = sqlite3.connect(self.path, check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
+            # Phase 4.1: WAL mode for filesystem-backed DBs so reads
+            # don't block writes (and vice versa). The `:memory:` path
+            # cannot run WAL — it is intrinsically single-connection
+            # and the PRAGMA returns "memory", not "wal".
+            if self.path != ":memory:":
+                self._conn.execute("PRAGMA journal_mode=WAL")
+                self._conn.execute("PRAGMA synchronous=NORMAL")
             self._conn.executescript(SCHEMA)
             self._conn.commit()
         return self._conn
