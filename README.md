@@ -220,6 +220,37 @@ CI also runs `ruff check`, `ruff format --check`, `bandit`,
 `pip-audit`, plus weekly `trivy` filesystem scans and CycloneDX
 SBOM generation for both the backend and frontend.
 
+## Roadmap
+
+What's intentionally **out of scope** at 0.3.0 — these are
+deliberate non-goals, not gaps, and `docs/OBSERVABILITY.md` calls
+out the operational boundaries that follow from them:
+
+- **Multi-replica horizontal scaling.** The simulation registry and
+  rate limiter are per-process. A multi-replica deployment would
+  shard simulations across replicas (the registry isn't consistent
+  between them) and need a shared store like Redis for the rate
+  limiter to be effective. Single-process is the right size for a
+  portfolio demo.
+- **PostgreSQL backend.** The persistence layer is single-writer
+  SQLite with WAL. Switching to Postgres earns nothing the demo
+  can show; the schema and repository would need migrations,
+  connection pooling, and transactional review the project does
+  not justify yet.
+- **Real hardware control.** Out of scope by mission statement —
+  RESEARCH.md §13: "AI or advanced controllers may advise,
+  deterministic assurance governs." The simulation models the
+  flight-software side of a fault-tolerant control loop; nothing
+  here is meant to fly anything.
+- **Distributed model checking.** Phase 9 ships a TLA+ spec
+  mirrored by an exhaustive Python checker. A real `tlc` run as a
+  separate CI job is reasonable polish (action plan PR 9.1) but
+  not a v0.3.0 requirement.
+- **SLOs / error budgets.** Production-grade, irrelevant for a
+  portfolio simulator that runs locally.
+
+These belong to a v1.0 plan, not portfolio polish.
+
 ## Portfolio positioning
 
 SentinelNav is intentionally small in scope but rich in the details
