@@ -51,17 +51,45 @@ flowchart LR
 
 ## Features
 
+### Core simulation
 - Three differing controllers (Conservative, Responsive, Balanced)
 - Deterministic vehicle state engine + Gaussian sensor model
+- INS / GPS / EKF filtering pipeline with GPS-denied handling
 - Majority voting with invalid/late exclusion
-- Counter-based + time-windowed trust detection
+- Counter-based + time-windowed trust detection with per-component
+  health states (`HEALTHY` → `SUSPECT` → `DEGRADED` → `CRITICAL` →
+  `RECOVERING`)
 - Safe-mode escalation with action restriction and recovery cooldown
-- 14 fault types (sensor and controller, with intermittent patterns)
-- 6 built-in scenarios (`nominal_cruise` through `multi_fault_failure`)
+- 15 fault types (sensor and controller, with intermittent patterns
+  and a metadata DSL that supports linear ramps)
+- 6 built-in scenarios plus a YAML scenario authoring surface with
+  run-time parameter overrides
 - SQLite persistence + full timeline reconstruction
 - Mission report (JSON + Markdown) with risk assessment
-- FastAPI app with consistent error contract and CORS
-- Next.js dashboard: simulations, scenarios, replay, report
+
+### Determinism & verification
+- Canonical replay fingerprint (SHA-256 over a scrubbed timeline)
+- Replay-equivalence harness — same seed + same scenario produces a
+  byte-identical run hash across processes
+- Hypothesis-driven property tests for invariants I1–I9
+- TLA+ formal spec mirrored by an exhaustive Python checker
+- 1000-step soak tests across every scenario, asserting invariants
+- Subprocess fuzz harness that hunts for safe-mode escapes
+- 538 backend tests, 97% line coverage
+
+### API, observability, and ops
+- FastAPI app with typed schemas, consistent error taxonomy, CORS
+  allowlist, optional bearer-token guard on writes, rate limiter,
+  per-simulation step + fault caps, and LRU eviction on the in-memory
+  registry
+- Prometheus `/metrics` endpoint and OpenTelemetry tracing on the
+  step loop
+- Server-Sent-Events stream of live simulation state
+- Anomaly-detection sidecar (isolation forest) wired alongside the
+  deterministic detector — advisory only, never gates the decision
+- Next.js + TypeScript dashboard: landing, simulations, scenarios,
+  replay, mission report, scenario authoring; trajectory map, charts,
+  and print-friendly report styles
 
 ## Backend routes
 
@@ -76,9 +104,14 @@ GET    /simulations/{id}
 GET    /simulations/{id}/timeline
 GET    /simulations/{id}/report
 GET    /simulations/{id}/report/markdown
+GET    /simulations/{id}/replay-fingerprint
+GET    /simulations/{id}/stream            # SSE
 GET    /scenarios
+POST   /scenarios                          # YAML body
 POST   /scenarios/{name}/run
 POST   /scenarios/{name}/run/{steps}
+GET    /metrics                            # Prometheus
+GET    /health
 ```
 
 ## Scenario examples
@@ -160,20 +193,45 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ```bash
 cd backend
-pytest -q
+pytest -q                       # full suite (538 tests, ~6s)
+pytest --cov=app -q             # with coverage (currently 97% line)
+pytest -m slow                  # opt-in fuzz / soak / property tests
 ```
 
 The suite covers voting, controller behavior, fault detection,
 trust/health logic, safe mode, simulation determinism, persistence
 recovery, timeline reconstruction, scenario determinism, advanced
-faults, mission reports, and API contracts.
+faults, mission reports, API contracts, invalid input rejection,
+replay fingerprinting, anomaly firewall, and the structured-logging
+contract. Property tests (`hypothesis`) and 1000-step soak runs are
+opt-in via the `slow` marker.
+
+CI also runs `ruff check`, `ruff format --check`, `bandit`,
+`pip-audit`, plus weekly `trivy` filesystem scans and CycloneDX
+SBOM generation for both the backend and frontend.
 
 ## Portfolio positioning
 
 SentinelNav is intentionally small in scope but rich in the details
 that real safety-critical systems demand: determinism, redundancy,
-explainable failure, persistence, and an auditable timeline. It
-demonstrates the ability to take a system-design problem and ship a
-clean backend, a typed API, a usable UI, and a paper trail end-to-end.
+explainable failure, persistence, and an auditable timeline. The
+project demonstrates the ability to take a system-design problem and
+ship a clean backend, a typed API, a usable UI, and a paper trail
+end-to-end — and to follow that with the depth a real engineering
+hand-off needs:
+
+- a TLA+ spec mirrored by an exhaustive Python checker,
+- property and soak tests that pin invariants the unit suite misses,
+- a canonical replay fingerprint that makes "same seed, same answer"
+  a falsifiable claim,
+- Prometheus metrics, OpenTelemetry traces, and an SSE stream wired
+  through the same step loop,
+- supply-chain CI (CycloneDX SBOMs, Trivy filesystem scans), bandit,
+  pip-audit, ruff, hardened multi-stage Dockerfiles, healthchecks, a
+  bearer-token write guard, and a sliding-window rate limiter.
+
 See [`docs/PORTFOLIO_CASE_STUDY.md`](docs/PORTFOLIO_CASE_STUDY.md) for
-the case-study write-up.
+the case-study write-up,
+[`docs/INVARIANTS.md`](docs/INVARIANTS.md) for the formal-spec
+mirror, and [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) for the
+metrics / traces / events signal map.
