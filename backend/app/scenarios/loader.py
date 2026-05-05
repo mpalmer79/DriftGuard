@@ -92,15 +92,39 @@ class ScenarioFile(BaseModel):
         )
 
 
+# Hostile-payload caps (Phase 8.1). Scenario YAML is small by design;
+# anything past these limits is rejected before yaml.safe_load runs.
+MAX_YAML_BYTES = 64 * 1024  # 64 KiB
+MAX_YAML_DEPTH = 12
+
+
+def _max_depth(value: Any, depth: int = 0) -> int:
+    if isinstance(value, dict):
+        if not value:
+            return depth
+        return max(_max_depth(v, depth + 1) for v in value.values())
+    if isinstance(value, list):
+        if not value:
+            return depth
+        return max(_max_depth(v, depth + 1) for v in value)
+    return depth
+
+
 def parse_yaml(payload: str) -> Scenario:
     """Parse a YAML document into a Scenario.
 
     Raises:
         yaml.YAMLError: payload is not valid YAML.
+        ValueError: payload exceeds size or nesting caps.
         pydantic.ValidationError: payload does not match the schema.
     """
+
+    if len(payload.encode("utf-8")) > MAX_YAML_BYTES:
+        raise ValueError(f"scenario document exceeds {MAX_YAML_BYTES} bytes")
 
     data = yaml.safe_load(payload)
     if not isinstance(data, dict):
         raise ValueError("scenario document must be a YAML mapping")
+    if _max_depth(data) > MAX_YAML_DEPTH:
+        raise ValueError(f"scenario document nesting depth exceeds {MAX_YAML_DEPTH}")
     return ScenarioFile.model_validate(data).to_scenario()
