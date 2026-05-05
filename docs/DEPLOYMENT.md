@@ -75,9 +75,58 @@ plus npm coverage).
 
 ## Production notes
 
-- The default repository uses an in-memory SQLite database, which is
-  fine for demos and resets between processes. To persist runs, point
-  the `Database(path=...)` to a mounted volume.
+### Persistence (Phase 4.1 / 4.2)
+
+By default the backend uses an in-memory SQLite database, which is
+fine for unit tests but resets every container restart. To persist
+runs across restarts, set `SENTINEL_DB_PATH` to a path on a mounted
+volume:
+
+```bash
+export SENTINEL_DB_PATH=/data/sentinelnav.db
+```
+
+`docker-compose.yml` wires this up automatically — the backend
+service mounts a named volume `sentinel-data` at `/data` and sets
+`SENTINEL_DB_PATH=/data/sentinelnav.db`. The container stays
+`read_only: true`; `/data` is the only writable mount apart from
+the existing `/tmp` tmpfs.
+
+When `SENTINEL_DB_PATH` resolves to a filesystem path, the
+`Database` connection enables `journal_mode=WAL` and
+`synchronous=NORMAL` on first connect. WAL allows concurrent reads
+alongside the single writer, which is the standard pattern for
+SQLite under a read-mostly FastAPI workload.
+
+**Persistence guarantee.** Single-process SQLite with WAL.
+Survives container restart when the volume is mounted.
+Multi-replica deployment is not supported by the in-memory
+simulation registry — see [`docs/OBSERVABILITY.md`](OBSERVABILITY.md)
+for the known-limits enumeration.
+
+#### Backup
+
+```bash
+# Snapshot the volume to a tar:
+docker run --rm -v sentinel-data:/data alpine \
+    tar c /data > sentinelnav-backup.tar
+
+# Restore:
+docker run --rm -v sentinel-data:/data -i alpine \
+    tar x -C / < sentinelnav-backup.tar
+```
+
+#### Smoke test the persistence guarantee
+
+```bash
+docker compose up -d
+SID=$(curl -s -X POST http://localhost:8000/simulations \
+        -H 'Content-Type: application/json' -d '{"seed": 42}' | jq -r .simulation_id)
+curl -s -X POST http://localhost:8000/simulations/$SID/step >/dev/null
+docker compose restart backend
+curl -s http://localhost:8000/simulations/$SID/timeline | jq length
+# expect: 1
+```
 
 ### Rate limiting (Phase 8.2)
 
