@@ -33,6 +33,7 @@ def build_report(repo: SimulationRepository, simulation_id: str) -> dict:
         "vote_outcome_counts": summary.vote_outcome_counts(votes),
         "rejected_controller_counts": summary.rejected_controller_counts(votes),
         "critical_events": summary.critical_events(events),
+        "anomaly_vs_deterministic": summary.anomaly_vs_deterministic_summary(events),
         "risk_assessment": risk.assess_risk(decisions, faults, events),
         "deterministic_reproducibility": {
             "note": "The same seed plus the same fault schedule reproduces the timeline.",
@@ -116,6 +117,29 @@ def render_markdown(report: dict) -> str:
         lines.append("_None recorded._")
     for e in report["critical_events"][:50]:
         lines.append(f"- step {e['step']} `{e['component']}` `{e['type']}` — {e['message']}")
+    lines.append("")
+
+    lines.append("## Anomaly detector vs deterministic system")
+    cmp = report.get("anomaly_vs_deterministic", {})
+    a_steps = cmp.get("anomaly_alert_steps", [])
+    d_steps = cmp.get("deterministic_alert_steps", [])
+    agree = cmp.get("agreement_steps", [])
+    lines.append(
+        f"- ML alerted on {len(a_steps)} step(s); deterministic alerted on {len(d_steps)} step(s)."
+    )
+    lines.append(
+        f"- They agreed on {len(agree)} step(s) (agreement rate {cmp.get('agreement_rate', 0.0)})."
+    )
+    if cmp.get("only_anomaly_steps"):
+        lines.append(f"- Only the anomaly detector alerted on: {cmp['only_anomaly_steps'][:20]}")
+    if cmp.get("only_deterministic_steps"):
+        lines.append(
+            f"- Only the deterministic system alerted on: {cmp['only_deterministic_steps'][:20]}"
+        )
+    lines.append(
+        "_The anomaly detector is advisory only (ADR 0009); these "
+        "numbers describe agreement, not control._"
+    )
     lines.append("")
 
     lines.append("## Reproducibility")
