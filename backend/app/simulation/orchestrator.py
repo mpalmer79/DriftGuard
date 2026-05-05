@@ -22,6 +22,7 @@ from ..domain.models import (
 from .anomaly_sidecar import AnomalySidecar, emit_advisory_event
 from .controllers import Controller, default_controllers
 from .detection import FaultDetector
+from .dynamics.integrator import integrate_action
 from .event_logger import EventLogger
 from .faults import FaultRegistry
 from .health import TrustDetector
@@ -198,7 +199,17 @@ class Simulation:
             record_decision(decision)
 
         with t.start_as_current_span("persistence"):
-            new_state = apply_action(self.state, decision.final_action)
+            if self.config.use_substep_integrator:
+                # Phase 2.1: opt-in continuous-time integrator. Default
+                # off — see ADR 0007. The legacy `apply_action` is
+                # what the replay-fingerprint contract pins.
+                new_state = integrate_action(
+                    self.state,
+                    decision.final_action,
+                    substeps=self.config.integrator_substeps,
+                )
+            else:
+                new_state = apply_action(self.state, decision.final_action)
             new_state.system_mode = new_mode
             self.state = new_state
             log_state(self.events, self.state.timestamp, self.state)
