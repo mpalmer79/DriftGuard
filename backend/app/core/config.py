@@ -24,6 +24,16 @@ class SimulationConfig:
     # supported for the unit-test baseline that pins `SensorModel`
     # behaviour directly, but it is a second-class path going forward.
     navigation_pipeline_enabled: bool = True
+    # Phase 2.1: opt-in continuous-time substep integrator
+    # (simulation/dynamics/integrator.py). Default off — the legacy
+    # discrete kinematic update in vehicle.apply_action stays the
+    # canonical path because that is what the replay-fingerprint
+    # contract pins. ADR 0007 + ADR 0010 document why we don't flip
+    # this on by default. (Re-added in the hotfix after the PR #24
+    # merge accidentally dropped these fields while resolving the
+    # conflict against PR #34's main version.)
+    use_substep_integrator: bool = False
+    integrator_substeps: int = 10
 
 
 DEFAULT_CONFIG = SimulationConfig()
