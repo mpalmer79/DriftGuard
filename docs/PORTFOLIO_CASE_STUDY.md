@@ -42,11 +42,26 @@ mode, decide action, advance state, log.
 
 - **Vehicle state engine** — pure-function transformation per action
   with bounds; no hidden global state.
-- **Sensor model** — Gaussian noise plus fault hooks that can drift,
-  spike, dropout, or invalidate. The repo also ships INS / GPS / EKF
-  reference modules with their own unit tests; today they live as
-  side modules and are not on the live orchestrator path. Wiring is
-  tracked in ADR 0010.
+- **Sensor model** — the controller-facing reading is the output of
+  an INS + GPS + EKF fusion stack. The INS integrates a noisy
+  version of truth state every step; GPS samples truth at a slower
+  cadence with its own noise; the EKF predicts from the INS and
+  updates from GPS when available. Sensor-target faults inject onto
+  the INS measurement (so a `SENSOR_DRIFT` still drifts what the INS
+  observes); a `GPS_DENIED` fault on the GPS target makes the EKF
+  run INS-only for the duration of the denial, with the variance
+  band growing visibly. Phase 1.4 wired this in by default; flip
+  `SimulationConfig.navigation_pipeline_enabled = False` to fall
+  back to the legacy direct-`SensorModel` feed for the unit-test
+  baseline. See ADR 0010.
+
+  *Why GPS-denial earns its place:* it's the simplest demonstration
+  in the project that "uncertainty is observable." The EKF altitude
+  variance stays bounded under nominal conditions, grows during the
+  denial window (no measurement correction), and snaps back inside
+  its measurement-noise band once GPS returns — exactly the
+  behaviour an aerospace reviewer expects from a fault-tolerant
+  navigation stack.
 - **Controllers** — three implementations with intentionally different
   decision boundaries so they actually disagree under stress:
   - **A: Conservative** — wide deadbands, slower response.
@@ -67,10 +82,16 @@ mode, decide action, advance state, log.
 - Failed mode forces `ABORT` as the fallback action.
 - Per-component recovery requires sustained healthy behavior — the
   trust detector enforces a multi-step clean streak before a
-  component returns to `HEALTHY`. System-mode hysteresis is a
-  separate property tracked in ADR 0011; today
-  `safe_mode_recovery_steps` is config plumbing waiting on that
-  wiring.
+  component returns to `HEALTHY`.
+- **System-mode recovery hysteresis** (ADR 0011 / I11). Escalations
+  are immediate so a safety-critical fault can promote the mode in
+  a single step. De-escalations require
+  `safe_mode_recovery_steps` consecutive proposals of the
+  same-or-less-severe mode, so a borderline fault can't flap
+  NORMAL → SAFE_MODE → NORMAL on noisy inputs. The pure clause body
+  (the function the TLA+ spec models) is split out from the
+  hysteresis wrapper, so the spec stays faithful and the property
+  test for I11 enforces the wrapper independently.
 
 ## Fault handling
 
