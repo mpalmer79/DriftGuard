@@ -11,6 +11,7 @@ from .models import (
 )
 
 _SCENARIOS: dict[str, Scenario] = {}
+_BUILTIN_NAMES: frozenset[str] = frozenset()
 
 
 def _register(scenario: Scenario) -> None:
@@ -19,6 +20,11 @@ def _register(scenario: Scenario) -> None:
 
 for _factory in ALL_BUILTINS:
     _register(_factory())
+
+# Snapshot the built-in names once at import time. Anything the user
+# registers later through the API (Phase 5.3) lives outside this set
+# and is therefore deletable.
+_BUILTIN_NAMES = frozenset(_SCENARIOS)
 
 
 def all_scenarios() -> list[Scenario]:
@@ -29,6 +35,34 @@ def get_scenario(name: str) -> Scenario:
     if name not in _SCENARIOS:
         raise ScenarioError(f"unknown scenario '{name}'")
     return _SCENARIOS[name]
+
+
+def is_builtin(name: str) -> bool:
+    return name in _BUILTIN_NAMES
+
+
+def register_user_scenario(scenario: Scenario) -> None:
+    """Register a user-supplied scenario (Phase 5.3).
+
+    Raises ScenarioError if the name collides with a built-in or
+    with another user-registered scenario.
+    """
+
+    if scenario.name in _BUILTIN_NAMES:
+        raise ScenarioError(f"'{scenario.name}' is a built-in and cannot be overridden")
+    if scenario.name in _SCENARIOS:
+        raise ScenarioError(f"scenario '{scenario.name}' already exists")
+    _SCENARIOS[scenario.name] = scenario
+
+
+def unregister_user_scenario(name: str) -> None:
+    """Remove a user-registered scenario. Built-ins are immutable."""
+
+    if name in _BUILTIN_NAMES:
+        raise ScenarioError(f"'{name}' is a built-in and cannot be deleted")
+    if name not in _SCENARIOS:
+        raise ScenarioError(f"unknown scenario '{name}'")
+    del _SCENARIOS[name]
 
 
 def run_scenario(name: str, steps_override: int | None = None) -> tuple[Simulation, ScenarioResult]:

@@ -1,9 +1,18 @@
 from dataclasses import asdict
 
-from fastapi import APIRouter
+import yaml
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
 from ..core.exceptions import ScenarioError
 from ..scenarios import all_scenarios, get_scenario, run_scenario
+from ..scenarios.loader import parse_yaml
+from ..scenarios.registry import (
+    is_builtin,
+    register_user_scenario,
+    unregister_user_scenario,
+)
 from . import dependencies as deps
 
 router = APIRouter()
@@ -25,7 +34,43 @@ def list_scenarios() -> list[dict]:
 
 @router.get("/scenarios/{name}")
 def get_scenario_detail(name: str) -> dict:
-    return _scenario_to_dict(get_scenario(name))
+    out = _scenario_to_dict(get_scenario(name))
+    out["builtin"] = is_builtin(name)
+    return out
+
+
+@router.post("/scenarios", status_code=201, response_model=None)
+async def create_scenario(request: Request) -> dict | JSONResponse:
+    """Register a new scenario from a YAML body (Phase 5.3).
+
+    Accepts ``Content-Type: text/yaml`` (or anything that parses as
+    YAML); pydantic.ValidationError surfaces as 422 with field-level
+    detail. Built-in scenario names cannot be overridden.
+    """
+
+    body = await request.body()
+    if not body:
+        return JSONResponse(status_code=400, content={"detail": "empty request body"})
+    try:
+        scenario = parse_yaml(body.decode())
+    except yaml.YAMLError as exc:
+        return JSONResponse(status_code=422, content={"detail": f"invalid YAML: {exc}"})
+    except ValidationError as exc:
+        return JSONResponse(status_code=422, content={"detail": exc.errors()})
+    except ValueError as exc:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+    register_user_scenario(scenario)
+    out = _scenario_to_dict(scenario)
+    out["builtin"] = False
+    return out
+
+
+@router.delete("/scenarios/{name}", status_code=204, response_model=None)
+def delete_scenario(name: str) -> JSONResponse:
+    """Remove a user-registered scenario. Built-ins are immutable."""
+
+    unregister_user_scenario(name)
+    return JSONResponse(status_code=204, content=None)
 
 
 @router.post("/scenarios/{name}/run")
