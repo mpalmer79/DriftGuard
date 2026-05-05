@@ -3,25 +3,32 @@
 import type { MissionReport } from "@/types/api";
 import { Card } from "./Card";
 import { SystemModeBadge } from "./SystemModeBadge";
+import {
+  DecisionsByModeBar,
+  VoteOutcomeDonut,
+} from "./charts/ReportCharts";
+import { Button } from "./ui/Button";
 
-export function MissionReportView({
-  report,
-  markdown,
-}: {
+interface Props {
   report: MissionReport;
   markdown: string;
-}) {
+  decisions?: { step: number; system_mode: string; final_action: string }[];
+}
+
+export function MissionReportView({ report, markdown, decisions = [] }: Props) {
   async function copy() {
     try {
       await navigator.clipboard.writeText(markdown);
-      alert("Markdown copied to clipboard.");
     } catch {
-      alert("Could not copy. Use the download button instead.");
+      // Surfaced through the browser's permission prompt; we don't
+      // alert() so the print stylesheet stays clean.
     }
   }
 
   function download() {
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(report, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -30,8 +37,14 @@ export function MissionReportView({
     URL.revokeObjectURL(url);
   }
 
+  function printReport() {
+    if (typeof window !== "undefined") window.print();
+  }
+
+  const cmp = (report as any).anomaly_vs_deterministic ?? null;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print:space-y-3">
       <Card>
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-xl font-semibold">Mission report</h1>
@@ -39,13 +52,16 @@ export function MissionReportView({
           <span className="text-sm text-gray-400">
             risk: <span className="text-white">{report.risk_assessment.level}</span>
           </span>
-          <div className="ml-auto flex gap-2 text-xs">
-            <button onClick={copy} className="px-3 py-1 border border-sentinel-accent/40 bg-sentinel-accent/20 rounded">
+          <div className="ml-auto flex gap-2 print:hidden">
+            <Button variant="primary" size="sm" onClick={copy}>
               copy markdown
-            </button>
-            <button onClick={download} className="px-3 py-1 border border-sentinel-border rounded">
+            </Button>
+            <Button size="sm" onClick={download}>
               download json
-            </button>
+            </Button>
+            <Button size="sm" onClick={printReport}>
+              print
+            </Button>
           </div>
         </div>
         <p className="text-xs text-gray-400 mt-2">{report.risk_assessment.summary}</p>
@@ -59,6 +75,29 @@ export function MissionReportView({
           <Row k="final mode" v={report.final_system_mode} />
         </dl>
       </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <VoteOutcomeDonut counts={report.vote_outcome_counts ?? {}} />
+        <DecisionsByModeBar decisions={decisions} />
+      </div>
+
+      {cmp && (
+        <Card title="Anomaly detector vs deterministic system">
+          <p className="text-sm">
+            ML alerted on {cmp.anomaly_alert_steps?.length ?? 0} step(s);
+            deterministic alerted on {cmp.deterministic_alert_steps?.length ?? 0} step(s).
+          </p>
+          <p className="text-sm text-gray-400 mt-1">
+            Agreement on {cmp.agreement_steps?.length ?? 0} step(s) (rate{" "}
+            {cmp.agreement_rate ?? 0}). Average score{" "}
+            {cmp.average_anomaly_score ?? 0}.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            The anomaly detector is advisory only (ADR 0009); these
+            numbers describe agreement, not control.
+          </p>
+        </Card>
+      )}
 
       <Card title="Mode transitions">
         {report.mode_transitions.length === 0 ? (
@@ -77,9 +116,7 @@ export function MissionReportView({
       </Card>
 
       <Card title="Markdown">
-        <pre className="text-xs whitespace-pre-wrap overflow-x-auto opacity-90">
-          {markdown}
-        </pre>
+        <pre className="text-xs whitespace-pre-wrap overflow-x-auto opacity-90">{markdown}</pre>
       </Card>
     </div>
   );
