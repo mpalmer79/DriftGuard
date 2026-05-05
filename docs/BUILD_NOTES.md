@@ -62,3 +62,39 @@ preserves every passing behavior. Concretely:
   back to persisted state when the registry is empty.
 - The original `FaultType` enum keeps all its values; new fault behaviors
   are layered on through metadata or additional enum members.
+
+## Original execution plan
+
+The first version of `ARCHITECTURE.md` carried a §23 "Execution Plan"
+directive that read more like a build prompt than an architecture
+document. That section has been retired; the work it described is
+captured here for posterity.
+
+- **Phase 1 — Domain layer.** Define the core dataclasses
+  (`VehicleState`, `SensorReading`, `ControllerOutput`, `VoteResult`,
+  `FaultRecord`, `SystemDecision`) and the enums that drive them
+  (`Action`, `SystemMode`, `FaultType`).
+- **Phase 2 — Core simulation modules.** Vehicle state update,
+  noisy sensor model, three differing controllers, voting, fault
+  injection, fault detection, safe-mode manager, event logger;
+  each module isolated and testable.
+- **Phase 3 — Orchestrator.** A central simulation service that
+  runs the full control loop, enforces step ordering, applies
+  faults, and produces system decisions.
+- **Phase 4 — API.** FastAPI routes for creating simulations,
+  stepping, injecting faults, and reading state and events.
+- **Phase 5 — Persistence.** SQLite schema and repositories for each
+  domain model, plus event storage.
+- **Phase 6 — Testing.** Unit and integration coverage for voting,
+  controller determinism, fault detection, safe-mode triggers, and
+  the end-to-end simulation flow.
+- **Phase 7 — Validation.** Confirm the simulation runs end-to-end,
+  faults trigger expected behavior, safe mode activates correctly,
+  and outputs are deterministic.
+
+Subsequent phases (8–12) added redundant detection, scenarios,
+mission reports, frontend, observability (Prometheus + OpenTelemetry
++ SSE), security/ops hardening, supply-chain CI, test expansion to
+538 cases at 97% line coverage, and the portfolio polish documented
+in [`CHANGELOG.md`](../CHANGELOG.md).
+
