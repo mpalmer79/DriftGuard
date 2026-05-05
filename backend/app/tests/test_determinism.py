@@ -101,12 +101,16 @@ def test_cross_process_equivalence(tmp_path):
     in_process = canonical_json(sim.step_history)
 
     script = _SUBPROCESS_SCRIPT.format(backend_path=backend_path, scenario=scenario)
+    # Silence structlog in the subprocess so its stdout contains only
+    # the canonical JSON the assertion compares (Phase 4.1).
+    env = {**os.environ, "SENTINEL_LOG_LEVEL": "CRITICAL"}
     result = subprocess.run(
         [sys.executable, "-c", script],
         capture_output=True,
         text=True,
         timeout=60,
         check=True,
+        env=env,
     )
 
     out_of_process = result.stdout
