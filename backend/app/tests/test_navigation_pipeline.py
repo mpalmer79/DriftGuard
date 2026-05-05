@@ -153,12 +153,17 @@ def test_pipeline_is_deterministic_under_same_seed():
         assert x.variance_z == y.variance_z
 
 
-def test_default_config_keeps_pipeline_disabled():
-    """Sanity: PR 1.2 keeps the flag off; PR 1.3 flips it."""
+def test_default_config_enables_pipeline():
+    """Phase 1.3: the navigation pipeline is the live data path.
+
+    Flipping the flag to False reverts to the legacy direct-
+    `SensorModel` feed, which remains supported for the unit-test
+    baseline that pins `SensorModel` behaviour directly.
+    """
 
     from app.core.config import DEFAULT_CONFIG
 
-    assert DEFAULT_CONFIG.navigation_pipeline_enabled is False
+    assert DEFAULT_CONFIG.navigation_pipeline_enabled is True
 
 
 def test_pipeline_constructible_with_plain_random():
@@ -172,3 +177,122 @@ def test_pipeline_constructible_with_plain_random():
     )
     out = pipeline.step(_state(step=0), [])
     assert out.step == 0
+
+
+# --- Phase 1.3 integration tests (ADR 0010 acceptance criteria) ---
+
+
+def test_orchestrator_uses_pipeline_by_default():
+    """The orchestrator's `sensor` field on every StepRecord now comes
+    from the EKF-smoothed pipeline output, not the bare SensorModel."""
+
+    from app.simulation.orchestrator import Simulation
+
+    sim = Simulation("default-pipeline", seed=11)
+    record = sim.step()
+    # `sensor` is a SensorReading projected from NavigationOutput; the
+    # legacy field shape is preserved.
+    assert record.sensor.altitude > 0
+    # NavigationPipeline is initialised on construction.
+    assert sim.navigation is not None
+
+
+def test_gps_denial_recovery_through_orchestrator():
+    """ADR 0010 acceptance #2 — INS-only drift visible in EKF variance,
+    recovery on GPS return.
+
+    Inject GPS_DENIED for a window in the middle of a run. The EKF
+    altitude variance should grow during the denial (no measurement
+    correction) and shrink again once GPS is back online.
+    """
+
+    from app.domain.enums import FaultType
+    from app.simulation.orchestrator import Simulation
+
+    sim = Simulation("gps-denial", seed=7)
+    sim.inject_fault(
+        FaultType.GPS_DENIED,
+        "gps",
+        start_step=6,
+        duration=8,
+    )
+    # Warm up before denial
+    for _ in range(5):
+        sim.step()
+    var_before = sim.navigation._ekf._p[2]
+    # During denial
+    for _ in range(8):
+        sim.step()
+    var_during = sim.navigation._ekf._p[2]
+    # After GPS returns
+    for _ in range(8):
+        sim.step()
+    var_after = sim.navigation._ekf._p[2]
+
+    # Variance grows with no GPS aiding...
+    assert var_during > var_before, (
+        f"EKF altitude variance should grow under GPS denial; "
+        f"before={var_before:.3f} during={var_during:.3f}"
+    )
+    # ...and shrinks again once GPS returns.
+    assert var_after < var_during, (
+        f"EKF altitude variance should shrink after GPS recovery; "
+        f"during={var_during:.3f} after={var_after:.3f}"
+    )
+
+
+def test_sensor_spike_attenuated_by_ekf_across_window():
+    """ADR 0010 acceptance #2 — a multi-step sensor spike is attenuated
+    by the EKF before it reaches the controller, on the GPS-update
+    steps that fall inside the spike window.
+
+    Note: the EKF's `predict()` snaps to the INS estimate (no
+    process-only smoothing) — so a single-step spike between GPS
+    updates passes through. The Kalman pull-back happens on
+    GPS-update steps. We span the GPS cadence (every 5 steps) so
+    the window contains at least one GPS-aided step.
+    """
+
+    from dataclasses import replace
+
+    from app.core.config import DEFAULT_CONFIG
+    from app.domain.enums import FaultType
+    from app.simulation.orchestrator import Simulation
+
+    legacy_cfg = replace(DEFAULT_CONFIG, navigation_pipeline_enabled=False)
+
+    def _altitudes_during_spike(config) -> list[float]:
+        sim = Simulation("spike", seed=17, config=config)
+        # Warm up so the EKF / TrustDetector are out of cold-start.
+        for _ in range(8):
+            sim.step()
+        sim.inject_fault(
+            FaultType.SENSOR_SPIKE,
+            "sensor",
+            start_step=sim.state.step + 1,
+            duration=6,
+            metadata={"magnitude": 100.0},
+        )
+        return [sim.step().sensor.altitude for _ in range(6)]
+
+    legacy_alts = _altitudes_during_spike(legacy_cfg)
+    smoothed_alts = _altitudes_during_spike(DEFAULT_CONFIG)
+
+    # Mean controller-facing altitude excess across the spike window.
+    legacy_mean = sum(abs(a - 1000.0) for a in legacy_alts) / len(legacy_alts)
+    smoothed_mean = sum(abs(a - 1000.0) for a in smoothed_alts) / len(smoothed_alts)
+    assert smoothed_mean < legacy_mean, (
+        f"EKF should attenuate the spike on average across the window; "
+        f"legacy={legacy_mean:.2f} smoothed={smoothed_mean:.2f}"
+    )
+    # On at least one step in the middle of the window (where a GPS
+    # measurement has had a chance to pull the EKF estimate back),
+    # the pipeline's altitude must be visibly closer to truth than
+    # the legacy path's altitude on the same step. We compare per-step
+    # rather than overall min because the legacy path also converges
+    # near the end of the window via safe-mode action restriction —
+    # that is not the EKF property we care about pinning here.
+    middle = list(zip(legacy_alts[2:5], smoothed_alts[2:5], strict=True))
+    assert any(
+        abs(smoothed - 1000.0) < abs(legacy - 1000.0) * 0.7 for legacy, smoothed in middle
+    ), f"EKF did not pull the spike back on any GPS-aided step: middle={middle}"
