@@ -47,10 +47,9 @@ def test_final_safe_mode_is_elevated():
 
 def test_long_safe_mode_dwell_is_elevated_even_if_recovered():
     # 4 SAFE_MODE steps out of 12 trips the dwell threshold (max(3, 12//4) == 3).
-    decisions = (
-        [_decision(i, "NORMAL") for i in range(8)]
-        + [_decision(8 + i, "SAFE_MODE") for i in range(4)]
-    )
+    decisions = [_decision(i, "NORMAL") for i in range(8)] + [
+        _decision(8 + i, "SAFE_MODE") for i in range(4)
+    ]
     decisions[-1] = _decision(decisions[-1]["step"], "NORMAL")  # final mode is back to NORMAL
     out = assess_risk(decisions, [], [])
     assert out["level"] == "ELEVATED"
