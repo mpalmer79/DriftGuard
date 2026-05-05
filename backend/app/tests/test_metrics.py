@@ -44,11 +44,20 @@ def test_decisions_counter_labels_mode_and_action():
 
 
 def test_step_duration_histogram_observes():
+    """Histograms aren't reset between tests (prom-client doesn't
+    expose .clear() on unlabeled histograms). Assert relative growth."""
+
+    import re
+
+    def _count() -> float:
+        text = metrics.render()[0].decode()
+        m = re.search(r"sentinel_step_duration_seconds_count\s+([0-9.]+)", text)
+        return float(m.group(1)) if m else 0.0
+
+    before = _count()
     metrics.step_duration_seconds.observe(0.012)
     metrics.step_duration_seconds.observe(0.7)
-    payload, _ = metrics.render()
-    text = payload.decode()
-    assert "sentinel_step_duration_seconds_count 2.0" in text
+    assert _count() == before + 2.0
 
 
 def test_faults_active_is_a_gauge():
@@ -64,15 +73,11 @@ def test_controller_health_one_hot():
     metrics.controller_health.labels(controller_id="controller_a", status="DEGRADED").set(0)
     payload, _ = metrics.render()
     text = payload.decode()
-    assert (
-        'sentinel_controller_health{controller_id="controller_a",status="HEALTHY"} 1.0' in text
-    )
+    assert 'sentinel_controller_health{controller_id="controller_a",status="HEALTHY"} 1.0' in text
 
 
 def test_replay_fingerprint_info_renders_label_kv():
-    metrics.replay_fingerprint.labels(simulation_id="sim-x").info(
-        {"fingerprint": "deadbeef" * 8}
-    )
+    metrics.replay_fingerprint.labels(simulation_id="sim-x").info({"fingerprint": "deadbeef" * 8})
     payload, _ = metrics.render()
     text = payload.decode()
     assert "sentinel_replay_fingerprint" in text

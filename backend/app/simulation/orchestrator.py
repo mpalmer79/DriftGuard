@@ -1,3 +1,4 @@
+import time
 from dataclasses import dataclass, field
 
 from ..core.config import DEFAULT_CONFIG, SimulationConfig
@@ -7,8 +8,6 @@ from ..domain.enums import (
     EventType,
     FaultSeverity,
     FaultType,
-    SystemMode,
-    VoteOutcome,
 )
 from ..domain.events import Event
 from ..domain.models import (
@@ -24,6 +23,7 @@ from .detection import FaultDetector
 from .event_logger import EventLogger
 from .faults import FaultRegistry
 from .health import TrustDetector
+from .orchestrator_decision import build_decision
 from .orchestrator_logging import (
     log_controller,
     log_decision,
@@ -34,6 +34,7 @@ from .orchestrator_logging import (
     log_trust_findings,
     log_vote,
 )
+from .orchestrator_metrics import record_decision, record_post_step, record_vote
 from .safe_mode import SafeModeManager
 from .sensors import SensorModel
 from .vehicle import apply_action, initial_state
@@ -119,6 +120,7 @@ class Simulation:
         return record
 
     def step(self) -> StepRecord:
+        wall_start = time.monotonic()
         next_step = self.state.step + 1
         ts = self.state.timestamp + 1.0
         active_faults = self.faults.active_at(next_step)
@@ -135,6 +137,7 @@ class Simulation:
 
         vote_result = vote(outputs, latency_threshold_ms=self.config.latency_threshold_ms)
         log_vote(self.events, next_step, ts, vote_result)
+        record_vote(vote_result)
 
         warnings = self.detector.update(outputs, vote_result, sensor)
         log_detector_warnings(self.events, next_step, ts, warnings)
@@ -146,13 +149,22 @@ class Simulation:
         if self.safe_mode.transition(new_mode):
             log_mode_change(self.events, next_step, ts, new_mode, justification)
 
-        decision = _build_decision(next_step, vote_result, new_mode, justification)
+        decision = build_decision(next_step, vote_result, new_mode, justification)
         log_decision(self.events, next_step, ts, decision)
+        record_decision(decision)
 
         new_state = apply_action(self.state, decision.final_action)
         new_state.system_mode = new_mode
         self.state = new_state
         log_state(self.events, self.state.timestamp, self.state)
+
+        record_post_step(
+            simulation_id=self.id,
+            trust=self.trust,
+            all_faults=self.faults.all(),
+            active_faults=active_faults,
+            duration_seconds=time.monotonic() - wall_start,
+        )
 
         record = StepRecord(
             state=self.state,
@@ -168,25 +180,3 @@ class Simulation:
 
     def run(self, steps: int) -> list[StepRecord]:
         return [self.step() for _ in range(steps)]
-
-
-def _build_decision(
-    step: int,
-    vote_result: VoteResult,
-    new_mode: SystemMode,
-    justification: str,
-) -> SystemDecision:
-    if vote_result.outcome == VoteOutcome.CONSENSUS and vote_result.selected_action is not None:
-        chosen = vote_result.selected_action
-    else:
-        chosen = SafeModeManager.fallback_action(new_mode)
-    final_action = SafeModeManager.restrict_action(new_mode, chosen)
-    return SystemDecision(
-        step=step,
-        final_action=final_action,
-        system_mode=new_mode,
-        safe_mode_active=new_mode in (SystemMode.SAFE_MODE, SystemMode.FAILED),
-        justification=justification,
-        trusted_controllers=vote_result.agreeing_controllers,
-        rejected_controllers=vote_result.rejected_controllers,
-    )
