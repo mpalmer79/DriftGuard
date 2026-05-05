@@ -73,14 +73,24 @@ def test_property_same_seed_same_history(seed, steps):
 
 
 _SUBPROCESS_SCRIPT = """
-import json
+import io
 import sys
 sys.path.insert(0, {backend_path!r})
-from app.core.canonical import canonical_json
-from app.scenarios import run_scenario
 
-sim, _ = run_scenario({scenario!r})
-sys.stdout.write(canonical_json(sim.step_history))
+# Redirect stdout during the simulation so structlog (and any other
+# import-time chatter) does not pollute the canonical-JSON payload
+# the parent process is going to compare. We restore the original
+# stdout right before writing the result.
+_real_stdout = sys.stdout
+sys.stdout = io.StringIO()
+try:
+    from app.core.canonical import canonical_json
+    from app.scenarios import run_scenario
+    sim, _ = run_scenario({scenario!r})
+    payload = canonical_json(sim.step_history)
+finally:
+    sys.stdout = _real_stdout
+sys.stdout.write(payload)
 """
 
 
