@@ -34,7 +34,9 @@ def test_sensor_drift_with_ramp_metadata_grows_over_time():
     # 0 and grows. After the same number of steps the ramped sensor
     # has a *smaller* total drift accumulation, hence a smaller
     # absolute deviation between truth altitude and reading altitude.
-    constant_alt_err = abs(records_constant[-1].sensor.altitude - records_constant[-1].state.altitude)
+    constant_alt_err = abs(
+        records_constant[-1].sensor.altitude - records_constant[-1].state.altitude
+    )
     ramped_alt_err = abs(records_ramped[-1].sensor.altitude - records_ramped[-1].state.altitude)
     assert ramped_alt_err < constant_alt_err
 
