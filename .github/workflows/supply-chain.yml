@@ -1,0 +1,68 @@
+name: supply-chain
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Re-scan weekly so freshly-published advisories surface even when
+  # the tree is quiet.
+  schedule:
+    - cron: "0 7 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    name: sbom (${{ matrix.target.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { name: backend, path: backend }
+          - { name: frontend, path: frontend }
+    steps:
+      # actions/checkout v4.1.7
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+
+      # anchore/sbom-action v0.17.7
+      - name: generate cyclonedx sbom
+        uses: anchore/sbom-action@f325610c9f50a54015d37c7d16cb4b6b13bff1ca
+        with:
+          path: ${{ matrix.target.path }}
+          format: cyclonedx-json
+          artifact-name: sbom-${{ matrix.target.name }}.cdx.json
+          output-file: sbom-${{ matrix.target.name }}.cdx.json
+
+      # actions/upload-artifact v4.4.3
+      - name: upload sbom
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: sbom-${{ matrix.target.name }}
+          path: sbom-${{ matrix.target.name }}.cdx.json
+          retention-days: 30
+
+  scan:
+    name: trivy (${{ matrix.target.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { name: backend, path: backend }
+          - { name: frontend, path: frontend }
+    steps:
+      # actions/checkout v4.1.7
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+
+      # aquasecurity/trivy-action 0.28.0
+      - name: trivy filesystem scan
+        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0
+        with:
+          scan-type: fs
+          scan-ref: ${{ matrix.target.path }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table

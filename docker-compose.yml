@@ -2,16 +2,63 @@ services:
   backend:
     build:
       context: ./backend
+    image: sentinelnav-backend:local
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
+      # Production deployments override these via env_file or
+      # orchestrator secrets. The defaults give a working dev stack.
+      - SENTINEL_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=2).status==200 else 1)"
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    # Defense-in-depth container hardening. Read-only root filesystem
+    # forces stateful writes through declared mounts; no_new_privileges
+    # blocks setuid escalation; dropping CAPs strips everything we do
+    # not need (the Python process binds a high port).
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
   frontend:
     build:
       context: ./frontend
+    image: sentinelnav-frontend:local
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_BASE=http://localhost:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

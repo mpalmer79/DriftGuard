@@ -38,6 +38,41 @@ Brings up:
 
 The frontend container is wired to point at the backend service.
 
+### Container hardening (Phase 9)
+
+Both Dockerfiles are multi-stage, pinned to specific minor versions
+of their base images, and drop to a non-root runtime user:
+
+- **backend** — `python:3.11.9-slim-bookworm`, builder stage installs
+  into `/opt/venv`, runtime stage copies the venv only. Drops to uid
+  1000 (`sentinel`). `HEALTHCHECK` polls `/health`.
+- **frontend** — `node:20.18-alpine`, ships the Next.js standalone
+  bundle (no `node_modules` in runtime). Drops to uid 1001 (`nextjs`).
+  `HEALTHCHECK` polls `/`.
+
+`docker-compose.yml` adds defense-in-depth flags: `read_only: true`
+root filesystem with `/tmp` tmpfs, `no-new-privileges`, and
+`cap_drop: ALL`. Frontend depends on `backend: service_healthy` so
+the API is reachable before Next.js boots.
+
+### Supply-chain CI (Phase 9.3 + 9.4)
+
+`.github/workflows/supply-chain.yml` runs on every push, every PR,
+and a weekly cron:
+
+- **SBOM** — Anchore syft emits per-target CycloneDX JSON SBOMs as
+  workflow artifacts (30-day retention). Useful for auditors and for
+  diffing dependencies between releases.
+- **Vulnerability scan** — Aqua Trivy filesystem scan against
+  `backend/` and `frontend/`, fails on `HIGH`/`CRITICAL`.
+  `ignore-unfixed: true` so we do not block on advisories with no
+  upstream patch yet.
+
+Combined with the Phase 8.7 `bandit` + `pip-audit` gates on the
+backend workflow, this gives layered coverage: bandit (Python static
+analysis), pip-audit (PyPI advisories), Trivy (GHSA + OSV + Aqua DB,
+plus npm coverage).
+
 ## Production notes
 
 - The default repository uses an in-memory SQLite database, which is
