@@ -11,6 +11,7 @@ import random
 from collections.abc import Iterable
 from dataclasses import dataclass
 
+from ..core.fault_dsl import resolve_metadata
 from ..domain.enums import Action, FaultType
 from ..domain.models import FaultRecord, SensorReading
 
@@ -75,7 +76,8 @@ def aggregate_effects(
 
     for fault in applicable:
         ftype = fault.type
-        meta = fault.metadata
+        step_offset = reading.step - fault.start_step
+        meta = resolve_metadata(fault.metadata, step_offset)
         if ftype == FaultType.CONTROLLER_BIAS:
             fx.bias_offset += float(meta.get("offset", 40.0))
         elif ftype == FaultType.CONTROLLER_TIMEOUT:

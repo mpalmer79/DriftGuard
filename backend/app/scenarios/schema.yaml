@@ -1,0 +1,47 @@
+# SentinelNav scenario schema (informational; see loader.py for the
+# authoritative pydantic model).
+#
+# A scenario YAML file contains a single document with these keys:
+
+# Required:
+name: "example_scenario"        # string, unique
+description: "Plain-language description shown in the UI."
+expected_behavior: "What the operator should expect to see."
+seed: 42                        # int >= 0
+steps: 20                       # int 1..1000
+
+# Optional:
+initial_state:                  # all keys optional; defaults from vehicle.initial_state
+  altitude: 1000.0
+  velocity: 120.0
+  heading: 90.0
+
+faults:                          # zero or more faults
+  - type: SENSOR_DRIFT           # one of FaultType (see app.domain.enums)
+    target: sensor               # one of: sensor, controller_a/b/c, gps
+    start_step: 3                # int >= 0
+    duration: 8                  # optional int >= 1; null means open-ended
+    severity: WARNING            # optional, default WARNING
+    metadata:                    # optional fault-type-specific payload
+      magnitude: 4.0
+      # Programmable values (Phase 5.5 DSL):
+      #   {ramp: [from, to, steps]} — linear ramp over `steps` simulation steps
+      #
+      # Example:
+      #   metadata:
+      #     magnitude: { ramp: [0, 50, 20] }
+
+waypoints:                        # optional list of waypoints
+  - { x: 500.0, y: 0.0, altitude: 1000.0, velocity: 120.0, capture_radius: 25.0 }
+
+expected_final_modes:             # optional list of accepted final SystemMode values
+  - NORMAL
+  - DEGRADED
+
+# Validation rules (enforced by app.scenarios.loader):
+#  - name is unique within the registry; built-ins cannot be overridden.
+#  - steps in [1, 1000]; seed >= 0.
+#  - faults[].type must be a known FaultType; target must be one of the
+#    documented targets.
+#  - faults[].metadata is opaque; the simulation interprets it.
+#    Phase 5.5 introduces the {ramp: [...]} DSL for time-varying values.
