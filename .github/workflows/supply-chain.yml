@@ -12,6 +12,14 @@ on:
 permissions:
   contents: read
 
+# We invoke trivy and syft as CLIs from their official GitHub releases
+# rather than via third-party composite actions. The composite actions
+# (aquasecurity/trivy-action, anchore/sbom-action) re-reference internal
+# sub-actions by tag, and a yanked sub-action tag (e.g. setup-trivy@v0.2.2)
+# breaks the whole job at "Prepare all required actions" before any code
+# runs. Direct CLI installs are pinned to versions we control and stay
+# stable across upstream tag churn.
+
 jobs:
   sbom:
     name: sbom (${{ matrix.target.name }})
@@ -22,18 +30,23 @@ jobs:
         target:
           - { name: backend, path: backend }
           - { name: frontend, path: frontend }
+    env:
+      SYFT_VERSION: "1.18.1"
     steps:
       # actions/checkout v4.1.7
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
 
-      # anchore/sbom-action v0.17.7
+      - name: install syft
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin syft
+          syft --version
+
       - name: generate cyclonedx sbom
-        uses: anchore/sbom-action@f325610c9f50a54015d37c7d16cb4b6b13bff1ca
-        with:
-          path: ${{ matrix.target.path }}
-          format: cyclonedx-json
-          artifact-name: sbom-${{ matrix.target.name }}.cdx.json
-          output-file: sbom-${{ matrix.target.name }}.cdx.json
+        run: |
+          syft "${{ matrix.target.path }}" \
+            --output "cyclonedx-json=sbom-${{ matrix.target.name }}.cdx.json"
 
       # actions/upload-artifact v4.4.3
       - name: upload sbom
@@ -52,17 +65,24 @@ jobs:
         target:
           - { name: backend, path: backend }
           - { name: frontend, path: frontend }
+    env:
+      TRIVY_VERSION: "0.57.1"
     steps:
       # actions/checkout v4.1.7
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
 
-      # aquasecurity/trivy-action 0.28.0
+      - name: install trivy
+        run: |
+          set -euo pipefail
+          curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin trivy
+          trivy --version
+
       - name: trivy filesystem scan
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0
-        with:
-          scan-type: fs
-          scan-ref: ${{ matrix.target.path }}
-          severity: HIGH,CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
-          format: table
+        run: |
+          trivy fs \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --format table \
+            "${{ matrix.target.path }}"
