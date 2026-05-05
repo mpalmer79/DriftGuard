@@ -54,12 +54,22 @@ flowchart LR
 ### Core simulation
 - Three differing controllers (Conservative, Responsive, Balanced)
 - Deterministic vehicle state engine + Gaussian sensor model
-- INS / GPS / EKF filtering pipeline with GPS-denied handling
+- **INS / GPS / EKF filtering pipeline with GPS-denied handling** —
+  runs by default; legacy direct-`SensorModel` mode available via
+  `SimulationConfig.navigation_pipeline_enabled = False` for the
+  unit-test baseline that pins `SensorModel` directly. See ADR 0010.
+- Continuous-time dynamics integrator available as an alternative to
+  the discrete kinematic update; opt-in via
+  `SimulationConfig.use_substep_integrator = True` (ADR 0007). Default
+  off to keep replay fingerprints stable.
 - Majority voting with invalid/late exclusion
 - Counter-based + time-windowed trust detection with per-component
   health states (`HEALTHY` → `SUSPECT` → `DEGRADED` → `CRITICAL` →
   `RECOVERING`)
-- Safe-mode escalation with action restriction and recovery cooldown
+- **Safe-mode escalation with action restriction and recovery
+  hysteresis** — escalations are immediate; de-escalations require
+  `safe_mode_recovery_steps` consecutive proposals of the
+  same-or-less-severe mode. See ADR 0011 / I11.
 - 15 fault types (sensor and controller, with intermittent patterns
   and a metadata DSL that supports linear ramps)
 - 6 built-in scenarios plus a YAML scenario authoring surface with
@@ -213,6 +223,37 @@ opt-in via the `slow` marker.
 CI also runs `ruff check`, `ruff format --check`, `bandit`,
 `pip-audit`, plus weekly `trivy` filesystem scans and CycloneDX
 SBOM generation for both the backend and frontend.
+
+## Roadmap
+
+What's intentionally **out of scope** at 0.3.0 — these are
+deliberate non-goals, not gaps, and `docs/OBSERVABILITY.md` calls
+out the operational boundaries that follow from them:
+
+- **Multi-replica horizontal scaling.** The simulation registry and
+  rate limiter are per-process. A multi-replica deployment would
+  shard simulations across replicas (the registry isn't consistent
+  between them) and need a shared store like Redis for the rate
+  limiter to be effective. Single-process is the right size for a
+  portfolio demo.
+- **PostgreSQL backend.** The persistence layer is single-writer
+  SQLite with WAL. Switching to Postgres earns nothing the demo
+  can show; the schema and repository would need migrations,
+  connection pooling, and transactional review the project does
+  not justify yet.
+- **Real hardware control.** Out of scope by mission statement —
+  RESEARCH.md §13: "AI or advanced controllers may advise,
+  deterministic assurance governs." The simulation models the
+  flight-software side of a fault-tolerant control loop; nothing
+  here is meant to fly anything.
+- **Distributed model checking.** Phase 9 ships a TLA+ spec
+  mirrored by an exhaustive Python checker. A real `tlc` run as a
+  separate CI job is reasonable polish (action plan PR 9.1) but
+  not a v0.3.0 requirement.
+- **SLOs / error budgets.** Production-grade, irrelevant for a
+  portfolio simulator that runs locally.
+
+These belong to a v1.0 plan, not portfolio polish.
 
 ## Portfolio positioning
 
