@@ -6,11 +6,7 @@ import { Card } from "@/components/Card";
 import { EventTimeline } from "@/components/EventTimeline";
 import { FaultTimeline } from "@/components/FaultTimeline";
 import { VehicleStateCard } from "@/components/VehicleStateCard";
-import {
-  AltitudeChart,
-  HorizontalSpeedChart,
-  ModeBand,
-} from "@/components/charts/TelemetryCharts";
+import { AltitudeChart, HorizontalSpeedChart, ModeBand } from "@/components/charts/TelemetryCharts";
 import { TrajectoryMap } from "@/components/charts/TrajectoryMap";
 import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -69,14 +65,18 @@ export default function SimulationDetail() {
         <FaultTimeline faults={faults.data ?? []} />
       </div>
 
-      <TrajectoryMap points={(trajectory.data ?? []) as any} />
+      <TrajectoryMap points={trajectory.data ?? []} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <AltitudeChart points={(trajectory.data ?? []) as any} />
-        <HorizontalSpeedChart points={(trajectory.data ?? []) as any} />
+        <AltitudeChart points={trajectory.data ?? []} />
+        <HorizontalSpeedChart points={trajectory.data ?? []} />
       </div>
 
-      <ModeBand decisions={decisions.data ?? []} />
+      <ModeBand
+        decisions={
+          (decisions.data ?? []) as { step: number; system_mode: string; final_action: string }[]
+        }
+      />
 
       <Card title={`Decisions (${decisions.data?.length ?? 0})`}>
         {decisions.data && decisions.data.length > 0 ? (
@@ -91,7 +91,14 @@ export default function SimulationDetail() {
                 </tr>
               </thead>
               <tbody>
-                {decisions.data.map((d: any) => (
+                {(
+                  decisions.data as {
+                    step: number;
+                    system_mode: string;
+                    final_action: string;
+                    justification: string;
+                  }[]
+                ).map((d) => (
                   <tr key={d.step} className="border-t border-sentinel-border">
                     <td className="py-1">{d.step}</td>
                     <td>{d.system_mode}</td>

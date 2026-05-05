@@ -28,8 +28,7 @@ export default function ReplayPage() {
   }, [id]);
 
   if (error) return <p className="text-sentinel-bad">{error}</p>;
-  if (timeline.length === 0)
-    return <p className="text-gray-400">No timeline available yet.</p>;
+  if (timeline.length === 0) return <p className="text-gray-400">No timeline available yet.</p>;
 
   const current = timeline[index];
   const decision = current?.decision;
@@ -56,10 +55,7 @@ export default function ReplayPage() {
               <Row k="altitude" v={Number(sensor.altitude).toFixed(2)} />
               <Row k="velocity" v={Number(sensor.velocity).toFixed(2)} />
               <Row k="heading" v={Number(sensor.heading).toFixed(2)} />
-              <Row
-                k="fault flags"
-                v={(sensor.fault_flags || []).join(", ") || "—"}
-              />
+              <Row k="fault flags" v={(sensor.fault_flags || []).join(", ") || "—"} />
             </dl>
           ) : (
             <p className="text-sm text-gray-500">No sensor reading.</p>
@@ -78,10 +74,10 @@ export default function ReplayPage() {
               </div>
               <div className="text-gray-400">{decision.justification}</div>
               <div className="text-xs text-gray-500 pt-2">
-                trusted: {(decision.trusted ?? []).join(", ") || "—"}
+                trusted: {(decision.trusted_controllers ?? []).join(", ") || "—"}
               </div>
               <div className="text-xs text-gray-500">
-                rejected: {(decision.rejected ?? []).join(", ") || "—"}
+                rejected: {(decision.rejected_controllers ?? []).join(", ") || "—"}
               </div>
             </div>
           ) : (
@@ -91,7 +87,7 @@ export default function ReplayPage() {
       </div>
 
       <ControllerOutputTable
-        outputs={(current?.controllers ?? []).map((c: any) => ({
+        outputs={(current?.controllers ?? []).map((c) => ({
           ...c,
           valid: !!c.valid,
         }))}
@@ -102,8 +98,8 @@ export default function ReplayPage() {
             ? {
                 outcome: current.vote.outcome,
                 selected_action: current.vote.selected_action,
-                agreeing_controllers: current.vote.agreeing ?? [],
-                rejected_controllers: current.vote.rejected ?? [],
+                agreeing_controllers: current.vote.agreeing_controllers ?? [],
+                rejected_controllers: current.vote.rejected_controllers ?? [],
                 reason: current.vote.reason,
               }
             : null
@@ -113,11 +109,10 @@ export default function ReplayPage() {
       <Card title={`Events at step ${current?.step}`}>
         {current?.events?.length ? (
           <ul className="text-xs space-y-1 max-h-64 overflow-y-auto">
-            {current.events.map((e: any) => (
+            {current.events.map((e) => (
               <li key={e.event_id}>
                 <span className="text-gray-500">{e.component}</span>{" "}
-                <span className="opacity-80">{e.type}</span>{" "}
-                <span>{e.message}</span>
+                <span className="opacity-80">{e.type}</span> <span>{e.message}</span>
               </li>
             ))}
           </ul>

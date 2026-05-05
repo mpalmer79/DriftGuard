@@ -5,13 +5,11 @@ import { useParams } from "next/navigation";
 import { Card } from "@/components/Card";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
 import { TrajectoryMap } from "@/components/charts/TrajectoryMap";
-import {
-  AltitudeChart,
-  HorizontalSpeedChart,
-} from "@/components/charts/TelemetryCharts";
+import { AltitudeChart, HorizontalSpeedChart } from "@/components/charts/TelemetryCharts";
 import { Button } from "@/components/ui/Button";
 import { ErrorState } from "@/components/ui/EmptyState";
 import { api } from "@/lib/api";
+import type { SystemMode } from "@/types/api";
 
 interface StreamPoint {
   step: number;
@@ -97,10 +95,8 @@ export default function LiveSimulationPage() {
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-semibold">Live</h1>
         <span className="text-xs text-gray-400">{id}</span>
-        {last && <SystemModeBadge mode={last.system_mode as any} />}
-        {last && (
-          <span className="text-xs text-gray-400">step {last.step}</span>
-        )}
+        {last && <SystemModeBadge mode={last.system_mode as SystemMode} />}
+        {last && <span className="text-xs text-gray-400">step {last.step}</span>}
       </header>
 
       <Card>
@@ -153,11 +149,11 @@ export default function LiveSimulationPage() {
 
       {error && <ErrorState message={error} retry={start} />}
 
-      <TrajectoryMap points={points as any} />
+      <TrajectoryMap points={points} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <AltitudeChart points={points as any} />
-        <HorizontalSpeedChart points={points as any} />
+        <AltitudeChart points={points} />
+        <HorizontalSpeedChart points={points} />
       </div>
     </div>
   );

@@ -105,11 +105,11 @@ export interface StepResponse {
 
 export interface TimelineEntry {
   step: number;
-  state: any;
-  sensor: any;
-  controllers: any[];
-  vote: any;
-  decision: any;
+  state: VehicleState;
+  sensor: SensorReading;
+  controllers: ControllerOutput[];
+  vote: VoteResult;
+  decision: SystemDecision;
   events: SimulationEvent[];
 }
 
@@ -138,26 +138,63 @@ export interface ScenarioResult {
   steps_run: number;
   final_mode: SystemMode;
   final_action: string;
-  fault_summary: any[];
+  fault_summary: FaultRecord[];
   decision_counts: Record<string, number>;
   event_counts: Record<string, number>;
   mode_transitions: { step: number; mode: string }[];
-  trust_snapshot: Record<string, any>;
+  trust_snapshot: Record<string, unknown>;
+}
+
+export interface ComponentTrustSnapshot {
+  status: string;
+  trust: number;
+  fault_streak: number;
+  clean_streak: number;
+  repeat_count: number;
+  disagreement_rate?: number;
+}
+
+export interface TrajectoryPoint {
+  step: number;
+  timestamp: number;
+  position_x: number;
+  position_y: number;
+  altitude: number;
+  system_mode: string;
+}
+
+export interface DecisionRecord {
+  step: number;
+  final_action: string;
+  system_mode: SystemMode;
+  safe_mode_active: boolean;
+  justification: string;
+  trusted_controllers: string[];
+  rejected_controllers: string[];
+}
+
+export interface AnomalyVsDeterministicSummary {
+  anomaly_alert_steps: number[];
+  deterministic_alert_steps: number[];
+  agreement_steps: number[];
+  agreement_rate: number;
+  average_anomaly_score: number;
 }
 
 export interface MissionReport {
   simulation_id: string;
   seed: number;
   total_steps: number;
-  initial_state: any;
-  final_state: any;
+  initial_state: VehicleState;
+  final_state: VehicleState;
   final_system_mode: SystemMode;
-  injected_faults: any[];
+  injected_faults: FaultRecord[];
   mode_transitions: { step: number; mode: string; justification?: string }[];
-  controller_trust_summary: Record<string, any>;
-  sensor_health_summary: Record<string, any>;
+  controller_trust_summary: Record<string, ComponentTrustSnapshot>;
+  sensor_health_summary: Record<string, ComponentTrustSnapshot>;
   vote_outcome_counts: Record<string, number>;
   rejected_controller_counts: Record<string, number>;
   critical_events: SimulationEvent[];
   risk_assessment: { level: string; summary: string };
+  anomaly_vs_deterministic?: AnomalyVsDeterministicSummary;
 }
