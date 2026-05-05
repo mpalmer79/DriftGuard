@@ -88,6 +88,12 @@ class Simulation:
         self.step_history: list[StepRecord] = []
         self.last_decision: SystemDecision | None = None
 
+    # Resource caps (Phase 8.4). Per-simulation step ceiling and per-
+    # simulation fault ceiling. Crossing either raises CapacityError,
+    # which the API layer maps to HTTP 429.
+    MAX_STEPS = 10_000
+    MAX_FAULTS = 100
+
     def inject_fault(
         self,
         fault_type: FaultType,
@@ -97,6 +103,12 @@ class Simulation:
         severity: FaultSeverity = FaultSeverity.WARNING,
         metadata: dict | None = None,
     ) -> FaultRecord:
+        from ..core.exceptions import CapacityError
+
+        if len(self.faults.all()) >= self.MAX_FAULTS:
+            raise CapacityError(
+                f"per-simulation fault cap of {self.MAX_FAULTS} reached"
+            )
         if start_step is None:
             start_step = self.state.step
         record = self.faults.inject(
@@ -123,6 +135,12 @@ class Simulation:
         return record
 
     def step(self) -> StepRecord:
+        from ..core.exceptions import CapacityError
+
+        if self.state.step >= self.MAX_STEPS:
+            raise CapacityError(
+                f"per-simulation step cap of {self.MAX_STEPS} reached"
+            )
         t = tracer()
         with t.start_as_current_span(
             "step", attributes={"sim.id": self.id, "step": self.state.step + 1}
