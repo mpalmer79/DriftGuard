@@ -19,3 +19,42 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* Reduced-motion: respect user preference (Phase 7.8). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles: mission report should render legibly on paper / PDF
+   (Phase 7.6). Force light-on-white, drop the sticky header, and
+   collapse anything tagged `print:hidden`. */
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  header {
+    position: static !important;
+    border: none !important;
+    background: none !important;
+  }
+  nav {
+    display: none !important;
+  }
+  .bg-sentinel-panel,
+  .bg-sentinel-bg {
+    background: #ffffff !important;
+    border-color: #d1d5db !important;
+  }
+  pre {
+    color: #000000 !important;
+    background: #f3f4f6 !important;
+  }
+}

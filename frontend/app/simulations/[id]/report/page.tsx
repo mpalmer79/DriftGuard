@@ -5,6 +5,9 @@ import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import type { MissionReport } from "@/types/api";
 import { MissionReportView } from "@/components/MissionReportView";
+import { ErrorState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useDecisions } from "@/lib/hooks/useSimulations";
 
 export default function ReportPage() {
   const params = useParams<{ id: string }>();
@@ -12,6 +15,7 @@ export default function ReportPage() {
   const [report, setReport] = useState<MissionReport | null>(null);
   const [markdown, setMarkdown] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const decisions = useDecisions(id);
 
   useEffect(() => {
     Promise.all([api.getReport(id), api.getMarkdownReport(id)])
@@ -22,8 +26,22 @@ export default function ReportPage() {
       .catch((e) => setError(e.message));
   }, [id]);
 
-  if (error) return <p className="text-sentinel-bad">{error}</p>;
-  if (!report) return <p className="text-gray-400">Loading…</p>;
+  if (error) return <ErrorState message={error} />;
+  if (!report) {
+    return (
+      <div className="space-y-3">
+        <Skeleton width="40%" height="2rem" />
+        <Skeleton height="6rem" />
+        <Skeleton height="12rem" />
+      </div>
+    );
+  }
 
-  return <MissionReportView report={report} markdown={markdown} />;
+  return (
+    <MissionReportView
+      report={report}
+      markdown={markdown}
+      decisions={decisions.data ?? []}
+    />
+  );
 }

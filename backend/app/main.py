@@ -8,6 +8,7 @@ from .api.recovery_routes import router as recovery_router
 from .api.report_routes import router as report_router
 from .api.routes import router
 from .api.scenario_routes import router as scenario_router
+from .api.stream_routes import router as stream_router
 
 
 def create_app() -> FastAPI:
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
     app.include_router(recovery_router)
     app.include_router(scenario_router)
     app.include_router(report_router)
+    app.include_router(stream_router)
 
     return app
 

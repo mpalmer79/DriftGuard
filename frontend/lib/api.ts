@@ -105,6 +105,21 @@ export const api = {
 
   getTimeline: (id: string) => request<TimelineEntry[]>(`/simulations/${id}/timeline`),
 
+  getTrajectory: (id: string) =>
+    request<
+      {
+        step: number;
+        timestamp: number;
+        position_x: number;
+        position_y: number;
+        altitude: number;
+        system_mode: string;
+      }[]
+    >(`/simulations/${id}/trajectory`),
+
+  streamUrl: (id: string, steps: number, speed: number) =>
+    `${API_BASE}/simulations/${id}/stream?steps=${steps}&speed=${speed}`,
+
   listScenarios: () => request<Scenario[]>("/scenarios"),
 
   getScenario: (name: string) => request<Scenario>(`/scenarios/${name}`),
