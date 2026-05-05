@@ -26,6 +26,7 @@ Configuration:
 
 from __future__ import annotations
 
+import ipaddress
 import os
 import time
 from collections import defaultdict, deque
@@ -77,12 +78,56 @@ def _read_limit() -> int:
     return int(os.environ.get("SENTINEL_RATE_LIMIT_READ_PER_MIN", "600"))
 
 
+def _trusted_proxy_networks() -> list[ipaddress.IPv4Network | ipaddress.IPv6Network]:
+    """Parse ``SENTINEL_TRUSTED_PROXIES`` (comma-separated CIDRs).
+
+    Empty/unset → return ``[]`` so the limiter ignores X-Forwarded-For
+    entirely. Malformed CIDRs are silently dropped — the safe default
+    is to treat the peer as untrusted rather than to fail open.
+    """
+
+    raw = os.environ.get("SENTINEL_TRUSTED_PROXIES", "").strip()
+    if not raw:
+        return []
+    networks: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+    for token in raw.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        try:
+            networks.append(ipaddress.ip_network(token, strict=False))
+        except ValueError:
+            continue
+    return networks
+
+
+def _peer_is_trusted(peer_host: str) -> bool:
+    networks = _trusted_proxy_networks()
+    if not networks:
+        return False
+    try:
+        peer = ipaddress.ip_address(peer_host)
+    except ValueError:
+        return False
+    return any(peer in net for net in networks)
+
+
 def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    if request.client and request.client.host:
-        return request.client.host
+    """Return the rate-limit key for ``request``.
+
+    Honours ``x-forwarded-for`` only when the immediate peer is in
+    ``SENTINEL_TRUSTED_PROXIES``. Otherwise the header is ignored —
+    a hostile client can otherwise spoof any IP and exhaust the
+    rate limiter's per-key budget for that address.
+    """
+
+    peer_host = request.client.host if request.client and request.client.host else None
+    if peer_host and _peer_is_trusted(peer_host):
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    if peer_host:
+        return peer_host
     return "anonymous"
 
 

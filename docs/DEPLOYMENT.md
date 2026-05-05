@@ -107,6 +107,28 @@ For horizontally-scaled deployments, terminate rate limiting at the
 edge (nginx, Envoy, an API gateway) and treat this layer as a
 defense-in-depth backstop.
 
+#### Trusted proxy gate (Phase 5.1)
+
+`x-forwarded-for` is **ignored by default**. A hostile client can
+otherwise forge any IP and exhaust the rate-limit budget for that
+address. To re-enable XFF parsing when the app is fronted by a
+known proxy, set `SENTINEL_TRUSTED_PROXIES` to a comma-separated
+CIDR list:
+
+```bash
+# Trust XFF only when the immediate peer is in the listed network(s).
+export SENTINEL_TRUSTED_PROXIES="10.0.0.0/8,192.168.0.0/16"
+```
+
+Behaviour:
+
+- Empty/unset → use `request.client.host` always; XFF is ignored.
+- Set → XFF's first hop is honoured iff the immediate peer lives
+  inside one of the listed CIDRs. Outside-CIDR peers fall back to
+  `request.client.host`.
+- Malformed CIDR tokens are silently dropped (safe default:
+  treat as untrusted).
+
 ### CORS allowlist (Phase 8.5)
 
 Set `SENTINEL_CORS_ORIGINS` to a comma-separated list of allowed
@@ -139,6 +161,11 @@ scrape without auth.
 Failed auth returns `401` with body
 `{"error": {"code": "unauthorized", "message": "..."}}` per the
 Phase 8.6 error taxonomy.
+
+The supplied token is compared against the expected token using
+`hmac.compare_digest` (Phase 5.1) so the comparison takes constant
+time regardless of how many leading bytes match. This guards against
+the byte-by-byte timing side-channel that a plain `==` would expose.
 
 ### Resource caps (Phase 8.4)
 
