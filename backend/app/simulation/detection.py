@@ -22,12 +22,20 @@ class FaultDetector:
         disagreement_critical: int,
         invalid_warning: int,
         invalid_critical: int,
+        latency_warning: int | None = None,
+        latency_critical: int | None = None,
     ) -> None:
         self.latency_threshold_ms = latency_threshold_ms
         self.dis_warn = disagreement_warning
         self.dis_crit = disagreement_critical
         self.inv_warn = invalid_warning
         self.inv_crit = invalid_critical
+        # Phase 5.2: latency violations bucket independently from
+        # invalid outputs. Default to the invalid_* thresholds so a
+        # caller that hasn't been updated yet keeps the legacy
+        # behaviour exactly.
+        self.lat_warn = invalid_warning if latency_warning is None else latency_warning
+        self.lat_crit = invalid_critical if latency_critical is None else latency_critical
         self.state = FaultDetectionState()
 
     def update(
@@ -57,9 +65,9 @@ class FaultDetector:
                 warnings.append((cid, FaultSeverity.WARNING, "invalid outputs"))
 
         for cid, count in self.state.latency_counts.items():
-            if count == self.inv_crit:
+            if count == self.lat_crit:
                 warnings.append((cid, FaultSeverity.CRITICAL, "repeated latency violations"))
-            elif count == self.inv_warn:
+            elif count == self.lat_warn:
                 warnings.append((cid, FaultSeverity.WARNING, "latency violations"))
 
         if self.state.disagreement_count == self.dis_crit:
@@ -77,7 +85,8 @@ class FaultDetector:
         ):
             inv = self.state.invalid_counts.get(cid, 0)
             lat = self.state.latency_counts.get(cid, 0)
-            if inv >= self.inv_warn or lat >= self.inv_warn:
+            # Phase 5.2: each count bucket against its own threshold.
+            if inv >= self.inv_warn or lat >= self.lat_warn:
                 result.append(cid)
         return result
 
@@ -88,6 +97,6 @@ class FaultDetector:
         ):
             inv = self.state.invalid_counts.get(cid, 0)
             lat = self.state.latency_counts.get(cid, 0)
-            if inv >= self.inv_crit or lat >= self.inv_crit:
+            if inv >= self.inv_crit or lat >= self.lat_crit:
                 result.append(cid)
         return result
