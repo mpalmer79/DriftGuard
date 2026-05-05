@@ -80,7 +80,7 @@ class Simulation:
         )
         self.safe_mode = SafeModeManager(self.detector)
         self.trust = TrustDetector(latency_threshold_ms=config.latency_threshold_ms)
-        self.events = EventLogger()
+        self.events = EventLogger(simulation_id=self.id)
         self.step_history: list[StepRecord] = []
         self.last_decision: SystemDecision | None = None
 
