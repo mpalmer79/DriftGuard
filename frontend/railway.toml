@@ -8,6 +8,9 @@
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
+[build.args]
+NEXT_PUBLIC_API_BASE = "${{ NEXT_PUBLIC_API_BASE }}"
+
 [deploy]
 # Liveness probe — the Next.js standalone server is up if "/" is
 # reachable. There is no Next-side dependency check; backend
