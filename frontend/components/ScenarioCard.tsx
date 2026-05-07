@@ -67,10 +67,7 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
 
   return (
     <div className="relative bg-surface-elevated border border-border rounded-md overflow-hidden transition duration-150 hover:-translate-y-0.5 hover:border-accent/40 motion-reduce:transform-none motion-reduce:transition-none">
-      <span
-        className={`absolute left-0 top-0 bottom-0 w-1 ${stripeClass}`}
-        aria-hidden
-      />
+      <span className={`absolute left-0 top-0 bottom-0 w-1 ${stripeClass}`} aria-hidden />
       <div className="p-5 pl-6 space-y-3">
         <h2 className="font-mono uppercase font-semibold text-text-primary tracking-wide break-words">
           {scenario.name.toUpperCase()}
@@ -112,9 +109,7 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
           </button>
         </div>
 
-        {error && (
-          <p className="font-mono text-xs text-status-failed pt-1 break-words">{error}</p>
-        )}
+        {error && <p className="font-mono text-xs text-status-failed pt-1 break-words">{error}</p>}
 
         {result && (
           <div className="border-t border-border pt-3 space-y-1 text-xs font-mono">

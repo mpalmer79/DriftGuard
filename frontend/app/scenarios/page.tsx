@@ -68,14 +68,10 @@ export default function ScenariosPage() {
           style={{
             backgroundColor:
               "color-mix(in srgb, var(--status-failed) 10%, var(--surface-elevated))",
-            borderColor:
-              "color-mix(in srgb, var(--status-failed) 40%, var(--border))",
+            borderColor: "color-mix(in srgb, var(--status-failed) 40%, var(--border))",
           }}
         >
-          <span
-            className="absolute left-0 top-0 bottom-0 w-1 bg-status-failed"
-            aria-hidden
-          />
+          <span className="absolute left-0 top-0 bottom-0 w-1 bg-status-failed" aria-hidden />
           <p className="font-mono text-sm text-status-failed p-4 pl-5 break-words">{error}</p>
         </div>
       )}
