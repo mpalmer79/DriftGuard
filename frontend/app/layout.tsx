@@ -19,7 +19,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="font-semibold text-base">
                 DriftGuard
               </Link>
-              <Link href="/dashboard">Dashboard</Link>
               <Link href="/scenarios">Scenarios</Link>
               <a
                 href="https://github.com/mpalmer79/SentinelNav"
