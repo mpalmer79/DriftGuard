@@ -51,7 +51,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(
       0,
       null,
-      `cannot reach SentinelNav backend at ${API_BASE}: ${(err as Error).message}`
+      `cannot reach DriftGuard backend at ${API_BASE}: ${(err as Error).message}`
     );
   }
 
