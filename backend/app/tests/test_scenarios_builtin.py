@@ -13,11 +13,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+from typing import Any
 
 import pytest
 
 from app.scenarios import all_scenarios, get_scenario, run_scenario
 from app.scenarios.models import Scenario
+from app.simulation.orchestrator import Simulation
 
 NEW_BUILTIN_NAMES = [
     "sensor_spike_transient",
@@ -40,7 +42,7 @@ ALL_BUILTIN_NAMES = [
 _NONDETERMINISTIC_KEYS = {"fault_id", "event_id", "simulation_id"}
 
 
-def _scrub(value):
+def _scrub(value: Any) -> Any:
     if isinstance(value, dict):
         return {k: _scrub(v) for k, v in value.items() if k not in _NONDETERMINISTIC_KEYS}
     if isinstance(value, list):
@@ -48,7 +50,7 @@ def _scrub(value):
     return value
 
 
-def _event_hash(simulation) -> str:
+def _event_hash(simulation: Simulation) -> str:
     """Hash the deterministic fields of every emitted event.
 
     ``event_id``, ``simulation_id`` and any embedded ``fault_id``

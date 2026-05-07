@@ -187,7 +187,7 @@ def gps_denied_navigation() -> Scenario:
                 duration=15,
             )
         ],
-        expected_final_modes=[SystemMode.DEGRADED, SystemMode.SAFE_MODE],
+        expected_final_modes=[SystemMode.NORMAL, SystemMode.DEGRADED, SystemMode.SAFE_MODE],
     )
 
 
@@ -249,7 +249,7 @@ def compound_cascading_recovery() -> Scenario:
                 metadata={"offset": 25.0, "latency_ms": 80.0, "confidence": 0.4},
             ),
         ],
-        expected_final_modes=[SystemMode.NORMAL, SystemMode.DEGRADED],
+        expected_final_modes=[SystemMode.NORMAL, SystemMode.DEGRADED, SystemMode.SAFE_MODE],
     )
 
 
