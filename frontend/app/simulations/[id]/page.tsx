@@ -1,14 +1,15 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Card } from "@/components/Card";
 import { EventTimeline } from "@/components/EventTimeline";
 import { FaultTimeline } from "@/components/FaultTimeline";
+import { SystemModeBadge } from "@/components/SystemModeBadge";
 import { VehicleStateCard } from "@/components/VehicleStateCard";
 import { AltitudeChart, HorizontalSpeedChart, ModeBand } from "@/components/charts/TelemetryCharts";
 import { TrajectoryMap } from "@/components/charts/TrajectoryMap";
-import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
+import { ErrorState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   useDecisions,
@@ -44,23 +45,26 @@ export default function SimulationDetail() {
   }
   if (!meta.data.simulation) return <SimulationNotFound id={id} />;
 
+  const seed = meta.data.simulation?.seed;
+
   return (
     <div className="space-y-6">
-      <header className="flex items-center gap-3 flex-wrap">
-        <h1 className="text-xl font-semibold">{id}</h1>
-        <span className="text-xs text-gray-400">seed {meta.data.simulation?.seed}</span>
-        <span className="text-xs text-gray-400">{meta.data.step_count} steps</span>
-        <div className="ml-auto flex gap-3 text-sm">
-          <Link className="text-sentinel-accent" href={`/simulations/${id}/live`}>
-            live →
-          </Link>
-          <Link className="text-sentinel-accent" href={`/simulations/${id}/replay`}>
-            replay →
-          </Link>
-          <Link className="text-sentinel-accent" href={`/simulations/${id}/report`}>
-            report →
-          </Link>
+      <header className="space-y-3">
+        <p className="font-mono text-sm text-text-muted break-all">
+          {"// "}
+          {id}
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {stateQ.data && <SystemModeBadge mode={stateQ.data.system_mode} />}
+          <span className="font-mono text-xs text-text-muted uppercase tracking-wider">
+            SEED {seed} / {meta.data.step_count} STEPS
+          </span>
         </div>
+        <nav className="flex flex-wrap items-center gap-5">
+          <DetailLink href={`/simulations/${id}/live`}>live →</DetailLink>
+          <DetailLink href={`/simulations/${id}/replay`}>replay →</DetailLink>
+          <DetailLink href={`/simulations/${id}/report`}>report →</DetailLink>
+        </nav>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -81,16 +85,19 @@ export default function SimulationDetail() {
         }
       />
 
-      <Card title={`Decisions (${decisions.data?.length ?? 0})`}>
+      <section className="surface-elevated-grad border border-border rounded-md p-4 space-y-3">
+        <h2 className="font-mono uppercase text-sm tracking-wider text-text-primary">
+          Decisions ({decisions.data?.length ?? 0})
+        </h2>
         {decisions.data && decisions.data.length > 0 ? (
           <div className="text-xs max-h-72 overflow-y-auto">
-            <table className="w-full">
-              <thead className="text-gray-400 text-left">
+            <table className="w-full font-mono">
+              <thead className="text-text-muted uppercase tracking-wider text-left">
                 <tr>
-                  <th className="py-1">step</th>
-                  <th>mode</th>
-                  <th>action</th>
-                  <th>justification</th>
+                  <th className="py-1 font-normal">Step</th>
+                  <th className="font-normal">Mode</th>
+                  <th className="font-normal">Action</th>
+                  <th className="font-normal">Justification</th>
                 </tr>
               </thead>
               <tbody>
@@ -102,26 +109,36 @@ export default function SimulationDetail() {
                     justification: string;
                   }[]
                 ).map((d) => (
-                  <tr key={d.step} className="border-t border-sentinel-border">
-                    <td className="py-1">{d.step}</td>
-                    <td>{d.system_mode}</td>
-                    <td>{d.final_action}</td>
-                    <td className="opacity-80">{d.justification}</td>
+                  <tr key={d.step} className="border-t border-border">
+                    <td className="py-1 text-text-primary">{d.step}</td>
+                    <td className="text-text-primary">{d.system_mode}</td>
+                    <td className="text-text-primary">{d.final_action}</td>
+                    <td className="text-text-muted">{d.justification}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <EmptyState
-            title="No decisions yet"
-            description="Run the simulation forward to see decisions."
-          />
+          <p className="font-mono text-xs text-text-muted">
+            {"// NO DECISIONS YET. RUN THE SIMULATION FORWARD."}
+          </p>
         )}
-      </Card>
+      </section>
 
       <EventTimeline events={events.data ?? []} limit={120} />
     </div>
+  );
+}
+
+function DetailLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="font-mono uppercase text-xs tracking-wider text-text-muted hover:text-accent transition-colors"
+    >
+      {children}
+    </Link>
   );
 }
 
