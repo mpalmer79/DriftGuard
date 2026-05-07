@@ -3,7 +3,7 @@
 FROM node:20.18-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,id=sentinelnav-frontend-npm,target=/root/.npm \
     npm ci --no-audit --no-fund
 
 
