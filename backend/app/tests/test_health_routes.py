@@ -30,8 +30,8 @@ def test_ready_returns_ready_in_default_environment(client):
 
 def test_ready_includes_scenario_count(client):
     body = client.get("/ready").json()
-    # The six built-in scenarios are registered at import time.
-    assert "6 registered" in body["checks"]["scenarios"]
+    # The ten built-in scenarios are registered at import time.
+    assert "10 registered" in body["checks"]["scenarios"]
 
 
 # --- Phase 7.1: liveness/readiness split ---
