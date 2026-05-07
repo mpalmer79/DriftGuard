@@ -2,6 +2,7 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  darkMode: ["class", "[data-theme=\"dark\"]"],
   theme: {
     extend: {
       colors: {
@@ -15,6 +16,17 @@ const config: Config = {
           bad: "#ef4444",
           critical: "#b91c1c",
         },
+        bg: "var(--bg)",
+        surface: "var(--surface)",
+        "surface-elevated": "var(--surface-elevated)",
+        border: "var(--border)",
+        "text-primary": "var(--text-primary)",
+        "text-muted": "var(--text-muted)",
+        accent: "var(--accent)",
+        "status-nominal": "var(--status-nominal)",
+        "status-degraded": "var(--status-degraded)",
+        "status-failed": "var(--status-failed)",
+        "status-safemode": "var(--status-safemode)",
       },
       fontFamily: {
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
