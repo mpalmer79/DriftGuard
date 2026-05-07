@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "SentinelNav",
+  title: "DriftGuard",
   description: "Deterministic, fault-tolerant control system simulation",
 };
 
@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="border-b border-sentinel-border bg-sentinel-panel/50 backdrop-blur sticky top-0 z-10">
           <nav className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-6 text-sm">
             <Link href="/" className="font-semibold text-base">
-              SentinelNav
+              DriftGuard
             </Link>
             <Link href="/dashboard">Dashboard</Link>
             <Link href="/scenarios">Scenarios</Link>
