@@ -144,6 +144,115 @@ def intermittent_fault() -> Scenario:
     )
 
 
+def sensor_spike_transient() -> Scenario:
+    return Scenario(
+        name="sensor_spike_transient",
+        description="A single-step sensor spike injects an outlier reading, then clears.",
+        expected_behavior=(
+            "Voter rejects the spike as an outlier. System stays in NORMAL or "
+            "briefly enters DEGRADED before recovering. Demonstrates that "
+            "transient sensor faults do not cause persistent state changes."
+        ),
+        seed=31,
+        steps=15,
+        faults=[
+            ScenarioFault(
+                type=FaultType.SENSOR_SPIKE,
+                target="sensor",
+                start_step=6,
+                duration=1,
+                metadata={"magnitude": 35.0},
+            )
+        ],
+        expected_final_modes=[SystemMode.NORMAL, SystemMode.DEGRADED],
+    )
+
+
+def gps_denied_navigation() -> Scenario:
+    return Scenario(
+        name="gps_denied_navigation",
+        description="GPS signal lost mid-mission, simulating jamming or urban canyon.",
+        expected_behavior=(
+            "System enters DEGRADED on signal loss as controllers fall back to "
+            "inertial estimates. If GPS does not return within the budget, the "
+            "system escalates to SAFE_MODE."
+        ),
+        seed=47,
+        steps=20,
+        faults=[
+            ScenarioFault(
+                type=FaultType.GPS_DENIED,
+                target="gps",
+                start_step=5,
+                duration=15,
+            )
+        ],
+        expected_final_modes=[SystemMode.DEGRADED, SystemMode.SAFE_MODE],
+    )
+
+
+def byzantine_low_confidence() -> Scenario:
+    return Scenario(
+        name="byzantine_low_confidence",
+        description=(
+            "Controller_c reports valid actions with persistently low confidence — "
+            "the Byzantine case where a node responds but its outputs are unreliable."
+        ),
+        expected_behavior=(
+            "Voter weights controller_c's contribution down. Provided controllers "
+            "a and b agree, system stays in NORMAL. Demonstrates trust-weighted "
+            "voting under partial controller compromise."
+        ),
+        seed=53,
+        steps=20,
+        faults=[
+            ScenarioFault(
+                type=FaultType.CONTROLLER_CONFIDENCE_DROP,
+                target="controller_c",
+                start_step=2,
+                duration=18,
+                metadata={"confidence": 0.15},
+            )
+        ],
+        expected_final_modes=[SystemMode.NORMAL, SystemMode.DEGRADED],
+    )
+
+
+def compound_cascading_recovery() -> Scenario:
+    return Scenario(
+        name="compound_cascading_recovery",
+        description=(
+            "A sensor noise spike overlaps with a compound controller fault. "
+            "Both faults clear; the system attempts to recover."
+        ),
+        expected_behavior=(
+            "System enters DEGRADED at the noise onset. After both faults clear, "
+            "health monitors observe clean readings for the recovery window and "
+            "the system returns to NORMAL. Demonstrates bidirectional state "
+            "transitions — escalation is not a one-way trip."
+        ),
+        seed=67,
+        steps=30,
+        faults=[
+            ScenarioFault(
+                type=FaultType.SENSOR_NOISE_SPIKE,
+                target="sensor",
+                start_step=5,
+                duration=8,
+                metadata={"magnitude": 6.0},
+            ),
+            ScenarioFault(
+                type=FaultType.COMPOUND_FAULT,
+                target="controller_b",
+                start_step=7,
+                duration=6,
+                metadata={"offset": 25.0, "latency_ms": 80.0, "confidence": 0.4},
+            ),
+        ],
+        expected_final_modes=[SystemMode.NORMAL, SystemMode.DEGRADED],
+    )
+
+
 ALL_BUILTINS = (
     nominal_cruise,
     single_controller_latency,
@@ -151,4 +260,8 @@ ALL_BUILTINS = (
     split_vote_escalation,
     multi_fault_failure,
     intermittent_fault,
+    sensor_spike_transient,
+    gps_denied_navigation,
+    byzantine_low_confidence,
+    compound_cascading_recovery,
 )
