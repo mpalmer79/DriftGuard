@@ -1,5 +1,12 @@
+"use client";
+
 import Link from "next/link";
-import { SystemCheckHero } from "../components/SystemCheckHero";
+import dynamic from "next/dynamic";
+
+const SystemCheckHero3D = dynamic(() => import("@/components/SystemCheckHero3D"), {
+  ssr: false,
+  loading: () => <div className="aspect-square w-full" />,
+});
 
 export default function HomePage() {
   return (
@@ -41,7 +48,7 @@ export default function HomePage() {
             </div>
           </div>
           <div>
-            <SystemCheckHero />
+            <SystemCheckHero3D />
           </div>
         </div>
       </section>
