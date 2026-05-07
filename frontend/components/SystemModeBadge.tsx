@@ -1,16 +1,24 @@
 import type { SystemMode } from "@/types/api";
 
-const styles: Record<SystemMode, string> = {
-  NORMAL: "bg-sentinel-good/20 text-sentinel-good border-sentinel-good/40",
-  DEGRADED: "bg-sentinel-warn/20 text-sentinel-warn border-sentinel-warn/40",
-  SAFE_MODE: "bg-sentinel-bad/20 text-sentinel-bad border-sentinel-bad/40",
-  FAILED: "bg-sentinel-critical/30 text-white border-sentinel-critical/60",
+const MODE_VAR: Record<SystemMode, string> = {
+  NORMAL: "--status-nominal",
+  DEGRADED: "--status-degraded",
+  SAFE_MODE: "--status-safemode",
+  FAILED: "--status-failed",
 };
 
 export function SystemModeBadge({ mode }: { mode: SystemMode }) {
+  const cssVar = MODE_VAR[mode];
+  const tint = `color-mix(in srgb, var(${cssVar}) 15%, transparent)`;
+  const borderTint = `color-mix(in srgb, var(${cssVar}) 50%, transparent)`;
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded border text-xs font-semibold tracking-wide ${styles[mode]}`}
+      className="inline-flex items-center px-3 py-1.5 rounded-md border font-mono uppercase text-xs tracking-wider transition-colors duration-200 ease-out motion-reduce:transition-none"
+      style={{
+        color: `var(${cssVar})`,
+        backgroundColor: tint,
+        borderColor: borderTint,
+      }}
     >
       {mode}
     </span>
