@@ -4,7 +4,7 @@ export default function HomePage() {
   return (
     <div className="space-y-10">
       <header className="space-y-3 max-w-3xl">
-        <h1 className="text-3xl font-semibold">SentinelNav</h1>
+        <h1 className="text-3xl font-semibold">DriftGuard</h1>
         <p className="text-gray-300 leading-relaxed">
           A deterministic, fault-tolerant control system simulation. Three redundant controllers
           process noisy sensor data, vote by majority, and escalate through{" "}
@@ -57,7 +57,7 @@ export default function HomePage() {
         <h2 className="text-lg font-semibold">Why this exists</h2>
         <p>
           Aerospace, defense, automotive, and medical systems frequently rely on triple-redundant
-          controllers with majority voting and explicit safe-mode behavior. SentinelNav models that
+          controllers with majority voting and explicit safe-mode behavior. DriftGuard models that
           pattern in a clean, inspectable way. It is not a flight simulator — it is a small,
           deterministic test bed for fault handling, recovery, and audit.
         </p>
