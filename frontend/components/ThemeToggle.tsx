@@ -5,15 +5,18 @@ import { useTheme } from "./ThemeProvider";
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
+  const next = isDark ? "light" : "dark";
+  const label = isDark ? "DARK" : "LIGHT";
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="opacity-60 hover:opacity-100 inline-flex items-center justify-center"
+      onClick={() => setTheme(next)}
+      aria-label={`Switch to ${next} mode`}
+      className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[112px] px-3.5 py-2.5 rounded-md border border-border bg-surface font-mono uppercase text-xs tracking-wider text-text-primary transition duration-150 hover:border-accent hover:shadow-[0_0_0_3px_var(--accent-glow)]"
     >
       {isDark ? <SunIcon /> : <MoonIcon />}
+      <span>{label}</span>
     </button>
   );
 }
@@ -22,8 +25,8 @@ function SunIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -49,8 +52,8 @@ function MoonIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
