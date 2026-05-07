@@ -20,8 +20,7 @@ RUN apt-get update \
 COPY requirements.txt ./
 RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install --upgrade pip
-RUN --mount=type=cache,id=sentinelnav-backend-pip,target=/root/.cache/pip \
-    /opt/venv/bin/pip install -r requirements.txt
+RUN /opt/venv/bin/pip install -r requirements.txt
 
 
 FROM python:3.11.9-slim-bookworm AS runtime
