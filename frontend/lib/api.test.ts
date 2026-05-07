@@ -79,7 +79,7 @@ describe("api client error contract", () => {
 
     await expect(api.health()).rejects.toMatchObject({
       status: 0,
-      message: expect.stringContaining("cannot reach SentinelNav backend"),
+      message: expect.stringContaining("cannot reach DriftGuard backend"),
     });
   });
 });

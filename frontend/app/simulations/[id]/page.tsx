@@ -30,6 +30,8 @@ export default function SimulationDetail() {
   const decisions = useDecisions(id);
   const trajectory = useTrajectory(id);
 
+  const errorStatus = (meta.error as { status?: number } | undefined)?.status;
+  if (errorStatus === 404) return <SimulationNotFound id={id} />;
   if (meta.error) return <ErrorState message={meta.error.message} retry={meta.mutate} />;
   if (!meta.data) {
     return (
@@ -40,6 +42,7 @@ export default function SimulationDetail() {
       </div>
     );
   }
+  if (!meta.data.simulation) return <SimulationNotFound id={id} />;
 
   return (
     <div className="space-y-6">
@@ -118,6 +121,43 @@ export default function SimulationDetail() {
       </Card>
 
       <EventTimeline events={events.data ?? []} limit={120} />
+    </div>
+  );
+}
+
+function SimulationNotFound({ id }: { id: string }) {
+  return (
+    <div
+      role="alert"
+      className="surface-elevated-grad relative border border-border rounded-md overflow-hidden"
+    >
+      <span className="absolute left-0 top-0 bottom-0 w-1 bg-status-failed" aria-hidden />
+      <div className="p-5 pl-6 space-y-3">
+        <p className="font-mono uppercase text-sm tracking-wider text-status-failed">
+          {"// SIMULATION NOT FOUND"}
+        </p>
+        <p className="font-mono text-xs text-text-muted break-words">
+          simulation &lsquo;{id}&rsquo; not found
+        </p>
+        <p className="text-sm text-text-primary leading-relaxed max-w-[560px]">
+          This simulation may have been cleared during a backend restart. Run a new scenario to
+          continue.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+          <Link
+            href="/scenarios"
+            className="inline-flex items-center justify-center font-mono uppercase text-xs tracking-wider px-4 py-2 rounded-md bg-accent text-bg hover:opacity-90 transition"
+          >
+            Browse Scenarios
+          </Link>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center justify-center font-mono uppercase text-xs tracking-wider px-4 py-2 rounded-md border border-border text-text-primary hover:border-accent transition"
+          >
+            Open Dashboard
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
