@@ -60,9 +60,7 @@ function modeChipClass(mode: string): string {
 // `mode_transitions[0]` is the initial mode (typically NORMAL at
 // step 0) — we keep that as the head of the string and only suffix
 // "at step N" to subsequent transitions.
-export function summarizeEscalation(
-  transitions: { step: number; mode: string }[]
-): string {
+export function summarizeEscalation(transitions: { step: number; mode: string }[]): string {
   if (!transitions || transitions.length === 0) return "No escalation occurred.";
   const distinct = transitions.filter((t, i) => i === 0 || t.mode !== transitions[i - 1].mode);
   if (distinct.length <= 1) return "No escalation occurred.";
@@ -77,9 +75,7 @@ export function summarizeEscalation(
 // Detector response is derived: any non-initial mode transition
 // signals that the kernel escalated. mode_transitions[0] is the
 // initial NORMAL state — we only count post-initial transitions.
-export function describeDetectorResponse(
-  transitions: { step: number; mode: string }[]
-): string {
+export function describeDetectorResponse(transitions: { step: number; mode: string }[]): string {
   if (!transitions || transitions.length <= 1) return "No escalation";
   return "Detector escalated";
 }
@@ -98,11 +94,7 @@ function voteSummary(result: ScenarioResult): string {
   const consensus = ev.CONSENSUS ?? dc.CONSENSUS;
   const split = ev.SPLIT ?? dc.SPLIT;
   const insufficient = ev.INSUFFICIENT_DATA ?? dc.INSUFFICIENT_DATA;
-  if (
-    consensus !== undefined ||
-    split !== undefined ||
-    insufficient !== undefined
-  ) {
+  if (consensus !== undefined || split !== undefined || insufficient !== undefined) {
     return `Consensus: ${consensus ?? 0} / Split: ${split ?? 0} / Insufficient: ${insufficient ?? 0}`;
   }
   if (typeof ev.VOTE === "number") return `${ev.VOTE} vote events`;

@@ -3,10 +3,19 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import type { DecisionRecord, FaultRecord, StepResponse, VehicleState } from "@/types/api";
+import type {
+  DecisionRecord,
+  FaultRecord,
+  StepResponse,
+  TimelineEntry,
+  VehicleState,
+} from "@/types/api";
 import { CausalityPanel } from "@/components/CausalityPanel";
+import { DecisionPipeline } from "@/components/DecisionPipeline";
 import { ModeLegend } from "@/components/ModeLegend";
+import { ReplayExplainer } from "@/components/ReplayExplainer";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
+import { VotePanel } from "@/components/VotePanel";
 
 interface SimSummary {
   id: string;
@@ -26,6 +35,11 @@ export default function DashboardPage() {
   const [lastDecision, setLastDecision] = useState<DecisionRecord | null>(null);
   const [previousDecision, setPreviousDecision] = useState<DecisionRecord | null>(null);
   const [fingerprint, setFingerprint] = useState<string | null>(null);
+  // Latest full step bundle (state + sensor + controllers + vote +
+  // decision). Needed by DecisionPipeline + VotePanel which render
+  // per-step causality. Populated either from a step response or by
+  // pulling the tail of the timeline when a simulation is selected.
+  const [latestStep, setLatestStep] = useState<TimelineEntry | null>(null);
 
   async function refreshList() {
     try {
@@ -78,6 +92,10 @@ export default function DashboardPage() {
       .getReplayFingerprint(activeId)
       .then((r) => setFingerprint(r.fingerprint))
       .catch(() => setFingerprint(null));
+    api
+      .getTimeline(activeId)
+      .then((entries) => setLatestStep(entries.length ? entries[entries.length - 1] : null))
+      .catch(() => setLatestStep(null));
   }, [activeId]);
 
   async function create() {
@@ -109,6 +127,10 @@ export default function DashboardPage() {
         setState(last.state);
         setStepCount(last.state.step);
         setLastDecision(last.decision as DecisionRecord);
+        // The StepResponse shape matches TimelineEntry minus `events`;
+        // synthesise an empty events list so DecisionPipeline + VotePanel
+        // can render the latest step without an extra round-trip.
+        setLatestStep({ ...last, events: [] } as TimelineEntry);
         if (prevToLast) {
           setPreviousDecision(prevToLast.decision as DecisionRecord);
         } else {
@@ -161,15 +183,6 @@ export default function DashboardPage() {
           <p className="font-mono text-sm text-status-failed p-4 pl-5 break-words">{error}</p>
         </div>
       )}
-
-      <section className="hidden md:block border-y border-border bg-surface -mx-6 px-6">
-        <div className="max-w-6xl mx-auto flex flex-wrap items-center gap-x-8 gap-y-2 py-3 font-mono text-xs uppercase tracking-wider text-text-muted">
-          <LegendPill colorClass="bg-status-nominal" label="NOMINAL" />
-          <LegendPill colorClass="bg-status-degraded" label="DEGRADED" />
-          <LegendPill colorClass="bg-status-safemode" label="SAFE_MODE" />
-          <LegendPill colorClass="bg-status-failed" label="FAILED" />
-        </div>
-      </section>
 
       <ModeLegend />
 
@@ -306,25 +319,29 @@ export default function DashboardPage() {
           </section>
 
           {activeId && (
-            <CausalityPanel
-              decision={lastDecision}
-              faults={faults}
-              replayFingerprint={fingerprint}
-              previousDecision={previousDecision}
-            />
+            <>
+              <CausalityPanel
+                decision={lastDecision}
+                faults={faults}
+                replayFingerprint={fingerprint}
+                previousDecision={previousDecision}
+              />
+              {latestStep && (
+                <>
+                  <DecisionPipeline step={latestStep} />
+                  <VotePanel controllers={latestStep.controllers} vote={latestStep.vote} />
+                </>
+              )}
+              <ReplayExplainer
+                simulationId={activeId}
+                fingerprint={fingerprint}
+                stepCount={stepCount}
+              />
+            </>
           )}
         </div>
       </div>
     </div>
-  );
-}
-
-function LegendPill({ colorClass, label }: { colorClass: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span className={`inline-block h-2 w-2 rounded-full ${colorClass}`} aria-hidden />
-      {label}
-    </span>
   );
 }
 

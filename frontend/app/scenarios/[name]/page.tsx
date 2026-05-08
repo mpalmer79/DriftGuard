@@ -135,8 +135,8 @@ export default function ScenarioDetailPage() {
           {"// RUN THIS SCENARIO"}
         </p>
         <p className="text-sm text-text-muted leading-relaxed">
-          Execute deterministically against the registered seed. Run extended doubles the step
-          count to surface long-window recovery and re-escalation behavior.
+          Execute deterministically against the registered seed. Run extended doubles the step count
+          to surface long-window recovery and re-escalation behavior.
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
           <button
@@ -159,9 +159,7 @@ export default function ScenarioDetailPage() {
         {running && (
           <p className="font-mono text-xs text-text-muted">Running deterministic simulation…</p>
         )}
-        {runError && (
-          <p className="font-mono text-xs text-status-failed break-words">{runError}</p>
-        )}
+        {runError && <p className="font-mono text-xs text-status-failed break-words">{runError}</p>}
       </section>
 
       {result && (

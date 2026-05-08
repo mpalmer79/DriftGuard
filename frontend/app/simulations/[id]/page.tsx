@@ -5,11 +5,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { CausalityPanel } from "@/components/CausalityPanel";
+import { DecisionPipeline } from "@/components/DecisionPipeline";
 import { EventTimeline } from "@/components/EventTimeline";
 import { FaultTimeline } from "@/components/FaultTimeline";
 import { ModeLegend } from "@/components/ModeLegend";
+import { ModeTimeline } from "@/components/ModeTimeline";
+import { ReplayExplainer } from "@/components/ReplayExplainer";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
+import { TrustEvolution } from "@/components/TrustEvolution";
 import { VehicleStateCard } from "@/components/VehicleStateCard";
+import { VotePanel } from "@/components/VotePanel";
 import { AltitudeChart, HorizontalSpeedChart, ModeBand } from "@/components/charts/TelemetryCharts";
 import { TrajectoryMap } from "@/components/charts/TrajectoryMap";
 import { ErrorState } from "@/components/ui/EmptyState";
@@ -21,6 +26,7 @@ import {
   useFaults,
   useSimulation,
   useSimulationState,
+  useTimeline,
   useTrajectory,
 } from "@/lib/hooks/useSimulations";
 
@@ -34,6 +40,7 @@ export default function SimulationDetail() {
   const faults = useFaults(id);
   const decisions = useDecisions(id);
   const trajectory = useTrajectory(id);
+  const timeline = useTimeline(id);
   const [fingerprint, setFingerprint] = useState<string | null>(null);
 
   useEffect(() => {
@@ -104,6 +111,21 @@ export default function SimulationDetail() {
         replayFingerprint={fingerprint}
       />
 
+      {timeline.data && timeline.data.length > 0 && (
+        <DecisionPipeline step={timeline.data[timeline.data.length - 1]} />
+      )}
+
+      <ModeTimeline decisions={decisions.data ?? []} />
+
+      {timeline.data && timeline.data.length > 0 && (
+        <VotePanel
+          controllers={timeline.data[timeline.data.length - 1].controllers}
+          vote={timeline.data[timeline.data.length - 1].vote}
+        />
+      )}
+
+      <TrustEvolution timeline={timeline.data ?? []} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <VehicleStateCard state={stateQ.data ?? null} />
         <FaultTimeline faults={faults.data ?? []} />
@@ -170,6 +192,12 @@ export default function SimulationDetail() {
           </div>
         )}
       </section>
+
+      <ReplayExplainer
+        simulationId={id}
+        fingerprint={fingerprint}
+        stepCount={meta.data.step_count ?? 0}
+      />
 
       <EventTimeline events={events.data ?? []} limit={120} />
     </div>

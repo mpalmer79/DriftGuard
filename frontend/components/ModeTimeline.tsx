@@ -148,9 +148,7 @@ export function ModeTimeline({ decisions, currentStep }: ModeTimelineProps) {
               title={tooltip}
               className={`flex-1 min-w-0 sm:min-w-[120px] rounded-md px-3 py-2 ${baseClass} ${ringClass}`}
             >
-              <p className="font-mono uppercase text-[11px] tracking-wider truncate">
-                {seg.mode}
-              </p>
+              <p className="font-mono uppercase text-[11px] tracking-wider truncate">{seg.mode}</p>
               <p className="font-mono text-[10px] tracking-wide opacity-80 truncate">
                 {formatRange(seg)}
               </p>

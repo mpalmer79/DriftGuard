@@ -59,7 +59,7 @@ describe("EmptyState", () => {
   });
 
   it("preserves legacy ReactNode-form action so existing call sites still work", () => {
-    render(<EmptyState title="t" action={<a href="/scenarios">legacy action</a>} />);
+    render(<EmptyState title="t" action={<span data-testid="legacy">legacy action</span>} />);
     expect(screen.getByText("legacy action")).toBeTruthy();
   });
 

@@ -12,8 +12,7 @@ import type { Scenario } from "@/types/api";
 const SENSOR_SCENARIO: Scenario = {
   name: "sensor_drift_recovery",
   description: "Sensor altitude drifts upward, then the fault clears.",
-  expected_behavior:
-    "Sensor health degrades, system restricts unsafe actions, then recovers.",
+  expected_behavior: "Sensor health degrades, system restricts unsafe actions, then recovers.",
   seed: 23,
   steps: 25,
   faults: [
