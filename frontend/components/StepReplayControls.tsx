@@ -27,10 +27,7 @@ export function StepReplayControls({
 
   return (
     <div className="flex items-center gap-3 text-xs">
-      <button
-        onClick={() => onChange(0)}
-        className="px-2 py-1 border border-dg-border rounded"
-      >
+      <button onClick={() => onChange(0)} className="px-2 py-1 border border-dg-border rounded">
         ⏮
       </button>
       <button

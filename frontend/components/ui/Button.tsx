@@ -6,8 +6,7 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md";
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary:
-    "bg-dg-accent/20 border-dg-accent/40 text-dg-accent hover:bg-dg-accent/30",
+  primary: "bg-dg-accent/20 border-dg-accent/40 text-dg-accent hover:bg-dg-accent/30",
   secondary: "bg-dg-panel border-dg-border text-gray-200 hover:bg-dg-border/40",
   ghost: "border-transparent text-gray-300 hover:bg-dg-panel",
   danger: "bg-dg-bad/20 border-dg-bad/40 text-dg-bad hover:bg-dg-bad/30",

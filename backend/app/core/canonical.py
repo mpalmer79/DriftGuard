@@ -26,7 +26,13 @@ from typing import Any
 # - simulation_id: a UUID minted at simulation construction; equivalent
 #   simulation timelines from two different sim_ids must compare equal
 #   under canonicalization.
-_NONDETERMINISTIC_FIELDS = frozenset({"event_id", "reading_id", "simulation_id"})
+# - fault_id, active_fault_ids: per-run UUIDs minted by FaultRegistry. The
+#   *count* and *target* of active faults are deterministic and remain in
+#   canonical output via the fault row itself (target_component, type,
+#   start_step, etc.); the identifier is not.
+_NONDETERMINISTIC_FIELDS = frozenset(
+    {"event_id", "reading_id", "simulation_id", "fault_id", "active_fault_ids"}
+)
 
 # Float precision used for stable hashing. Higher is stricter; 9
 # digits is enough to distinguish the fault-injection magnitudes we

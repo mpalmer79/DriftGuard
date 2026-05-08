@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS system_decisions (
     justification TEXT NOT NULL,
     trusted TEXT NOT NULL,
     rejected TEXT NOT NULL,
+    causality_payload TEXT,
     PRIMARY KEY (simulation_id, step)
 );
 
@@ -122,6 +123,7 @@ class Database:
                 self._conn.execute("PRAGMA journal_mode=WAL")
                 self._conn.execute("PRAGMA synchronous=NORMAL")
             self._conn.executescript(SCHEMA)
+            _apply_migrations(self._conn)
             self._conn.commit()
         return self._conn
 
@@ -129,3 +131,32 @@ class Database:
         if self._conn is not None:
             self._conn.close()
             self._conn = None
+
+
+def _apply_migrations(conn: sqlite3.Connection) -> None:
+    """Idempotent ALTER TABLEs for columns added after the original schema.
+
+    SQLite's ``CREATE TABLE IF NOT EXISTS`` does NOT add new columns to
+    a pre-existing table, so a database created before a column was
+    introduced will not pick it up from ``SCHEMA`` alone. Each migration
+    here is wrapped to swallow the "duplicate column" error that signals
+    the migration already ran on this database file.
+    """
+
+    _add_column_if_missing(conn, "system_decisions", "causality_payload", "TEXT")
+
+
+def _add_column_if_missing(
+    conn: sqlite3.Connection,
+    table: str,
+    column: str,
+    column_type: str,
+) -> None:
+    try:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_type}")
+    except sqlite3.OperationalError as exc:
+        # The "duplicate column name" error is the migration's
+        # success-on-second-run signal; anything else is a real schema
+        # problem and must propagate.
+        if "duplicate column" not in str(exc).lower():
+            raise

@@ -45,6 +45,10 @@ def _serialize_step(record) -> StepResponse:
     decision = asdict(record.decision)
     decision["final_action"] = record.decision.final_action.value
     decision["system_mode"] = record.decision.system_mode.value
+    # Operator-causality fields. `asdict` converts the previous_mode
+    # SystemMode enum into a (name, value) tuple via str-Enum's
+    # default; coerce explicitly so the wire shape is predictable.
+    decision["previous_mode"] = record.decision.previous_mode.value
 
     state = asdict(record.state)
     state["system_mode"] = record.state.system_mode.value

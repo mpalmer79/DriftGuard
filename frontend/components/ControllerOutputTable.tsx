@@ -30,9 +30,7 @@ export function ControllerOutputTable({ outputs }: { outputs: ControllerOutput[]
               <td>{(o.confidence ?? 0).toFixed(2)}</td>
               <td className="opacity-80">{o.reason_code}</td>
               <td>{o.response_time_ms}</td>
-              <td className={o.valid ? "text-dg-good" : "text-dg-bad"}>
-                {o.valid ? "yes" : "no"}
-              </td>
+              <td className={o.valid ? "text-dg-good" : "text-dg-bad"}>{o.valid ? "yes" : "no"}</td>
             </tr>
           ))}
         </tbody>

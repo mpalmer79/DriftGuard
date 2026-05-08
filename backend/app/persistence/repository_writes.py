@@ -99,11 +99,18 @@ def save_vote(conn, sim_id: str, step: int, v: VoteResult) -> None:
 
 
 def save_decision(conn, sim_id: str, d: SystemDecision) -> None:
+    causality_payload = {
+        "previous_mode": d.previous_mode.value,
+        "trigger_reason": d.trigger_reason,
+        "active_fault_ids": list(d.active_fault_ids),
+        "detector_findings": list(d.detector_findings),
+        "vote_split": dict(d.vote_split),
+    }
     conn.execute(
         """INSERT OR REPLACE INTO system_decisions
         (simulation_id, step, final_action, system_mode, safe_mode_active,
-         justification, trusted, rejected)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+         justification, trusted, rejected, causality_payload)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             sim_id,
             d.step,
@@ -113,6 +120,7 @@ def save_decision(conn, sim_id: str, d: SystemDecision) -> None:
             d.justification,
             json.dumps(d.trusted_controllers),
             json.dumps(d.rejected_controllers),
+            json.dumps(causality_payload),
         ),
     )
 
