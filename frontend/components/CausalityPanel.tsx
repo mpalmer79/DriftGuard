@@ -15,6 +15,8 @@ import type {
   SystemDecision,
   SystemMode,
 } from "@/types/api";
+import { FaultEvidenceCard } from "./FaultEvidenceCard";
+import { ReplayExplainer } from "./ReplayExplainer";
 import { SystemModeBadge } from "./SystemModeBadge";
 import { EmptyState } from "./ui/EmptyState";
 
@@ -25,6 +27,18 @@ interface CausalityPanelProps {
   faults: FaultRecord[];
   replayFingerprint?: string | null;
   previousDecision?: DecisionRecord | null;
+  // When supplied, the inline fault chip list is replaced with a
+  // FaultEvidenceCard per active fault (operator-readable expansion
+  // of each fault). The original chip behavior is preserved when the
+  // prop is absent so the 14 baseline tests still pass.
+  activeFaults?: FaultRecord[];
+  // When true, the truncated fingerprint row is replaced with a full
+  // ReplayExplainer panel (copy button + three-bullet explanation).
+  // We require simulationId + stepCount when expanded so the
+  // explainer can render its full surface.
+  expanded?: boolean;
+  simulationId?: string;
+  stepCount?: number;
 }
 
 // Severity → status-token mapping. Detector findings ride on a
@@ -123,6 +137,10 @@ export function CausalityPanel({
   faults,
   replayFingerprint,
   previousDecision,
+  activeFaults,
+  expanded,
+  simulationId,
+  stepCount,
 }: CausalityPanelProps) {
   if (!decision) {
     return (
