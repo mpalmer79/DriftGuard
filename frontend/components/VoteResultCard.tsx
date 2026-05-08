@@ -1,39 +1,97 @@
-import type { VoteResult } from "@/types/api";
-import { Card } from "./Card";
+// VoteResultCard — slim vote summary for cramped contexts (replay
+// page, sidebars). Shows: outcome word, selected_action chip, agreeing
+// list, rejected list, and a single-line rationale. No per-controller
+// breakdown — use VotePanel for the full operator view.
 
-export function VoteResultCard({ vote }: { vote: VoteResult | null }) {
+import type { VoteResult } from "@/types/api";
+
+interface VoteResultCardProps {
+  vote: VoteResult | null;
+}
+
+const OUTCOME_CHIP: Record<string, string> = {
+  CONSENSUS: "text-status-nominal border-status-nominal/40 bg-status-nominal/10",
+  SPLIT: "text-status-degraded border-status-degraded/40 bg-status-degraded/10",
+  INSUFFICIENT_DATA: "text-status-safemode border-status-safemode/40 bg-status-safemode/10",
+};
+
+function rationale(vote: VoteResult): string {
+  switch (vote.outcome) {
+    case "CONSENSUS":
+      return `Majority consensus: ${vote.selected_action ?? "—"}`;
+    case "SPLIT":
+      return "No consensus — controllers disagree.";
+    case "INSUFFICIENT_DATA":
+      return "Insufficient valid controllers — defaulting to safe action.";
+    default:
+      return vote.outcome;
+  }
+}
+
+export function VoteResultCard({ vote }: VoteResultCardProps) {
   if (!vote) {
     return (
-      <Card title="Vote result">
-        <p className="text-gray-500 text-sm">No vote recorded.</p>
-      </Card>
+      <section
+        aria-label="Vote result"
+        data-testid="vote-result-card"
+        className="border border-border rounded-md p-3"
+      >
+        <p className="font-mono text-xs text-text-muted">No vote recorded.</p>
+      </section>
     );
   }
+  const chip = OUTCOME_CHIP[vote.outcome] ?? OUTCOME_CHIP.SPLIT;
   return (
-    <Card title="Vote result">
-      <div className="flex items-baseline gap-4 mb-2">
-        <span className="text-lg font-semibold">{vote.outcome}</span>
-        {vote.selected_action && <span className="text-dg-accent">→ {vote.selected_action}</span>}
+    <section
+      aria-label="Vote result"
+      data-testid="vote-result-card"
+      className="border border-border rounded-md p-3 space-y-2"
+    >
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded-md border font-mono text-[11px] uppercase tracking-wider ${chip}`}
+        >
+          {vote.outcome}
+        </span>
+        {vote.selected_action && (
+          <span className="font-mono text-xs uppercase tracking-wide text-accent">
+            → {vote.selected_action}
+          </span>
+        )}
       </div>
-      <p className="text-sm text-gray-400">{vote.reason}</p>
-      <div className="mt-3 grid grid-cols-2 gap-4 text-xs">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-text-primary">
+        {rationale(vote)}
+      </p>
+      <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
         <div>
-          <div className="text-gray-400 mb-1">agreeing</div>
-          <ul>
-            {vote.agreeing_controllers.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
+          <p className="uppercase tracking-wider text-text-muted text-[10px] mb-0.5">Agreeing</p>
+          {vote.agreeing_controllers.length === 0 ? (
+            <p className="text-text-muted">—</p>
+          ) : (
+            <ul className="space-y-0.5">
+              {vote.agreeing_controllers.map((c) => (
+                <li key={c} className="text-status-nominal">
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div>
-          <div className="text-gray-400 mb-1">rejected</div>
-          <ul>
-            {vote.rejected_controllers.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
+          <p className="uppercase tracking-wider text-text-muted text-[10px] mb-0.5">Rejected</p>
+          {vote.rejected_controllers.length === 0 ? (
+            <p className="text-text-muted">—</p>
+          ) : (
+            <ul className="space-y-0.5">
+              {vote.rejected_controllers.map((c) => (
+                <li key={c} className="text-status-degraded">
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
-    </Card>
+    </section>
   );
 }

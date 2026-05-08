@@ -7,6 +7,10 @@ import { api } from "@/lib/api";
 import type { DecisionRecord, FaultRecord, TimelineEntry } from "@/types/api";
 import { Card } from "@/components/Card";
 import { CausalityPanel } from "@/components/CausalityPanel";
+import { DecisionPipeline } from "@/components/DecisionPipeline";
+import { FaultEvidenceCard } from "@/components/FaultEvidenceCard";
+import { ModeTimeline } from "@/components/ModeTimeline";
+import { ReplayExplainer } from "@/components/ReplayExplainer";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
 import { ControllerOutputTable } from "@/components/ControllerOutputTable";
 import { VoteResultCard } from "@/components/VoteResultCard";
@@ -64,6 +68,19 @@ export default function ReplayPage() {
     index > 0 ? (timeline[index - 1].decision as DecisionRecord) : null;
   const sensor = current?.sensor;
 
+  // Active faults at the current replay step. A fault is active when
+  // its window contains the current step (faults without an explicit
+  // end_step are open-ended).
+  const activeFaults = faults.filter((f) => {
+    if (!current) return false;
+    const ends = f.end_step ?? Number.POSITIVE_INFINITY;
+    return current.step >= f.start_step && current.step <= ends;
+  });
+
+  // Decisions list derived from the timeline so ModeTimeline can
+  // render the segment band without an extra round-trip.
+  const decisions: DecisionRecord[] = timeline.map((entry) => entry.decision as DecisionRecord);
+
   return (
     <div className="space-y-6">
       <header className="flex items-center gap-3 flex-wrap">
@@ -76,12 +93,29 @@ export default function ReplayPage() {
         <StepReplayControls total={timeline.length} index={index} onChange={setIndex} />
       </Card>
 
+      <ModeTimeline decisions={decisions} currentStep={current?.step} />
+
       <CausalityPanel
         decision={(decision as DecisionRecord) ?? null}
         previousDecision={previousDecision}
-        faults={faults}
+        faults={activeFaults}
         replayFingerprint={fingerprint}
       />
+
+      <DecisionPipeline step={current ?? null} />
+
+      {activeFaults.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-mono uppercase text-sm tracking-wider text-text-primary">
+            Fault evidence at step {current?.step}
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {activeFaults.map((fault) => (
+              <FaultEvidenceCard key={fault.fault_id} fault={fault} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="Sensor reading">
@@ -149,6 +183,8 @@ export default function ReplayPage() {
           <p className="text-sm text-gray-500">No events at this step.</p>
         )}
       </Card>
+
+      <ReplayExplainer simulationId={id} fingerprint={fingerprint} stepCount={timeline.length} />
     </div>
   );
 }

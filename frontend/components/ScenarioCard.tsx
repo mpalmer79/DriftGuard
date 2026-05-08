@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Scenario, ScenarioResult, SystemMode } from "@/types/api";
 import { api } from "@/lib/api";
-import { SystemModeBadge } from "./SystemModeBadge";
+import { ExecutionSummaryCard } from "./ExecutionSummaryCard";
 
 const SEVERITY_RANK: Record<SystemMode, number> = {
   NORMAL: 1,
@@ -115,32 +116,19 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
           </button>
         </div>
 
+        <Link
+          href={`/scenarios/${scenario.name}`}
+          className="inline-flex items-center font-mono uppercase text-[11px] tracking-wider text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+          data-testid="scenario-card-brief-link"
+        >
+          Read scenario brief →
+        </Link>
+
         {error && <p className="font-mono text-xs text-status-failed pt-1 break-words">{error}</p>}
 
         {result && (
-          <div className="border-t border-border pt-3 space-y-1 text-xs font-mono">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-text-muted uppercase tracking-wide">Final Mode:</span>
-              <SystemModeBadge mode={result.final_mode} />
-              <a
-                className="ml-auto text-accent hover:underline"
-                href={`/simulations/${result.simulation_id}`}
-              >
-                view →
-              </a>
-            </div>
-            <div className="text-text-muted uppercase tracking-wide">
-              Steps Run: {result.steps_run}
-            </div>
-            <div className="text-text-muted uppercase tracking-wide break-words">
-              Final Action: {result.final_action}
-            </div>
-            <div className="text-text-muted uppercase tracking-wide break-words">
-              Mode Counts:{" "}
-              {Object.entries(result.decision_counts)
-                .map(([k, v]) => `${k}:${v}`)
-                .join(", ")}
-            </div>
+          <div className="pt-3 -mx-1">
+            <ExecutionSummaryCard result={result} scenario={scenario} />
           </div>
         )}
       </div>

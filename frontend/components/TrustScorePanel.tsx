@@ -1,54 +1,91 @@
-import { Card } from "./Card";
+// TrustScorePanel — single-purpose tight 3-row table showing the
+// current trust state for each controller from a `trust_snapshot`.
+// Sparkbars / per-step trajectory belong to TrustEvolution. The
+// snapshot may also carry "sensor" + "_global" entries; we render
+// "sensor" if present and surface the global disagreement rate as a
+// footer line so operators can see "the controllers can't agree N%
+// of the time" at a glance.
 
-interface TrustEntry {
-  status?: string;
-  trust?: number;
-  fault_streak?: number;
-  clean_streak?: number;
+import type { ComponentTrustSnapshot } from "@/types/api";
+
+interface TrustScorePanelProps {
+  snapshot?: Record<string, ComponentTrustSnapshot> | null;
 }
 
-interface GlobalTrust {
+const STATUS_TEXT: Record<string, string> = {
+  HEALTHY: "text-status-nominal",
+  RECOVERING: "text-status-safemode",
+  SUSPECT: "text-status-degraded",
+  DEGRADED: "text-status-degraded",
+  CRITICAL: "text-status-failed",
+};
+
+interface GlobalEntry {
   disagreement_rate?: number;
 }
 
-type TrustSnapshot = Record<string, TrustEntry | GlobalTrust>;
+function isComponent(
+  v: ComponentTrustSnapshot | GlobalEntry | undefined
+): v is ComponentTrustSnapshot {
+  return !!v && typeof (v as ComponentTrustSnapshot).status === "string";
+}
 
-export function TrustScorePanel({ snapshot }: { snapshot: TrustSnapshot }) {
-  if (!snapshot) {
-    return null;
+export function TrustScorePanel({ snapshot }: TrustScorePanelProps) {
+  if (!snapshot || Object.keys(snapshot).length === 0) {
+    return (
+      <section
+        aria-label="Trust snapshot"
+        data-testid="trust-score-panel"
+        className="border border-border rounded-md p-3"
+      >
+        <p className="font-mono text-xs text-text-muted">Trust snapshot unavailable.</p>
+      </section>
+    );
   }
-  const entries = Object.entries(snapshot).filter(([k]) => k !== "_global") as [
-    string,
-    TrustEntry,
-  ][];
-  const global = snapshot._global as GlobalTrust | undefined;
+
+  const entries = Object.entries(snapshot)
+    .filter(([k]) => k !== "_global")
+    .filter(([, v]) => isComponent(v as ComponentTrustSnapshot))
+    .sort(([a], [b]) => a.localeCompare(b)) as [string, ComponentTrustSnapshot][];
+  const global = (snapshot as Record<string, GlobalEntry>)._global as GlobalEntry | undefined;
+
   return (
-    <Card title="Trust snapshot">
-      <table className="w-full text-xs">
-        <thead className="text-gray-400 text-left">
-          <tr>
-            <th className="py-1">component</th>
-            <th>status</th>
-            <th>trust</th>
-            <th>fault streak</th>
-            <th>clean streak</th>
+    <section
+      aria-label="Trust snapshot"
+      data-testid="trust-score-panel"
+      className="border border-border rounded-md p-3 space-y-2"
+    >
+      <table className="w-full text-xs font-mono">
+        <thead>
+          <tr className="text-left text-text-muted uppercase tracking-wider text-[10px]">
+            <th className="py-1 font-normal">component</th>
+            <th className="font-normal">status</th>
+            <th className="font-normal">trust</th>
+            <th className="font-normal">fault</th>
+            <th className="font-normal">clean</th>
           </tr>
         </thead>
         <tbody>
-          {entries.map(([cid, h]) => (
-            <tr key={cid} className="border-t border-dg-border">
-              <td className="py-1">{cid}</td>
-              <td>{h.status}</td>
-              <td>{h.trust}</td>
-              <td>{h.fault_streak}</td>
-              <td>{h.clean_streak}</td>
-            </tr>
-          ))}
+          {entries.map(([cid, h]) => {
+            const trustValue = typeof h.trust === "number" ? h.trust.toFixed(2) : "—";
+            const statusClass = STATUS_TEXT[h.status] ?? "text-text-primary";
+            return (
+              <tr key={cid} data-testid={`trust-row-${cid}`} className="border-t border-border">
+                <td className="py-1 text-text-primary">{cid}</td>
+                <td className={statusClass}>{h.status}</td>
+                <td className="text-text-primary tabular-nums">{trustValue}</td>
+                <td className="text-text-primary tabular-nums">{h.fault_streak ?? 0}</td>
+                <td className="text-text-primary tabular-nums">{h.clean_streak ?? 0}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
-      {global && (
-        <p className="text-xs text-gray-400 mt-2">disagreement rate: {global.disagreement_rate}</p>
+      {global && typeof global.disagreement_rate === "number" && (
+        <p className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
+          disagreement rate: {(global.disagreement_rate * 100).toFixed(0)}%
+        </p>
       )}
-    </Card>
+    </section>
   );
 }

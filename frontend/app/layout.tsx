@@ -1,8 +1,8 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { HeaderNav } from "../components/HeaderNav";
 
 export const metadata: Metadata = {
   title: "DriftGuard",
@@ -15,11 +15,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-mono">
         <ThemeProvider>
           <header className="border-b border-dg-border bg-dg-panel/50 backdrop-blur sticky top-0 z-10">
-            <nav className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-6 text-sm">
-              <Link href="/" className="font-semibold text-base">
-                DriftGuard
-              </Link>
-              <Link href="/scenarios">Scenarios</Link>
+            <nav className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <HeaderNav />
               <a
                 href="https://github.com/mpalmer79/driftguard"
                 target="_blank"

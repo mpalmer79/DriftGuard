@@ -15,6 +15,8 @@ import type {
   SystemDecision,
   SystemMode,
 } from "@/types/api";
+import { FaultEvidenceCard } from "./FaultEvidenceCard";
+import { ReplayExplainer } from "./ReplayExplainer";
 import { SystemModeBadge } from "./SystemModeBadge";
 import { EmptyState } from "./ui/EmptyState";
 
@@ -25,6 +27,18 @@ interface CausalityPanelProps {
   faults: FaultRecord[];
   replayFingerprint?: string | null;
   previousDecision?: DecisionRecord | null;
+  // When supplied, the inline fault chip list is replaced with a
+  // FaultEvidenceCard per active fault (operator-readable expansion
+  // of each fault). The original chip behavior is preserved when the
+  // prop is absent so the 14 baseline tests still pass.
+  activeFaults?: FaultRecord[];
+  // When true, the truncated fingerprint row is replaced with a full
+  // ReplayExplainer panel (copy button + three-bullet explanation).
+  // We require simulationId + stepCount when expanded so the
+  // explainer can render its full surface.
+  expanded?: boolean;
+  simulationId?: string;
+  stepCount?: number;
 }
 
 // Severity → status-token mapping. Detector findings ride on a
@@ -123,6 +137,10 @@ export function CausalityPanel({
   faults,
   replayFingerprint,
   previousDecision,
+  activeFaults,
+  expanded,
+  simulationId,
+  stepCount,
 }: CausalityPanelProps) {
   if (!decision) {
     return (
@@ -182,7 +200,13 @@ export function CausalityPanel({
         </Row>
 
         <Row label="Fault Evidence">
-          {activeFaultIds.length === 0 ? (
+          {activeFaults && activeFaults.length > 0 ? (
+            <div className="flex flex-col gap-2" data-testid="causality-active-fault-cards">
+              {activeFaults.map((f) => (
+                <FaultEvidenceCard key={f.fault_id} fault={f} />
+              ))}
+            </div>
+          ) : activeFaultIds.length === 0 ? (
             <span className="font-mono text-xs text-text-muted">no active faults</span>
           ) : (
             <span className="flex flex-wrap gap-1.5">
@@ -205,19 +229,31 @@ export function CausalityPanel({
           </span>
         </Row>
 
-        <Row label="Replay Fingerprint">
-          {replayFingerprint ? (
-            <span
-              title={replayFingerprint}
-              className="font-mono text-xs text-text-primary break-all"
-            >
-              {replayFingerprint.slice(0, 12)}…
-            </span>
-          ) : (
-            <span className="font-mono text-xs text-text-muted">—</span>
-          )}
-        </Row>
+        {!expanded && (
+          <Row label="Replay Fingerprint">
+            {replayFingerprint ? (
+              <span
+                title={replayFingerprint}
+                className="font-mono text-xs text-text-primary break-all"
+              >
+                {replayFingerprint.slice(0, 12)}…
+              </span>
+            ) : (
+              <span className="font-mono text-xs text-text-muted">—</span>
+            )}
+          </Row>
+        )}
       </dl>
+
+      {expanded && (
+        <div className="pt-2 border-t border-border" data-testid="causality-replay-explainer">
+          <ReplayExplainer
+            simulationId={simulationId ?? ""}
+            fingerprint={replayFingerprint ?? null}
+            stepCount={stepCount ?? decision.step}
+          />
+        </div>
+      )}
 
       {findings.length > 0 && (
         <div className="pt-2 border-t border-border space-y-2">

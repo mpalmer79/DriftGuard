@@ -167,4 +167,44 @@ describe("CausalityPanel", () => {
     render(<CausalityPanel decision={decision} faults={[FAULT]} previousDecision={previous} />);
     expect(screen.getByText(/← previous: NORMAL/i)).toBeTruthy();
   });
+
+  it("renders FaultEvidenceCards when activeFaults is supplied", () => {
+    render(<CausalityPanel decision={BASE} faults={[FAULT]} activeFaults={[FAULT]} />);
+    // Fault cards live in the dedicated container; the chip-style
+    // label should NOT appear when activeFaults is supplied.
+    expect(screen.getByTestId("causality-active-fault-cards")).toBeTruthy();
+    expect(screen.queryByText("SENSOR_DRIFT → barometer")).toBeNull();
+    // The card itself uses the humanised type (Title Case).
+    expect(screen.getByText("Sensor Drift")).toBeTruthy();
+  });
+
+  it("falls back to fault chips when activeFaults is omitted", () => {
+    render(<CausalityPanel decision={BASE} faults={[FAULT]} />);
+    expect(screen.queryByTestId("causality-active-fault-cards")).toBeNull();
+    expect(screen.getByText("SENSOR_DRIFT → barometer")).toBeTruthy();
+  });
+
+  it("renders the ReplayExplainer instead of the fingerprint row when expanded", () => {
+    const fp = "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
+    render(
+      <CausalityPanel
+        decision={BASE}
+        faults={[FAULT]}
+        replayFingerprint={fp}
+        expanded
+        simulationId="sim-1"
+        stepCount={42}
+      />
+    );
+    // Replay Fingerprint row label should NOT render when expanded.
+    expect(screen.queryByText(/Replay Fingerprint/i)).toBeTruthy();
+    expect(screen.getByTestId("causality-replay-explainer")).toBeTruthy();
+    expect(screen.getByTestId("replay-explainer")).toBeTruthy();
+    // The truncated 12-char form (legacy) is gone; the 8…8 explainer
+    // form is the one rendered.
+    expect(screen.queryByText(`${fp.slice(0, 12)}…`)).toBeNull();
+    expect(screen.getByTestId("replay-fingerprint-hash").textContent).toBe(
+      `${fp.slice(0, 8)}…${fp.slice(-8)}`
+    );
+  });
 });
