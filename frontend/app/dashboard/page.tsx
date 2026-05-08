@@ -173,7 +173,6 @@ export default function DashboardPage() {
 
       <ModeLegend />
 
-
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         <div className="lg:col-span-2 space-y-5">
           <section className="surface-elevated-grad border border-border rounded-md p-4">

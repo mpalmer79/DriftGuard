@@ -83,9 +83,7 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
           {scenario.expected_final_modes.length > 0 && (
             <p className="font-mono text-[11px] text-text-muted tracking-wide pt-2">
               expected final mode →{" "}
-              <span className="text-text-primary">
-                {scenario.expected_final_modes.join(" | ")}
-              </span>
+              <span className="text-text-primary">{scenario.expected_final_modes.join(" | ")}</span>
             </p>
           )}
         </div>
