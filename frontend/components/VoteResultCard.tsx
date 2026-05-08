@@ -1,8 +1,3 @@
-// VoteResultCard — slim vote summary for cramped contexts (replay
-// page, sidebars). Shows: outcome word, selected_action chip, agreeing
-// list, rejected list, and a single-line rationale. No per-controller
-// breakdown — use VotePanel for the full operator view.
-
 import type { VoteResult } from "@/types/api";
 
 interface VoteResultCardProps {

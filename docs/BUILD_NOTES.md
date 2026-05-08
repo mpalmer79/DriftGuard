@@ -29,8 +29,8 @@ All 29 tests pass on `main`.
 
 ## Expansion goals
 
-This build pass extends the prototype into a portfolio-grade platform. It
-preserves every passing behavior. Concretely:
+This build pass extends the prototype. It preserves every passing
+behavior. Concretely:
 
 1. **Backend architecture polish** — centralized ID and timestamp helpers,
    typed application exceptions, consistent API error responses,

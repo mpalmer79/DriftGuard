@@ -1,20 +1,5 @@
 "use client";
 
-// Landing page — operator-console framing for a 30-second portfolio
-// review.
-//
-// Vertical order (Phase 2 brief):
-//   1. Hero band — title + 1-2 sentence subtitle
-//   2. Primary action — "Run Sensor Drift Demo" + "Browse all scenarios"
-//   3. "What this simulates" — four ≤ 18-word technical bullets
-//   4. Scenario preview strip — four highlighted scenarios via
-//      `api.listScenarios()` rendered through LandingScenarioPreview
-//   5. Portfolio framing — three quiet capability chips
-//
-// The 3D hero is preserved as a load-bearing visual but moved into the
-// hero band as a smaller secondary element so the primary action stays
-// above the fold on small viewports.
-
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -29,9 +14,6 @@ const SystemCheckHero3D = dynamic(() => import("@/components/SystemCheckHero3D")
   loading: () => <div className="aspect-square w-full" />,
 });
 
-// Names of scenarios to surface in the preview strip. Order is the
-// rendered order. If any are missing from the backend payload they're
-// silently skipped — we never fabricate a scenario that doesn't exist.
 const FEATURED_SCENARIOS = [
   "sensor_drift_recovery",
   "split_vote_escalation",
@@ -49,8 +31,6 @@ export default function HomePage() {
   const [primaryRunning, setPrimaryRunning] = useState(false);
   const [primaryError, setPrimaryError] = useState<string | null>(null);
 
-  // Fetch the scenario catalog on mount. Failures fall back to a
-  // quiet "temporarily unavailable" line — we don't synthesize cards.
   useEffect(() => {
     let active = true;
     api
@@ -68,9 +48,8 @@ export default function HomePage() {
     };
   }, []);
 
-  // Look up the most-recently created simulation so the deterministic-
-  // replay capability chip can deep-link into a real replay page when
-  // one exists. Fail silently — the chip falls back to /scenarios.
+  // Pick the most-recent simulation so the replay capability chip
+  // deep-links to a real run; falls back to /scenarios when none exist.
   useEffect(() => {
     let active = true;
     api
@@ -81,8 +60,7 @@ export default function HomePage() {
         setRecentSimulationId(newest.id);
       })
       .catch(() => {
-        // Listing simulations is best-effort metadata for a deep
-        // link; swallow errors silently.
+        /* best-effort deep link; ignore failure */
       });
     return () => {
       active = false;
@@ -115,7 +93,6 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12">
-      {/* 1 — Hero band */}
       <section
         aria-labelledby="hero-title"
         className="bg-gradient-to-b from-bg to-surface-elevated border border-border rounded-xl p-6 md:p-10"
@@ -143,7 +120,6 @@ export default function HomePage() {
               <code className="font-mono text-status-failed">FAILED</code>.
             </p>
 
-            {/* 2 — Primary action */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
               <button
                 type="button"
@@ -171,9 +147,8 @@ export default function HomePage() {
               </p>
             )}
             <p className="font-mono text-[11px] uppercase tracking-wider text-text-muted pt-1">
-              <span className="opacity-70">Demo runs scenario</span>{" "}
-              <span className="text-text-primary">sensor_drift_recovery</span>{" "}
-              <span className="opacity-70">→ routes to live simulation detail</span>
+              Demo runs <span className="text-text-primary">sensor_drift_recovery</span> and routes
+              to the simulation detail.
             </p>
           </div>
           <div className="max-w-[360px] w-full mx-auto lg:max-w-none">
@@ -182,7 +157,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3 — What this simulates */}
       <section aria-labelledby="what-title">
         <p
           id="what-title"
@@ -214,7 +188,6 @@ export default function HomePage() {
         </ul>
       </section>
 
-      {/* 4 — Scenario preview strip */}
       <section aria-labelledby="scenarios-title">
         <div className="flex items-baseline justify-between gap-3 mb-4 flex-wrap">
           <p
@@ -233,27 +206,20 @@ export default function HomePage() {
         <ScenarioPreviewStrip scenarios={scenarios} featured={featured} error={scenariosError} />
       </section>
 
-      {/* 5 — Portfolio framing */}
       <section aria-labelledby="capabilities-title" className="border-t border-border pt-6">
         <p
           id="capabilities-title"
           className="font-mono text-xs uppercase tracking-[0.2em] text-text-muted mb-3"
         >
-          {"// DEMONSTRATED CAPABILITIES"}
+          {"// CAPABILITIES"}
         </p>
         <ul className="flex flex-wrap gap-2" data-testid="capability-chips">
-          <CapabilityChip
-            href={replayHref}
-            label="Demonstrates deterministic replay (SHA-256 fingerprint)"
-          />
+          <CapabilityChip href={replayHref} label="Deterministic replay (SHA-256 fingerprint)" />
           <CapabilityChip
             href="/scenarios"
-            label="Demonstrates explainable fault escalation (NORMAL → DEGRADED → SAFE_MODE → FAILED)"
+            label="Explainable fault escalation (NORMAL → DEGRADED → SAFE_MODE → FAILED)"
           />
-          <CapabilityChip
-            href="/scenarios"
-            label="Demonstrates redundant controller voting (3-of-3 majority)"
-          />
+          <CapabilityChip href="/scenarios" label="Redundant controller voting (3-of-3 majority)" />
         </ul>
       </section>
     </div>
@@ -300,7 +266,6 @@ function ScenarioPreviewStrip({
   }
 
   if (scenarios === null) {
-    // Fetch in flight — render compact skeletons.
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[0, 1, 2, 3].map((i) => (

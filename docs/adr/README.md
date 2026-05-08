@@ -15,6 +15,7 @@ changes, supersede it with a new ADR and mark the old one accordingly.
 | 0007 | 3-DOF dynamics layered under the legacy kinematic update | Accepted (Phase 2.1/2.2) |
 | 0008 | Direct NORMAL → FAILED transitions are permitted | Accepted (Phase 3.1) |
 | 0009 | The anomaly detector is advisory only | Accepted (Phase 6.2) |
-| 0011 | Safe-mode recovery hysteresis | Proposed (Phase 3) |
+| 0010 | Navigation pipeline (INS / GPS / EKF) on the live path | Accepted (Phase 1) |
+| 0011 | Safe-mode recovery hysteresis | Accepted (Phase 3) |
 
 Use `0000-template.md` as the starting point.

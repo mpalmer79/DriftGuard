@@ -1,14 +1,8 @@
 """Canonical serialization for replay-equivalence checking.
 
-A simulation's step history contains UUIDs (event_id, reading_id)
-that are deliberately non-deterministic per ADR 0004 — they exist to
-disambiguate persisted rows, not to participate in the
-reproducibility claim. Canonical serialization strips them and any
-other non-deterministic surface so two equivalent runs produce
-byte-identical output.
-
-The output is a sorted-key, fixed-precision JSON string suitable for
-hashing.
+Strips per-run UUIDs and other non-deterministic fields (see ADR 0004)
+so two equivalent runs produce byte-identical output. The result is a
+sorted-key, fixed-precision JSON string suitable for hashing.
 """
 
 from __future__ import annotations
@@ -30,13 +24,25 @@ from typing import Any
 #   *count* and *target* of active faults are deterministic and remain in
 #   canonical output via the fault row itself (target_component, type,
 #   start_step, etc.); the identifier is not.
+# - trust_snapshot: descriptive metadata produced by TrustDetector after
+#   each step's update. It is fully deterministic given the seed but is
+#   *redundant* with the rest of the canonical record (sensor, outputs,
+#   vote → trust state). Including it would freeze the detector's
+#   internal scoring constants into the fingerprint, so we keep the
+#   fingerprint contract narrow and exclude it.
 _NONDETERMINISTIC_FIELDS = frozenset(
-    {"event_id", "reading_id", "simulation_id", "fault_id", "active_fault_ids"}
+    {
+        "event_id",
+        "reading_id",
+        "simulation_id",
+        "fault_id",
+        "active_fault_ids",
+        "trust_snapshot",
+    }
 )
 
-# Float precision used for stable hashing. Higher is stricter; 9
-# digits is enough to distinguish the fault-injection magnitudes we
-# work with while absorbing IEEE-754 rounding noise.
+# 9 digits is enough to distinguish the fault-injection magnitudes
+# while absorbing IEEE-754 rounding noise.
 _FLOAT_DIGITS = 9
 
 
@@ -71,18 +77,16 @@ def canonical_json(records: list[Any]) -> str:
 def fingerprint(records: list[Any]) -> str:
     """SHA-256 hex digest of the canonical timeline.
 
-    This is the "run hash" referenced in RESEARCH.md §11 and §12 — a
-    stable identifier that two replays of the same scenario must agree
-    on byte-for-byte.
+    The run hash referenced in RESEARCH.md §11–12. Two replays of the
+    same scenario must agree on this byte-for-byte.
     """
 
     return hashlib.sha256(canonical_json(records).encode()).hexdigest()
 
 
 def _default(obj: Any) -> Any:
-    # Enums (Action, SystemMode, ...) carry a `.value`; everything else
-    # falls back to repr to make hash differences visible rather than
-    # silently failing.
+    # Enums carry `.value`; fall back to repr so unexpected types make
+    # the hash differ visibly rather than silently coercing.
     value = getattr(obj, "value", None)
     if value is not None:
         return value

@@ -1,31 +1,10 @@
 "use client";
 
-// DecisionPipeline — visual chain of the per-step decision pipeline.
-//
-// The kernel produces a deterministic chain at every simulation step:
-//
-//     Sensor → Controllers → Voter → Detectors → Mode → Action
-//
-// This component renders that chain as a horizontal sequence of small
-// stage cards (vertical on small screens) so an operator can see, at
-// a glance, how the inputs at one stage shape the outputs of the
-// next. Each stage's chip is colored using existing status tokens
-// (`text-status-{nominal,degraded,safemode,failed}`) and is keyed off
-// a single `TimelineEntry` prop — the timeline endpoint already
-// bundles state/sensor/controllers/vote/decision/events for every
-// step, so we don't need to invent any data.
-//
-// Mobile note: at < md breakpoint the stages stack vertically with a
-// downward chevron; at md+ they sit side-by-side with a `→` arrow.
-// We do this with a single set of utility classes (no JS branching)
-// so the component remains SSR-safe.
-
 import type { TimelineEntry } from "@/types/api";
 import { EmptyState } from "./ui/EmptyState";
 
-// Severity → status-token classes. We use Tailwind's static class
-// names rather than CSS variables here so the content scanner picks
-// them up, matching the pattern in CausalityPanel.
+// Static class map — Tailwind's content scanner can't see dynamic
+// `text-status-${token}` strings.
 const STATUS_CLASS = {
   nominal: "text-status-nominal border-status-nominal/40 bg-status-nominal/10",
   degraded: "text-status-degraded border-status-degraded/40 bg-status-degraded/10",
@@ -36,9 +15,6 @@ const STATUS_CLASS = {
 
 type StatusToken = keyof typeof STATUS_CLASS;
 
-// Map a fault/severity string into a status token. The detector
-// component statuses (HEALTHY/SUSPECT/DEGRADED/CRITICAL/RECOVERING)
-// arrive verbatim from the kernel, so we accept either casing.
 function severityToken(severity: string | null | undefined): StatusToken {
   switch ((severity ?? "").toUpperCase()) {
     case "HEALTHY":
@@ -58,7 +34,6 @@ function severityToken(severity: string | null | undefined): StatusToken {
   }
 }
 
-// Sensor stage uses the SensorStatus enum (OK/DEGRADED/INVALID).
 function sensorToken(status: string | undefined, flags: string[]): StatusToken {
   if ((status ?? "").toUpperCase() === "OK" && flags.length === 0) return "nominal";
   if ((status ?? "").toUpperCase() === "INVALID") return "failed";
@@ -129,7 +104,6 @@ function Stage({ label, token, children, testId }: StageProps) {
   );
 }
 
-// Connector arrow — horizontal at md+, vertical (down) below md.
 function Connector() {
   return (
     <div
@@ -166,42 +140,31 @@ export function DecisionPipeline({ step }: DecisionPipelineProps) {
 
   const { sensor, controllers, vote, decision } = step;
 
-  // -- Stage 1: Sensor -----------------------------------------------
   const sensorStatus = sensor?.status ?? "OK";
   const sensorFlags = sensor?.fault_flags ?? [];
   const sensorTokenValue = sensorToken(sensorStatus, sensorFlags);
 
-  // -- Stage 2: Controllers ------------------------------------------
-  // Worst-case token: any invalid controller pushes the stage to
-  // degraded; otherwise nominal.
   const ctrlAnyInvalid = controllers.some((c) => !c.valid);
   const ctrlToken: StatusToken = ctrlAnyInvalid ? "degraded" : "nominal";
 
-  // -- Stage 3: Voter -------------------------------------------------
   const voteOutcome = decision.vote_split?.outcome ?? vote?.outcome ?? null;
   const voteAction =
     decision.vote_split?.selected_action ?? vote?.selected_action ?? decision.final_action;
   const voteReason = decision.vote_split?.reason ?? vote?.reason ?? "";
   const voteTokenValue = voteToken(voteOutcome);
 
-  // -- Stage 4: Detectors --------------------------------------------
   const findings = decision.detector_findings ?? [];
-  // Pick the worst finding to color the stage.
   const detectorTokenValue: StatusToken = findings.reduce<StatusToken>((acc, f) => {
     const t = severityToken(f.severity);
     const order: StatusToken[] = ["nominal", "muted", "safemode", "degraded", "failed"];
     return order.indexOf(t) > order.indexOf(acc) ? t : acc;
   }, "nominal");
 
-  // -- Stage 5: Mode --------------------------------------------------
   const previousMode = decision.previous_mode ?? null;
   const currentMode = decision.system_mode;
   const modeTokenValue = modeToken(currentMode);
   const triggerReason = decision.trigger_reason || decision.justification || "";
 
-  // -- Stage 6: Action ------------------------------------------------
-  // Final action stage colors: SAFE_MODE active flag escalates the
-  // stage; otherwise it inherits the mode token.
   const actionTokenValue: StatusToken = decision.safe_mode_active ? "safemode" : modeTokenValue;
 
   return (
@@ -219,7 +182,6 @@ export function DecisionPipeline({ step }: DecisionPipelineProps) {
         </span>
       </div>
 
-      {/* Pipeline grid: vertical < md, horizontal >= md. */}
       <div className="flex flex-col md:flex-row md:items-stretch gap-2">
         <Stage label="Sensor" token={sensorTokenValue} testId="pipeline-sensor">
           <p className="font-mono text-xs uppercase">{sensorStatus}</p>

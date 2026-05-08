@@ -1,7 +1,3 @@
-// ModeTimeline — unit tests covering segment collapsing, range
-// labels, the empty state, the currentStep cursor highlight, and the
-// hover/title attribute that surfaces per-segment justification.
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

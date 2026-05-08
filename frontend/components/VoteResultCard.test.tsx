@@ -1,6 +1,3 @@
-// VoteResultCard — slim summary tests. Asserts the outcome chip,
-// rationale string, and agreeing/rejected lists.
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

@@ -1,9 +1,3 @@
-// ControllerOutputTable — compact 3-row table for dense layouts.
-// Columns: controller / action / confidence / response time / valid.
-// Coloring mirrors VotePanel: green for agreeing, amber for rejected,
-// neutral otherwise. Latency over the 150ms operator budget is shown
-// in red so a slow controller is obvious in a dense grid.
-
 import type { ControllerOutput, VoteResult } from "@/types/api";
 
 const LATENCY_BUDGET_MS = 150;

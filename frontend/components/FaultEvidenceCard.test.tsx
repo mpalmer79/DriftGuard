@@ -1,13 +1,3 @@
-// FaultEvidenceCard — operator readout for a single FaultRecord.
-//
-// Coverage targets:
-//   * humanises known fault type tokens and renders the
-//     interpretation line from the lookup table
-//   * unknown types fall back to a generic phrase that still
-//     surfaces the raw token
-//   * severity chip + window range render from the props
-//   * raw-metadata disclosure renders the JSON blob
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

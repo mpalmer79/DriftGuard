@@ -35,10 +35,7 @@ export default function DashboardPage() {
   const [lastDecision, setLastDecision] = useState<DecisionRecord | null>(null);
   const [previousDecision, setPreviousDecision] = useState<DecisionRecord | null>(null);
   const [fingerprint, setFingerprint] = useState<string | null>(null);
-  // Latest full step bundle (state + sensor + controllers + vote +
-  // decision). Needed by DecisionPipeline + VotePanel which render
-  // per-step causality. Populated either from a step response or by
-  // pulling the tail of the timeline when a simulation is selected.
+  // Tail of the timeline; consumed by DecisionPipeline and VotePanel.
   const [latestStep, setLatestStep] = useState<TimelineEntry | null>(null);
 
   async function refreshList() {
@@ -70,9 +67,6 @@ export default function DashboardPage() {
       .getSimulation(activeId)
       .then((d) => setStepCount(d.step_count))
       .catch(() => setStepCount(0));
-    // Pull the latest persisted decision so the causality panel
-    // shows real data even when the user just selected the
-    // simulation without stepping it themselves.
     api
       .getDecisions(activeId)
       .then((decs) => {
@@ -127,25 +121,21 @@ export default function DashboardPage() {
         setState(last.state);
         setStepCount(last.state.step);
         setLastDecision(last.decision as DecisionRecord);
-        // The StepResponse shape matches TimelineEntry minus `events`;
-        // synthesise an empty events list so DecisionPipeline + VotePanel
-        // can render the latest step without an extra round-trip.
+        // StepResponse mirrors TimelineEntry minus `events`; pad it so
+        // the per-step components can render without another round-trip.
         setLatestStep({ ...last, events: [] } as TimelineEntry);
         if (prevToLast) {
           setPreviousDecision(prevToLast.decision as DecisionRecord);
         } else {
-          // First step in this batch — fall back to whatever was
-          // previously cached so previous_mode resolution still works.
           setPreviousDecision((prev) => prev ?? lastDecision);
         }
       }
-      // Refresh the fingerprint after stepping — every new step
-      // changes the canonical hash.
+      // Fingerprint changes with every step.
       api
         .getReplayFingerprint(activeId)
         .then((r) => setFingerprint(r.fingerprint))
         .catch(() => {
-          /* keep stale fingerprint */
+          /* leave stale value */
         });
     } catch (e) {
       setError((e as Error).message);
@@ -164,8 +154,8 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <p className="text-text-muted leading-relaxed max-w-[640px]">
-          Create a new simulation, step through it, and inspect the system state at each step. Each
-          simulation is identified by its seed — same seed reproduces the same trajectory.
+          Create a simulation, step through it, and inspect each transition. The seed identifies the
+          run — same seed reproduces the same trajectory.
         </p>
       </header>
 
@@ -245,22 +235,32 @@ export default function DashboardPage() {
 
         <div className="lg:col-span-3 space-y-5">
           <section className="surface-elevated-grad border border-border rounded-md p-4 space-y-4">
-            <h2 className="font-mono uppercase text-sm tracking-wider text-text-primary">
-              Active Simulation
-            </h2>
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <h2 className="font-mono uppercase text-sm tracking-wider text-text-primary">
+                Active Simulation
+              </h2>
+              {activeId && (
+                <Link
+                  href={`/simulations/${activeId}`}
+                  className="font-mono text-[11px] uppercase tracking-wider text-accent hover:underline"
+                >
+                  Full view →
+                </Link>
+              )}
+            </div>
             {!activeId ? (
               <p className="font-mono text-xs text-text-muted py-8 text-center">
                 {"// SELECT OR CREATE A SIMULATION TO BEGIN"}
               </p>
             ) : (
               <>
-                <p className="font-mono text-xs text-text-muted break-all">{activeId}</p>
                 <div className="flex flex-wrap items-center gap-3">
                   {state && <SystemModeBadge mode={state.system_mode} />}
                   <span className="font-mono text-xs text-text-muted uppercase tracking-wider">
-                    Step {stepCount} / ∞
+                    Step {stepCount}
                   </span>
                 </div>
+                <p className="font-mono text-[11px] text-text-muted break-all">{activeId}</p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     type="button"
@@ -305,14 +305,6 @@ export default function DashboardPage() {
                       {faults.length} active
                     </p>
                   </StatCard>
-                </div>
-                <div className="pt-1">
-                  <Link
-                    href={`/simulations/${activeId}`}
-                    className="inline-flex items-center font-mono uppercase text-xs tracking-wider text-accent hover:underline"
-                  >
-                    Open Full View →
-                  </Link>
                 </div>
               </>
             )}

@@ -1,32 +1,9 @@
 "use client";
 
-// ReplayExplainer — inline explainability panel for the replay
-// fingerprint endpoint.
-//
-// DriftGuard's deterministic simulator emits a SHA-256 fingerprint
-// over the full per-step trajectory. The hash itself is hard to read
-// (64 hex chars), so this component:
-//   1. shows it truncated as ABCDEFGH…ZYXWVUTS with the full hash
-//      kept in the `title` and `aria-label` for screen-reader access,
-//   2. exposes a copy-to-clipboard button that uses
-//      navigator.clipboard.writeText and shows a transient "Copied"
-//      hint, and
-//   3. lists three short bullets explaining the contract: same seed
-//      → same trajectory → same fingerprint. A regression flips the
-//      hash.
-//
-// The "How verified" line links to the in-repo docs that the rest of
-// the project owns: docs/DETERMINISM.md (description) and
-// docs/formal/SafeMode.tla (the TLA+ spec). We deliberately use
-// relative paths so the links continue to work in both the
-// production deployment and locally cloned repos.
-
 import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "./ui/EmptyState";
 
-// 1.5s in ms — long enough to register, short enough not to block
-// the next click. Exported for tests so they can advance fake
-// timers without hard-coding the value.
+// Exported so tests can advance fake timers without hard-coding the value.
 export const COPY_HINT_MS = 1500;
 
 function truncate(hash: string): string {
@@ -44,10 +21,6 @@ export function ReplayExplainer({ simulationId, fingerprint, stepCount }: Replay
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clean up the pending timer if the component unmounts before the
-  // hint expires — otherwise we'd call setState on an unmounted
-  // component, which React 18 quietly drops but vitest still flags
-  // in strict-mode runs.
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -73,16 +46,14 @@ export function ReplayExplainer({ simulationId, fingerprint, stepCount }: Replay
   }
 
   const onCopy = async () => {
+    if (typeof navigator === "undefined" || !navigator.clipboard) return;
     try {
       await navigator.clipboard.writeText(fingerprint);
       setCopied(true);
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setCopied(false), COPY_HINT_MS);
     } catch {
-      // Clipboard write may reject in secure-context-less environments
-      // (e.g. http on iframe). We swallow the error rather than
-      // surface a console error — the fingerprint is still readable
-      // because the full hash is in the title/aria-label attributes.
+      // Clipboard rejects in non-secure contexts; full hash stays readable via title/aria-label.
     }
   };
 

@@ -1,17 +1,3 @@
-// Phase 6.2a — first vitest test surface for the frontend.
-//
-// Covers the three error contracts the API client must honour:
-//   1. happy path returns the decoded JSON body
-//   2. 4xx with `{error: {code, message}}` envelope (Phase 8.6) →
-//      ApiError with `body.error.message` as the user-facing string
-//   3. 4xx with `{detail: ...}` (FastAPI validation default) →
-//      ApiError with the detail string
-//   4. network error → ApiError with status=0 and the underlying
-//      message wrapped
-//
-// Stubs `globalThis.fetch` via `vi.stubGlobal` — simpler than MSW
-// for a single helper, and keeps the dev-dep footprint tight.
-
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "./api";
@@ -112,6 +98,21 @@ describe("api client routing (Phase 6.3 auth proxy)", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]).not.toMatch(/^\/api\/proxy/);
     expect(calls[0]).toMatch(/\/scenarios$/);
+  });
+
+  it("routes getTrustHistory direct to NEXT_PUBLIC_API_BASE", async () => {
+    const calls: string[] = [];
+    stubFetch(async (input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+      calls.push(url);
+      return jsonResponse(200, [{ step: 1, snapshot: {} }]);
+    });
+
+    const result = await api.getTrustHistory("sim-x");
+    expect(result).toEqual([{ step: 1, snapshot: {} }]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).not.toMatch(/^\/api\/proxy/);
+    expect(calls[0]).toMatch(/\/simulations\/sim-x\/trust$/);
   });
 
   it("routes YAML scenario uploads through the proxy too", async () => {

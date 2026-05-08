@@ -1,17 +1,6 @@
-// Frontend auth proxy (Phase 6.3).
-//
-// Mutating API calls are routed through this Next.js route handler
-// instead of going directly to the FastAPI backend from the browser.
-// The handler runs server-side, so it can read the *non-public*
-// `SENTINEL_API_TOKEN` and inject `Authorization: Bearer <token>`
-// without exposing the token to the client.
-//
-// Read traffic still goes direct (`NEXT_PUBLIC_API_BASE`) — reads
-// don't need the token under the Phase 8.3 policy and bouncing them
-// through the proxy would just add a hop.
-//
-// Method allow-list: POST, PUT, PATCH, DELETE. GET / HEAD return 405
-// to avoid an open relay.
+// Server-side auth proxy (Phase 6.3). Mutating calls land here so the
+// non-public SENTINEL_API_TOKEN can be injected without leaking to the
+// client. Reads stay direct under the Phase 8.3 policy.
 
 import { NextRequest, NextResponse } from "next/server";
 
@@ -32,8 +21,8 @@ async function forward(req: NextRequest, path: string[]): Promise<NextResponse> 
 
   const target = `${BACKEND.replace(/\/$/, "")}/${path.join("/")}${req.nextUrl.search}`;
   const headers = new Headers();
-  // Forward the content type the client sent so YAML scenario uploads
-  // (Phase 5.3) reach the backend with `text/yaml`.
+  // Preserve content-type so YAML scenario uploads reach the FastAPI
+  // parse_yaml branch (Phase 5.3).
   const contentType = req.headers.get("content-type");
   if (contentType) headers.set("content-type", contentType);
 
@@ -62,8 +51,8 @@ async function forward(req: NextRequest, path: string[]): Promise<NextResponse> 
     );
   }
 
-  // Pass the upstream body and content-type through unchanged so the
-  // client sees the exact 4xx envelope the backend produced.
+  // Pass body + content-type through so the client sees the backend's
+  // exact 4xx envelope.
   const upstreamBody = await upstream.text();
   const responseHeaders = new Headers();
   const upstreamCT = upstream.headers.get("content-type");

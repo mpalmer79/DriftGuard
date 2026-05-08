@@ -125,6 +125,14 @@ def save_decision(conn, sim_id: str, d: SystemDecision) -> None:
     )
 
 
+def save_trust_snapshot(conn, sim_id: str, step: int, payload: dict) -> None:
+    conn.execute(
+        """INSERT OR REPLACE INTO trust_snapshots
+        (simulation_id, step, payload) VALUES (?, ?, ?)""",
+        (sim_id, step, json.dumps(payload, sort_keys=True)),
+    )
+
+
 def save_event(conn, sim_id: str, e: Event) -> None:
     conn.execute(
         """INSERT OR IGNORE INTO events

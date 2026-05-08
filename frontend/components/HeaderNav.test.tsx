@@ -1,8 +1,3 @@
-// HeaderNav — verifies the active-link rule (`isActive`) and the
-// rendered set of links. We exercise `isActive` directly so we don't
-// have to install a full Next router context inside the test
-// environment; that helper drives every link's aria-current state.
-
 import { describe, expect, it, afterEach, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
@@ -32,7 +27,6 @@ describe("HeaderNav", () => {
     vi.doMock("next/navigation", () => ({
       usePathname: () => "/dashboard",
     }));
-    // Re-import after mocking so the component picks up the stub.
     const { HeaderNav: NavWithMock } = await import("./HeaderNav");
 
     render(<NavWithMock />);

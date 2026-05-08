@@ -1,9 +1,3 @@
-// ExecutionSummaryCard — unit tests covering the post-run debrief
-// surfaces: escalation summarisation, detector response derivation,
-// vote stat fallbacks, fault chip rendering, and the optional
-// expected-vs-actual section that compares result.final_mode against
-// scenario.expected_final_modes.
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

@@ -1,8 +1,3 @@
-// ScenarioNarrative — unit tests covering the operator-brief render
-// surface for the five sections: header, what-this-tests, injected
-// condition, expected observation, expected escalation, and the
-// per-fault-type "what to inspect" checklist mapping.
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

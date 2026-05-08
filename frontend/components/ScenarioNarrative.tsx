@@ -1,27 +1,9 @@
-// ScenarioNarrative — full operator brief for a single scenario.
-//
-// Renders the scenario as a narrative an operator can read before
-// running it: what is being tested, what condition is injected, what
-// observation should appear, what escalation envelope is expected,
-// and which post-run artefacts to inspect.
-//
-// All copy is derived from the scenario's own fields — `description`
-// and `expected_behavior` are quoted verbatim. The only authored copy
-// here is the per-fault-type "what to inspect" mapping below, which
-// translates the first fault's target into a static three-line
-// operator checklist.
-//
-// The component is a pure render — no fetching, no state. It is safe
-// to use both on the listing page and the detail route.
-
 import type { Scenario, SystemMode } from "@/types/api";
 
 interface ScenarioNarrativeProps {
   scenario: Scenario;
 }
 
-// Mode → Tailwind status-token classes. Static map so the content
-// scanner emits the concrete utility names at build time.
 const MODE_CHIP_CLASS: Record<SystemMode, string> = {
   NORMAL: "text-status-nominal border-status-nominal/40 bg-status-nominal/10",
   DEGRADED: "text-status-degraded border-status-degraded/40 bg-status-degraded/10",
@@ -36,14 +18,7 @@ function modeChipClass(mode: string): string {
   return "text-text-muted border-border bg-surface";
 }
 
-// Inspect-checklist mapping (D1).
-//
-// The first fault's target string drives this lookup — that is the
-// only authored copy in the component. Mapping is deterministic:
-//   * "sensor"       → sensor-fault checklist
-//   * "controller_*" → controller-fault checklist
-//   * "gps"          → GPS-fault checklist
-//   * anything else  → generic justification-table fallback
+// First-fault target drives the post-run inspection checklist.
 function inspectChecklist(scenario: Scenario): string[] {
   const firstFault = scenario.faults[0];
   if (!firstFault) {

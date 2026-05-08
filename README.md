@@ -7,6 +7,40 @@ detection erodes trust. Every decision is reproducible from a seed and
 every step is logged for audit. The repo ships a Python/FastAPI backend
 with SQLite persistence and a Next.js + TypeScript dashboard.
 
+## What this is (and isn't)
+
+DriftGuard is a portfolio simulation of the redundancy and safe-mode
+patterns used in mission-critical control systems. It is built to be
+*inspectable*: deterministic replay, falsifiable claims, ADR-backed
+decisions, and a TLA+ spec for the safe-mode transition function.
+
+It is **not** flight-certified software, a SaaS product, or a real
+hardware control loop. Production-boundary callouts in this README and
+in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) are deliberate; promoting
+the system past them is real engineering work, not a config flip.
+
+## Documentation map
+
+| Topic | Document |
+| --- | --- |
+| High-level architecture | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| Block diagram (audited against source) | [`docs/ARCHITECTURE_DIAGRAM.md`](docs/ARCHITECTURE_DIAGRAM.md) |
+| Portfolio case study | [`docs/PORTFOLIO_CASE_STUDY.md`](docs/PORTFOLIO_CASE_STUDY.md) |
+| Live demo walkthrough | [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) |
+| Determinism / replay audit | [`docs/DETERMINISM.md`](docs/DETERMINISM.md) |
+| API surface | [`docs/API.md`](docs/API.md) |
+| Built-in scenarios | [`docs/SCENARIOS.md`](docs/SCENARIOS.md) |
+| Fault model | [`docs/FAULT_MODEL.md`](docs/FAULT_MODEL.md) |
+| Physics / dynamics / EKF | [`docs/PHYSICS.md`](docs/PHYSICS.md) |
+| Numbered invariants (I1–I11) | [`docs/INVARIANTS.md`](docs/INVARIANTS.md) |
+| Observability (events / metrics / traces) | [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) |
+| Local + Compose deployment | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) |
+| Railway deployment runbook | [`docs/RAILWAY_DEPLOY.md`](docs/RAILWAY_DEPLOY.md) |
+| Architecture decision records | [`docs/adr/`](docs/adr) |
+| TLA+ specification | [`docs/formal/SafeMode.tla`](docs/formal/SafeMode.tla) |
+| Whitepaper (predates rename) | [`RESEARCH.md`](RESEARCH.md) |
+| Changelog | [`CHANGELOG.md`](CHANGELOG.md) |
+
 <details>
 <summary><strong>Claim audit (verified at HEAD)</strong></summary>
 
@@ -19,7 +53,7 @@ with SQLite persistence and a Next.js + TypeScript dashboard.
 | Canonical replay fingerprint (SHA-256) | true | [`backend/app/core/canonical.py`](backend/app/core/canonical.py); endpoint `GET /simulations/{id}/replay-fingerprint` |
 | Causality fields on every decision | true | `previous_mode`, `trigger_reason`, `active_fault_ids`, `detector_findings`, `vote_split`; mapped in [`docs/API.md`](docs/API.md) |
 | Bearer-token guard on writes via `SENTINEL_API_TOKEN` | true | [`backend/app/api/auth.py`](backend/app/api/auth.py); reads are open by design |
-| Sliding-window rate limiter | true | [`backend/app/api/rate_limit.py`](backend/app/api/rate_limit.py); per-process, see Production Boundaries |
+| Sliding-window rate limiter | true | [`backend/app/api/rate_limit.py`](backend/app/api/rate_limit.py); per-process, see Production boundaries |
 | Single-replica deployment | true | `numReplicas = 1` in [`backend/railway.toml`](backend/railway.toml) and [`frontend/railway.toml`](frontend/railway.toml) |
 | WAL-mode SQLite at `/data/driftguard.db` | corrected | Path was `sentinelnav.db` in README; matches [`docker-compose.yml`](docker-compose.yml) |
 | Supply-chain CI (Trivy + CycloneDX SBOMs) | true | [`.github/workflows/supply-chain.yml`](.github/workflows/supply-chain.yml) — runs trivy fs scan + syft for backend & frontend |
@@ -85,7 +119,7 @@ flowchart LR
   same-or-less-severe mode. See ADR 0011 / I11.
 - 15 fault types (sensor and controller, with intermittent patterns
   and a metadata DSL that supports linear ramps)
-- 6 built-in scenarios plus a YAML scenario authoring surface with
+- 10 built-in scenarios plus a YAML scenario authoring surface with
   run-time parameter overrides
 - SQLite persistence + full timeline reconstruction
 - Mission report (JSON + Markdown) with risk assessment
@@ -179,9 +213,9 @@ Full taxonomy in [`docs/FAULT_MODEL.md`](docs/FAULT_MODEL.md).
 
 ## Live demo walkthrough
 
-For a step-by-step reviewer script — sensor-drift run → DEGRADED
-observation → controller-fault injection → SAFE_MODE observation →
-replay-fingerprint check — see [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
+A step-by-step demo script — sensor-drift run → DEGRADED → controller
+fault injection → SAFE_MODE → replay-fingerprint check — lives at
+[`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
 
 ## Local setup
 
@@ -247,88 +281,35 @@ CI also runs `ruff check`, `ruff format --check`, `bandit`,
 `pip-audit`, plus weekly `trivy` filesystem scans and CycloneDX
 SBOM generation for both the backend and frontend.
 
-## Roadmap
+## Non-goals
 
-What's intentionally **out of scope** at 0.3.0 — these are
-deliberate non-goals, not gaps, and `docs/OBSERVABILITY.md` calls
-out the operational boundaries that follow from them:
+Deliberate non-goals at 0.3.0. These are not gaps; the
+[Production boundaries](#production-boundaries) section enumerates
+the operational consequences.
 
-- **Multi-replica horizontal scaling.** The simulation registry and
-  rate limiter are per-process. A multi-replica deployment would
-  shard simulations across replicas (the registry isn't consistent
-  between them) and need a shared store like Redis for the rate
-  limiter to be effective. Single-process is the right size for a
-  portfolio demo. Railway deploys are pinned to one replica per
-  service in `railway.toml` for the same reason; moving to a shared
-  store is the next step for production-grade scale.
-- **PostgreSQL backend.** The persistence layer is single-writer
-  SQLite with WAL. Switching to Postgres earns nothing the demo
-  can show; the schema and repository would need migrations,
-  connection pooling, and transactional review the project does
-  not justify yet.
-- **Real hardware control.** Out of scope by mission statement —
-  RESEARCH.md §13: "AI or advanced controllers may advise,
-  deterministic assurance governs." The simulation models the
-  flight-software side of a fault-tolerant control loop; nothing
-  here is meant to fly anything.
-- **Distributed model checking.** Phase 9 ships a TLA+ spec
-  mirrored by an exhaustive Python checker. A real `tlc` run as a
-  separate CI job is reasonable polish (action plan PR 9.1) but
-  not a v0.3.0 requirement.
-- **SLOs / error budgets.** Production-grade, irrelevant for a
-  portfolio simulator that runs locally.
+- **Multi-replica horizontal scaling.** Single-process is the right
+  size for a portfolio demo. Lifting this requires shared state
+  (Redis) for the rate limiter and a non-SQLite persistence layer.
+- **PostgreSQL backend.** SQLite + WAL is a deliberate choice
+  ([ADR 0003](docs/adr/0003-sqlite-not-postgres.md)).
+- **Real hardware control.** Per [`RESEARCH.md`](RESEARCH.md) §13,
+  the simulation models the flight-software side; nothing here is
+  meant to fly anything.
+- **Distributed model checking.** Phase 9 ships a TLA+ spec mirrored
+  by an exhaustive Python checker; running `tlc` as a CI job is a
+  later polish item, not a 0.3.0 requirement.
+- **SLOs / error budgets.** Out of scope for a portfolio simulator.
 
-These belong to a v1.0 plan, not portfolio polish.
+## Further reading
 
-## What this demonstrates
+The capability-to-source map and the "what this demonstrates" write-up
+live in [`docs/PORTFOLIO_CASE_STUDY.md`](docs/PORTFOLIO_CASE_STUDY.md).
+For the formal-spec mirror, see
+[`docs/INVARIANTS.md`](docs/INVARIANTS.md); for the
+events / metrics / traces signal map,
+[`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md).
 
-DriftGuard is intentionally small in scope but rich in the details
-that real safety-critical systems demand. The list below maps each
-capability to where it actually lives in the repo.
-
-- **Deterministic control simulation.** Named-RNG service
-  ([`backend/app/core/rng.py`](backend/app/core/rng.py)) feeds every
-  stochastic source from a single seed; canonical SHA-256 fingerprint
-  over a scrubbed step timeline ([`backend/app/core/canonical.py`](backend/app/core/canonical.py))
-  makes "same seed, same answer" a falsifiable claim
-  ([ADR 0004](docs/adr/0004-determinism-via-seeds.md)).
-- **Redundant controller voting.** Three controllers (Conservative,
-  Responsive, Balanced) with intentionally different decision
-  boundaries; majority vote over valid, on-time outputs
-  ([ADR 0002](docs/adr/0002-majority-voting.md)).
-- **Fault injection.** 15 fault types across sensor and controller
-  targets — including intermittent on/off masks, linear ramps, and
-  the `COMPOUND_FAULT` DSL ([`docs/FAULT_MODEL.md`](docs/FAULT_MODEL.md)).
-- **Safe-mode escalation.** `NORMAL → DEGRADED → SAFE_MODE → FAILED`,
-  with immediate escalation but a configurable `safe_mode_recovery_steps`
-  hysteresis on de-escalation ([ADR 0011](docs/adr/0011-safe-mode-recovery-hysteresis.md),
-  invariant I11).
-- **Replayability.** `GET /simulations/{id}/replay-fingerprint`
-  returns the canonical hash; two independent runs of the same
-  (seed, scenario) must agree byte-for-byte
-  ([`backend/app/tests/test_replay_fingerprint.py`](backend/app/tests/test_replay_fingerprint.py)).
-- **Audit logging.** Append-only `EventLogger` writes through to a
-  SQLite-backed timeline; the mission report reconstructs the run
-  from those records.
-- **Operator-facing explainability.** Every decision response carries
-  `previous_mode`, `trigger_reason`, `active_fault_ids`,
-  `detector_findings`, and `vote_split` so the UI can answer
-  "why this mode, why this action?" without re-running the sim. See
-  the causality table in [`docs/API.md`](docs/API.md).
-- **CI-backed engineering discipline.** Backend CI runs `ruff check`,
-  `ruff format --check`, `bandit`, `pip-audit`, and
-  `pytest --cov=app`. Frontend CI runs `vitest`, `prettier`, and
-  `eslint`. A weekly supply-chain workflow runs Trivy filesystem
-  scans and emits CycloneDX SBOMs (via `syft`) for both services
-  ([`.github/workflows/`](.github/workflows)).
-
-See [`docs/PORTFOLIO_CASE_STUDY.md`](docs/PORTFOLIO_CASE_STUDY.md) for
-the case-study write-up,
-[`docs/INVARIANTS.md`](docs/INVARIANTS.md) for the formal-spec
-mirror, and [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) for the
-metrics / traces / events signal map.
-
-## Production Boundaries
+## Production boundaries
 
 DriftGuard is a single-replica portfolio system, not a multi-tenant
 SaaS. The following limits are deliberate and documented; promoting
@@ -359,9 +340,7 @@ the system past them is a real piece of work, not a config flip.
   is per-process state with no cross-replica coordination. With one
   replica it is correct; with N replicas the effective limit becomes
   N × the configured limit.
-- **Out of scope.** Real hardware control (per [`RESEARCH.md`](RESEARCH.md)
-  §13: "AI or advanced controllers may advise, deterministic assurance
-  governs"), distributed `tlc` model checking, SLOs / error budgets,
-  and multi-tenant production. The non-goals enumerated under
-  [Roadmap](#roadmap) are the source of truth — this section is the
-  operator-facing summary, not a duplicate.
+- **Out of scope.** Real hardware control, distributed `tlc` model
+  checking, SLOs / error budgets, and multi-tenant production. The
+  [Non-goals](#non-goals) section is the source of truth; this
+  section is the operator-facing summary.

@@ -1,11 +1,3 @@
-// VotePanel — rationale / exclusion / trust-meter rendering tests.
-//
-// The bucket coloring (agreeing → status-nominal, rejected →
-// status-degraded) is asserted via the controller-id test ids so the
-// shape of the visual mapping is locked in even if surrounding copy
-// changes. Exclusion strings are asserted verbatim because the spec
-// requires us to derive them strictly from `valid` / latency.
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

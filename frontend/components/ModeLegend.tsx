@@ -1,8 +1,3 @@
-// ModeLegend — inline operator-friendly explanations for each safety
-// mode the system can occupy. The chips use the same status color
-// tokens as SystemModeBadge so the visual mapping is consistent
-// wherever the legend appears (dashboard, simulation detail, etc.).
-
 import type { SystemMode } from "@/types/api";
 
 interface ModeEntry {

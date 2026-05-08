@@ -1,17 +1,3 @@
-// CausalityPanel — operator-level summary panel tests.
-//
-// Coverage targets the contract documented in CLAUDE.md Phase B10:
-//   * renders system state + previous-mode chip when decision present
-//   * hides previous-mode chip when previous_mode === system_mode (we
-//     render it but visually subdue it; assert it stays present and
-//     opaque-grey)
-//   * resolves active_fault_ids → fault chips via the faults prop
-//   * "no active faults" copy when active_fault_ids is empty
-//   * detector findings sub-section appears when present, hidden when
-//     empty
-//   * truncated fingerprint is rendered with the full hash in title
-//   * EmptyState is rendered when the decision is null
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

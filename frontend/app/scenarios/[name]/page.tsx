@@ -1,20 +1,5 @@
 "use client";
 
-// /scenarios/[name] — operator-facing scenario detail route.
-//
-// The page reads the scenario from the backend via api.getScenario,
-// renders the full ScenarioNarrative, and lets the operator run the
-// scenario in-place. After a run completes:
-//
-//   * we fetch the per-step decisions for the produced simulation so
-//     the ModeTimeline can render the segment band;
-//   * we render the ExecutionSummaryCard with the scenario prop so
-//     expected-vs-actual is included.
-//
-// Errors fall through to a friendly 404 surface when getScenario
-// returns a non-2xx response. We keep the loading state lightweight —
-// no skeleton — so the route renders cleanly even on cold-start.
-
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -66,14 +51,12 @@ export default function ScenarioDetailPage() {
     try {
       const r = await api.runScenario(scenario.name, steps);
       setResult(r);
-      // Pull the per-step decisions so the ModeTimeline can render
-      // segments. The /scenarios/{name}/run endpoint returns the
-      // result but not the decision stream — we fetch it separately.
+      // /scenarios/{name}/run returns the result without the decision
+      // stream; pull it so ModeTimeline can render segments.
       try {
         const ds = await api.getDecisions(r.simulation_id);
         setDecisions(ds);
       } catch {
-        // Best-effort. The summary card still renders without it.
         setDecisions([]);
       }
     } catch (e) {
@@ -131,13 +114,14 @@ export default function ScenarioDetailPage() {
         aria-label="Run scenario"
         className="bg-surface-elevated border border-border rounded-md p-5 space-y-3"
       >
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
-          {"// RUN THIS SCENARIO"}
-        </p>
-        <p className="text-sm text-text-muted leading-relaxed">
-          Execute deterministically against the registered seed. Run extended doubles the step count
-          to surface long-window recovery and re-escalation behavior.
-        </p>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
+            Run this scenario
+          </p>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-text-muted">
+            seed {scenario.seed}
+          </p>
+        </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <button
             type="button"
@@ -156,6 +140,9 @@ export default function ScenarioDetailPage() {
             Run Extended ({scenario.steps * 2})
           </button>
         </div>
+        <p className="font-mono text-[11px] text-text-muted">
+          Extended doubles the step count to surface recovery and re-escalation behavior.
+        </p>
         {running && (
           <p className="font-mono text-xs text-text-muted">Running deterministic simulation…</p>
         )}

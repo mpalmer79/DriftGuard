@@ -15,6 +15,22 @@ class CreateSimulationResponse(BaseModel):
     seed: int
 
 
+class ComponentTrustSnapshot(BaseModel):
+    """One controller / sensor entry inside a TrustDetector snapshot."""
+
+    status: str
+    trust: float
+    fault_streak: int
+    clean_streak: int
+    repeat_count: int
+
+
+class GlobalTrustSnapshot(BaseModel):
+    """The ``_global`` aggregate inside a TrustDetector snapshot."""
+
+    disagreement_rate: float
+
+
 class StepResponse(BaseModel):
     step: int
     sensor: dict[str, Any]
@@ -22,6 +38,18 @@ class StepResponse(BaseModel):
     vote: dict[str, Any]
     decision: dict[str, Any]
     state: dict[str, Any]
+    # Additive: per-step TrustDetector snapshot. Maps component id (or
+    # the literal ``"_global"``) to its detector state at the end of
+    # this step. Optional for backwards compatibility with persisted
+    # runs that pre-date this field.
+    trust_snapshot: dict[str, dict[str, Any]] = Field(default_factory=dict)
+
+
+class TrustSnapshotEntry(BaseModel):
+    """One step's persisted TrustDetector snapshot."""
+
+    step: int
+    snapshot: dict[str, dict[str, Any]]
 
 
 class FaultRequest(BaseModel):

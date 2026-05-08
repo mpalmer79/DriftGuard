@@ -56,10 +56,7 @@ def get_timeline(sim_id: str) -> list[dict]:
 
 @router.get("/simulations/{sim_id}/trajectory")
 def get_trajectory(sim_id: str) -> list[dict]:
-    """Position-vs-time trajectory for the persisted simulation.
-
-    Frontend trajectory map consumes this directly. See Phase 2.7.
-    """
+    """Position-vs-time trajectory for the persisted simulation (Phase 2.7)."""
 
     repo = deps.get_repository()
     if repo.get_simulation(sim_id) is None:
@@ -67,14 +64,28 @@ def get_trajectory(sim_id: str) -> list[dict]:
     return repo.get_trajectory(sim_id)
 
 
+@router.get("/simulations/{sim_id}/trust")
+def get_trust_history(sim_id: str) -> list[dict]:
+    """Per-step TrustDetector snapshots in step order.
+
+    Each entry: ``{"step": int, "snapshot": {component_id: {...},
+    "_global": {"disagreement_rate": float}}}``. Empty for runs persisted
+    before the ``trust_snapshots`` table existed.
+    """
+
+    repo = deps.get_repository()
+    if repo.get_simulation(sim_id) is None:
+        raise NotFoundError(f"simulation '{sim_id}' not found")
+    return repo.get_trust_snapshots(sim_id)
+
+
 @router.get("/simulations/{sim_id}/replay-fingerprint")
 def get_replay_fingerprint(sim_id: str) -> dict:
-    """Return the canonical SHA-256 fingerprint of the persisted timeline.
+    """SHA-256 fingerprint of the persisted timeline.
 
-    Per RESEARCH.md §7 the kernel produces evidence and the UI reads
-    it. The fingerprint is computed from the SQLite-backed timeline,
-    not from any in-memory state, so two replays of the same scenario
-    must agree even if the originating Simulation has been GC'd.
+    Computed from the SQLite-backed timeline, not from any in-memory
+    state, so two replays of the same scenario must agree even after
+    the originating ``Simulation`` is GC'd.
     """
 
     repo = deps.get_repository()
