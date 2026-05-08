@@ -53,47 +53,15 @@ export default function ScenariosPage() {
         </Link>
       </header>
 
-      <section
-        aria-label="Scenario library overview"
-        className="bg-surface-elevated border border-border rounded-md p-5 space-y-3 max-w-[820px]"
-      >
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
-          {"// WHAT THE SCENARIO LIBRARY DEMONSTRATES"}
-        </p>
-        <ul className="text-sm text-text-primary leading-relaxed list-disc list-inside space-y-1">
-          <li>
-            <span className="font-mono uppercase text-[11px] tracking-wider text-text-muted">
-              Deterministic fault injection
-            </span>{" "}
-            — every scenario reproduces the same step-by-step decisions on every run with the same
-            seed.
-          </li>
-          <li>
-            <span className="font-mono uppercase text-[11px] tracking-wider text-text-muted">
-              Escalation
-            </span>{" "}
-            — observe how DriftGuard moves through NORMAL, DEGRADED, SAFE_MODE, and FAILED as fault
-            evidence accumulates.
-          </li>
-          <li>
-            <span className="font-mono uppercase text-[11px] tracking-wider text-text-muted">
-              Recovery
-            </span>{" "}
-            — when faults clear, the system can return to a less-restricted mode. Escalation is not
-            a one-way trip.
-          </li>
-        </ul>
-        <p className="font-mono text-[11px] text-text-muted">
-          Click any scenario to read the operator brief, or run it directly from the card.
-        </p>
-      </section>
-
       <section className="hidden md:block border-y border-border bg-surface -mx-6 px-6">
-        <div className="max-w-6xl mx-auto flex flex-wrap items-center gap-x-8 gap-y-2 py-3 font-mono text-xs uppercase tracking-wider text-text-muted">
-          <LegendPill colorClass="bg-status-nominal" label="NOMINAL" />
-          <LegendPill colorClass="bg-status-degraded" label="DEGRADED" />
-          <LegendPill colorClass="bg-status-safemode" label="SAFE_MODE" />
-          <LegendPill colorClass="bg-status-failed" label="FAILED" />
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3 font-mono text-xs uppercase tracking-wider text-text-muted">
+          <span className="flex flex-wrap items-center gap-x-6 gap-y-1">
+            <LegendPill colorClass="bg-status-nominal" label="NOMINAL" />
+            <LegendPill colorClass="bg-status-degraded" label="DEGRADED" />
+            <LegendPill colorClass="bg-status-safemode" label="SAFE_MODE" />
+            <LegendPill colorClass="bg-status-failed" label="FAILED" />
+          </span>
+          <span className="text-[10px] tracking-[0.18em]">stripe = worst expected mode</span>
         </div>
       </section>
 

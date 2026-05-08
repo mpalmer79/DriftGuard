@@ -55,9 +55,8 @@ In the backend service, open **Variables** and add:
 | `SENTINEL_TRUSTED_PROXIES` | `0.0.0.0/0` |
 
 Notes:
-- The `SENTINEL_*` env-var prefix is retained for backwards
-  compatibility with deployments that pre-date the SentinelNav →
-  DriftGuard rename. See `docs/DEPLOYMENT.md` ("Env var naming").
+- The `SENTINEL_*` env-var prefix is a legacy alias kept for
+  deployment compatibility. See `docs/DEPLOYMENT.md` ("Env var naming").
 - `SENTINEL_TRUSTED_PROXIES = 0.0.0.0/0` tells the rate limiter to
   honor `x-forwarded-for` (Railway's edge proxy injects it). This is
   appropriate because Railway is the only thing that can reach the
@@ -130,7 +129,7 @@ Open the public frontend URL in a browser. Confirm:
 
 If any of these fails, see the **Troubleshooting** section below.
 
-## Step 8 — Set the production-grade defaults
+## Step 8 — Set the recommended deploy defaults
 
 In the backend service, **Settings → Health Check**:
 - Path: `/readyz` (already set by `railway.toml`)
@@ -182,7 +181,7 @@ approximately:
 - Volume: ~$0.25/month per GB
 
 For portfolio use, set both services to the **Hobby** tier and turn
-on **sleep on inactivity** if you only need them up during interviews.
+on **sleep on inactivity** if you only need them up intermittently.
 
 ## What this deployment does *not* do
 

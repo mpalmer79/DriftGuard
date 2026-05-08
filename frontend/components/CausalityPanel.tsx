@@ -1,13 +1,5 @@
 "use client";
 
-// CausalityPanel — operator-level summary of why DriftGuard chose the
-// final action at the latest decision step. The backend's wave-1
-// causality fields (previous_mode, trigger_reason, active_fault_ids,
-// detector_findings, vote_split) feed this panel directly. When the
-// new fields are absent (legacy persisted simulation), each row
-// gracefully falls back to the original SystemDecision fields so the
-// panel still renders something meaningful.
-
 import type {
   DecisionRecord,
   DetectorFinding,
@@ -28,22 +20,15 @@ interface CausalityPanelProps {
   replayFingerprint?: string | null;
   previousDecision?: DecisionRecord | null;
   // When supplied, the inline fault chip list is replaced with a
-  // FaultEvidenceCard per active fault (operator-readable expansion
-  // of each fault). The original chip behavior is preserved when the
-  // prop is absent so the 14 baseline tests still pass.
+  // FaultEvidenceCard per active fault.
   activeFaults?: FaultRecord[];
   // When true, the truncated fingerprint row is replaced with a full
-  // ReplayExplainer panel (copy button + three-bullet explanation).
-  // We require simulationId + stepCount when expanded so the
-  // explainer can render its full surface.
+  // ReplayExplainer panel; simulationId + stepCount are required.
   expanded?: boolean;
   simulationId?: string;
   stepCount?: number;
 }
 
-// Severity → status-token mapping. Detector findings ride on a
-// component-status string (HEALTHY / SUSPECT / DEGRADED / CRITICAL /
-// RECOVERING); the kernel emits these strings verbatim.
 const SEVERITY_TOKEN: Record<string, string> = {
   HEALTHY: "status-nominal",
   SUSPECT: "status-degraded",
@@ -52,8 +37,6 @@ const SEVERITY_TOKEN: Record<string, string> = {
   RECOVERING: "status-safemode",
 };
 
-// Static class lookup so Tailwind's content scanner picks the
-// concrete utility names up at build time.
 const SEVERITY_CLASS: Record<string, string> = {
   "status-nominal": "text-status-nominal border-status-nominal/40 bg-status-nominal/10",
   "status-degraded": "text-status-degraded border-status-degraded/40 bg-status-degraded/10",
@@ -91,9 +74,8 @@ function describeVote(decision: AnyDecision): string {
     const action = decision.vote_split.selected_action ?? "no consensus";
     return `${decision.vote_split.outcome}: ${action} (${agreeing}/${total} agree)`;
   }
-  // Fallback: derive a SPLIT/CONSENSUS-ish summary from the legacy
-  // trusted/rejected lists. We don't know the formal outcome, so we
-  // just expose the counts and the final action.
+  // Legacy fallback: derive counts from the trusted/rejected lists; we
+  // don't know the formal outcome here.
   const trusted = decision.trusted_controllers?.length ?? 0;
   const rejected = decision.rejected_controllers?.length ?? 0;
   const total = trusted + rejected;

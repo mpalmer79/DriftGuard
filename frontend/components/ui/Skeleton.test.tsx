@@ -1,14 +1,3 @@
-// Skeleton — typed pulse loader.
-//
-// Coverage:
-//   * default (no `kind`) renders with role/aria-busy and respects
-//     explicit width / height props (legacy API).
-//   * `kind` variants surface via the `data-skeleton-kind` attribute
-//     and apply opinionated default dimensions when not overridden.
-//   * caller-provided width / height override the variant defaults
-//     (this protects existing simulations/[id]/{page,report}/page.tsx
-//     call sites which pass explicit dimensions).
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

@@ -1,11 +1,3 @@
-// TrustScorePanel — single-purpose tight 3-row table showing the
-// current trust state for each controller from a `trust_snapshot`.
-// Sparkbars / per-step trajectory belong to TrustEvolution. The
-// snapshot may also carry "sensor" + "_global" entries; we render
-// "sensor" if present and surface the global disagreement rate as a
-// footer line so operators can see "the controllers can't agree N%
-// of the time" at a glance.
-
 import type { ComponentTrustSnapshot } from "@/types/api";
 
 interface TrustScorePanelProps {

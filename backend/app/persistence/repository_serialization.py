@@ -25,15 +25,13 @@ def decision_row(row) -> dict:
     d["trusted"] = json.loads(d["trusted"])
     d["rejected"] = json.loads(d["rejected"])
     d["safe_mode_active"] = bool(d["safe_mode_active"])
-    # `causality_payload` is a TEXT column added in a later schema
-    # migration; rows persisted before the migration ran have NULL.
-    # Promote the JSON blob to top-level keys with safe defaults so
-    # downstream callers don't have to defensively check for them.
+    # causality_payload was added in a later migration; pre-migration
+    # rows are NULL. Promote the blob to top-level keys with safe
+    # defaults so callers don't have to defensively check.
     raw = d.pop("causality_payload", None)
     payload = json.loads(raw) if raw else {}
     d["previous_mode"] = payload.get("previous_mode", "NORMAL")
-    # `trigger_reason` mirrors `justification` for legacy rows; the
-    # operator UI binds to the clearer name.
+    # Legacy rows fall back to justification.
     d["trigger_reason"] = payload.get("trigger_reason") or d.get("justification", "")
     d["active_fault_ids"] = list(payload.get("active_fault_ids", []))
     d["detector_findings"] = list(payload.get("detector_findings", []))
@@ -51,4 +49,10 @@ def vote_row(row) -> dict:
     d = dict(row)
     d["agreeing"] = json.loads(d["agreeing"])
     d["rejected"] = json.loads(d["rejected"])
+    return d
+
+
+def trust_snapshot_row(row) -> dict:
+    d = dict(row)
+    d["snapshot"] = json.loads(d.pop("payload"))
     return d

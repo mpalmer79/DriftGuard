@@ -1,7 +1,9 @@
-# SentinelNav Technical Whitepaper
+# Technical Whitepaper
 
-> **Note:** this repository was renamed from SentinelNav to DriftGuard.
-> Historical references below are preserved for archival accuracy.
+> **Note:** this whitepaper was authored before the project was
+> renamed from SentinelNav to DriftGuard. Brand references below are
+> retained verbatim for historical accuracy; the recommendations and
+> design directives still apply to the current codebase.
 
 ## Autonomous Navigation Safety, Fault Tolerance, and Decision Assurance
 

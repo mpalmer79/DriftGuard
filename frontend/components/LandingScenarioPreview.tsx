@@ -1,16 +1,5 @@
 "use client";
 
-// LandingScenarioPreview — compact preview card for the landing
-// scenario strip. Renders a single Scenario from `api.listScenarios()`
-// in either grid (default) or list mode, exposes a Run action that
-// calls `api.runScenario(name)` and routes to the resulting
-// simulation detail page.
-//
-// This component is intentionally read-only with respect to the
-// Scenario shape. It does not invent fields; if a value is missing
-// (e.g. no faults declared, empty expected_final_modes) it falls back
-// to a quiet placeholder so the strip never renders broken UI.
-
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -31,9 +20,8 @@ const SEVERITY_RANK: Record<SystemMode, number> = {
   FAILED: 4,
 };
 
-// Static map mirrors ScenarioCard so Tailwind's content scanner sees
-// every concrete class. Dynamic `bg-${token}` strings would be
-// tree-shaken away.
+// Static class map — Tailwind's content scanner can't see dynamic
+// `bg-${token}` strings.
 const STRIPE_CLASS: Record<string, string> = {
   "status-nominal": "bg-status-nominal",
   "status-degraded": "bg-status-degraded",

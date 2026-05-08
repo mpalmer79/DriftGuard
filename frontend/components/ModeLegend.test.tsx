@@ -1,8 +1,3 @@
-// ModeLegend — verifies all four safety modes are rendered with the
-// expected operator-friendly explanation strings. Title attributes
-// mirror the visible explanation so screen-reader / hover users see
-// the same text.
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

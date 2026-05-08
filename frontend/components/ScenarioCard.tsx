@@ -20,8 +20,8 @@ const STATUS_TOKEN: Record<SystemMode, string> = {
   FAILED: "status-failed",
 };
 
-// Static map so Tailwind's content scanner can see every concrete
-// class. Dynamic `bg-${token}` strings would be tree-shaken away.
+// Static map — Tailwind's content scanner can't see dynamic
+// `bg-${token}` strings.
 const STRIPE_CLASS: Record<string, string> = {
   "status-nominal": "bg-status-nominal",
   "status-degraded": "bg-status-degraded",
@@ -70,32 +70,33 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
     <div className="relative bg-surface-elevated border border-border rounded-md overflow-hidden transition duration-150 hover:-translate-y-0.5 hover:border-accent/40 motion-reduce:transform-none motion-reduce:transition-none">
       <span className={`absolute left-0 top-0 bottom-0 w-1 ${stripeClass}`} aria-hidden />
       <div className="p-5 pl-6 space-y-3">
-        <h2 className="font-mono uppercase font-semibold text-text-primary tracking-wide break-words">
-          {scenario.name.toUpperCase()}
-        </h2>
+        <header className="space-y-1">
+          <h2 className="font-mono uppercase font-semibold text-text-primary tracking-wide break-words">
+            {scenario.name.toUpperCase()}
+          </h2>
+          <p className="font-mono text-[11px] uppercase text-text-muted tracking-wide">
+            {faultLabel}
+            <span className="opacity-50 px-2">/</span>
+            {scenario.steps} STEPS
+            <span className="opacity-50 px-2">/</span>
+            SEED {scenario.seed}
+          </p>
+        </header>
 
         <p className="text-sm text-text-primary leading-relaxed">{scenario.description}</p>
 
-        <div className="border-l-2 border-accent/40 bg-surface/40 rounded-r-md pl-3 py-2 -ml-1">
-          <p className="font-mono uppercase text-[10px] text-text-muted tracking-wider mb-1">
-            {"// EXPECTED OPERATOR OBSERVATION"}
+        <div className="border-l-2 border-accent/40 bg-surface/40 rounded-r-md pl-3 py-2 -ml-1 space-y-1">
+          <p className="font-mono uppercase text-[10px] text-text-muted tracking-wider">
+            Expected observation
           </p>
           <p className="text-sm text-text-primary leading-relaxed">{scenario.expected_behavior}</p>
           {scenario.expected_final_modes.length > 0 && (
-            <p className="font-mono text-[11px] text-text-muted tracking-wide pt-2">
-              expected final mode →{" "}
+            <p className="font-mono text-[11px] text-text-muted tracking-wide pt-1">
+              expected final →{" "}
               <span className="text-text-primary">{scenario.expected_final_modes.join(" | ")}</span>
             </p>
           )}
         </div>
-
-        <p className="font-mono text-xs uppercase text-text-muted tracking-wide">
-          {faultLabel}
-          <span className="opacity-50 px-2">/</span>
-          {scenario.steps} STEPS
-          <span className="opacity-50 px-2">/</span>
-          SEED {scenario.seed}
-        </p>
 
         <div className="flex flex-col sm:flex-row gap-2 pt-1">
           <button
@@ -114,22 +115,24 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
           >
             Run Extended
           </button>
+          <Link
+            href={`/scenarios/${scenario.name}`}
+            className="inline-flex items-center font-mono uppercase text-[11px] tracking-wider text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent sm:ml-auto sm:self-center"
+            data-testid="scenario-card-brief-link"
+          >
+            Read brief →
+          </Link>
         </div>
-
-        <Link
-          href={`/scenarios/${scenario.name}`}
-          className="inline-flex items-center font-mono uppercase text-[11px] tracking-wider text-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-          data-testid="scenario-card-brief-link"
-        >
-          Read scenario brief →
-        </Link>
 
         {error && <p className="font-mono text-xs text-status-failed pt-1 break-words">{error}</p>}
 
         {result && (
-          <div className="pt-3 -mx-1">
+          <details className="pt-2 -mx-1" open>
+            <summary className="cursor-pointer font-mono uppercase text-[10px] tracking-wider text-text-muted hover:text-text-primary px-1 pb-2">
+              Last run summary
+            </summary>
             <ExecutionSummaryCard result={result} scenario={scenario} />
-          </div>
+          </details>
         )}
       </div>
     </div>

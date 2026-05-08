@@ -1,14 +1,3 @@
-// Breadcrumbs — minimal route trail.
-//
-// Coverage:
-//   * empty trail renders nothing (no <nav> in the DOM).
-//   * intermediate items with `href` render as <Link>; intermediate
-//     items without `href` render as plain text.
-//   * the last item is non-link, marked with aria-current="page", and
-//     bolded.
-//   * separators appear between every pair of items but not before
-//     the first.
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

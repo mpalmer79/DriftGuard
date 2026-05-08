@@ -1,29 +1,14 @@
-// TrustEvolution — controller trust trajectory across a run.
-//
-// Renders two stacked sections:
-//   1. CURRENT TRUST  — three sparkbar-style rows, one per controller,
-//      derived from `trustSnapshot[controller_id]`. Shows the current
-//      trust score (0..1, displayed 0–100%) and the component status
-//      word (HEALTHY/SUSPECT/DEGRADED/CRITICAL/RECOVERING).
-//   2. VALIDITY OVER TIME — a per-step bitmap (one row per controller,
-//      one cell per step) coloured by `controllers[i].valid`. This is
-//      the closest proxy the frontend has to a per-step trust history
-//      because the backend does not currently expose `trust.history`
-//      per step — only `result.trust_snapshot` (the final state).
-//      Operators can read the bitmap as: green = valid, amber = invalid.
-//
-// Field gap: the per-step trust trajectory is not surfaced by the API
-// today. This component derives a proxy from the validity bitmap so
-// reviewers can still see "when did controller_b stop voting?" at a
-// glance. See the Phase 2 report for the gap reference.
-//
-// No charting library — only Tailwind layout primitives.
-
-import type { ComponentTrustSnapshot, ControllerOutput, TimelineEntry } from "@/types/api";
+import type {
+  ComponentTrustSnapshot,
+  ControllerOutput,
+  TimelineEntry,
+  TrustSnapshotEntry,
+} from "@/types/api";
 
 interface TrustEvolutionProps {
   timeline: TimelineEntry[];
   trustSnapshot?: Record<string, ComponentTrustSnapshot>;
+  trustHistory?: TrustSnapshotEntry[];
 }
 
 const STATUS_TOKEN: Record<string, string> = {
@@ -48,9 +33,19 @@ function formatControllerId(id: string): string {
   return id;
 }
 
+function isComponentSnapshot(v: unknown): v is ComponentTrustSnapshot {
+  return (
+    !!v &&
+    typeof v === "object" &&
+    typeof (v as ComponentTrustSnapshot).status === "string" &&
+    typeof (v as ComponentTrustSnapshot).trust === "number"
+  );
+}
+
 function gatherControllerIds(
   timeline: TimelineEntry[],
-  trustSnapshot?: Record<string, ComponentTrustSnapshot>
+  trustSnapshot?: Record<string, ComponentTrustSnapshot>,
+  trustHistory?: TrustSnapshotEntry[]
 ): string[] {
   const seen = new Set<string>();
   for (const entry of timeline) {
@@ -58,14 +53,33 @@ function gatherControllerIds(
       seen.add(c.controller_id);
     }
   }
-  if (trustSnapshot) {
-    for (const key of Object.keys(trustSnapshot)) {
+  const collect = (rec: Record<string, unknown> | undefined) => {
+    if (!rec) return;
+    for (const key of Object.keys(rec)) {
       if (key === "_global" || key === "sensor") continue;
-      seen.add(key);
+      if (key.startsWith("controller_")) seen.add(key);
+    }
+  };
+  collect(trustSnapshot);
+  if (trustHistory) {
+    for (const entry of trustHistory) collect(entry.snapshot);
+  }
+  return [...seen].sort();
+}
+
+function latestSnapshotFor(
+  controllerId: string,
+  trustHistory?: TrustSnapshotEntry[],
+  trustSnapshot?: Record<string, ComponentTrustSnapshot>
+): ComponentTrustSnapshot | undefined {
+  if (trustHistory && trustHistory.length > 0) {
+    for (let i = trustHistory.length - 1; i >= 0; i--) {
+      const v = trustHistory[i].snapshot[controllerId];
+      if (isComponentSnapshot(v)) return v;
     }
   }
-  // Sort so controller_a/b/c order is stable.
-  return [...seen].sort();
+  const v = trustSnapshot?.[controllerId];
+  return isComponentSnapshot(v) ? v : undefined;
 }
 
 function CurrentTrustRow({
@@ -108,6 +122,38 @@ function CurrentTrustRow({
   );
 }
 
+function TrustSparkRow({
+  controllerId,
+  cells,
+}: {
+  controllerId: string;
+  cells: { step: number; trust: number; status: string }[];
+}) {
+  return (
+    <div data-testid={`trust-spark-${controllerId}`} className="flex items-center gap-2">
+      <span className="font-mono text-[11px] uppercase tracking-wider text-text-primary w-[110px] shrink-0">
+        {formatControllerId(controllerId)}
+      </span>
+      <div className="flex-1 flex items-end gap-px h-8">
+        {cells.map((c) => {
+          const h = Math.max(2, Math.round(c.trust * 32));
+          const cls = STATUS_BAR[c.status] ?? "bg-status-degraded";
+          return (
+            <span
+              key={c.step}
+              title={`step ${c.step} — trust ${c.trust.toFixed(2)} (${c.status})`}
+              data-step={c.step}
+              data-trust={c.trust.toFixed(3)}
+              className={`inline-block w-1.5 rounded-sm ${cls}`}
+              style={{ height: `${h}px` }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ValidityBitmapRow({
   controllerId,
   cells,
@@ -136,8 +182,11 @@ function ValidityBitmapRow({
   );
 }
 
-export function TrustEvolution({ timeline, trustSnapshot }: TrustEvolutionProps) {
-  if ((!timeline || timeline.length === 0) && !trustSnapshot) {
+export function TrustEvolution({ timeline, trustSnapshot, trustHistory }: TrustEvolutionProps) {
+  const hasHistory = !!trustHistory && trustHistory.length > 0;
+  const hasSnapshot = !!trustSnapshot && Object.keys(trustSnapshot).length > 0;
+
+  if ((!timeline || timeline.length === 0) && !hasSnapshot && !hasHistory) {
     return (
       <section
         aria-label="Trust evolution"
@@ -151,37 +200,43 @@ export function TrustEvolution({ timeline, trustSnapshot }: TrustEvolutionProps)
     );
   }
 
-  const controllerIds = gatherControllerIds(timeline, trustSnapshot);
+  const controllerIds = gatherControllerIds(timeline, trustSnapshot, trustHistory);
 
-  // Build per-controller validity cells from the timeline. Only
-  // controllers that actually appeared in `entry.controllers` get a
-  // cell for that step; missing controllers are skipped (no synthetic
-  // values).
+  const trustByController: Record<string, { step: number; trust: number; status: string }[]> = {};
+  for (const cid of controllerIds) {
+    trustByController[cid] = [];
+  }
+  if (trustHistory) {
+    for (const entry of trustHistory) {
+      for (const cid of controllerIds) {
+        const snap = entry.snapshot[cid];
+        if (isComponentSnapshot(snap)) {
+          trustByController[cid].push({
+            step: entry.step,
+            trust: snap.trust,
+            status: snap.status,
+          });
+        }
+      }
+    }
+  }
+
   const validityByController: Record<string, { step: number; valid: boolean }[]> = {};
   for (const cid of controllerIds) {
     validityByController[cid] = [];
   }
   for (const entry of timeline) {
-    const seen = new Set<string>();
     for (const c of entry.controllers ?? []) {
       if (!validityByController[c.controller_id]) continue;
       validityByController[c.controller_id].push({
         step: entry.step,
         valid: c.valid,
       });
-      seen.add(c.controller_id);
-    }
-    // For controllers present in trustSnapshot but missing in this
-    // step, leave a gap rather than inventing a valid/invalid.
-    for (const cid of controllerIds) {
-      if (!seen.has(cid)) {
-        // Intentionally do nothing; bitmap shows only steps where the
-        // controller actually produced an output.
-      }
     }
   }
 
   const hasValidity = timeline.some((e) => (e.controllers ?? []).length > 0);
+  const stepCount = hasHistory ? trustHistory!.length : timeline.length;
 
   return (
     <section
@@ -194,7 +249,7 @@ export function TrustEvolution({ timeline, trustSnapshot }: TrustEvolutionProps)
           Trust Evolution
         </h2>
         <span className="font-mono text-[10px] tracking-wider text-text-muted">
-          {timeline.length} step{timeline.length === 1 ? "" : "s"}
+          {stepCount} step{stepCount === 1 ? "" : "s"}
         </span>
       </div>
 
@@ -202,20 +257,54 @@ export function TrustEvolution({ timeline, trustSnapshot }: TrustEvolutionProps)
         <p className="font-mono uppercase text-[10px] tracking-wider text-text-muted">
           Current Trust
         </p>
-        {controllerIds.length === 0 || !trustSnapshot ? (
-          <p data-testid="trust-current-empty" className="font-mono text-[11px] text-text-muted">
-            Trust snapshot unavailable.
-          </p>
-        ) : (
-          <div className="space-y-2">
+        {(() => {
+          const rows = controllerIds
+            .map((cid) => ({ cid, snap: latestSnapshotFor(cid, trustHistory, trustSnapshot) }))
+            .filter((r) => !!r.snap) as { cid: string; snap: ComponentTrustSnapshot }[];
+          if (rows.length === 0) {
+            return (
+              <p
+                data-testid="trust-current-empty"
+                className="font-mono text-[11px] text-text-muted"
+              >
+                Trust snapshot unavailable.
+              </p>
+            );
+          }
+          return (
+            <div className="space-y-2">
+              {rows.map(({ cid, snap }) => (
+                <CurrentTrustRow key={cid} controllerId={cid} snapshot={snap} />
+              ))}
+            </div>
+          );
+        })()}
+      </div>
+
+      {hasHistory && (
+        <div className="space-y-2 pt-2 border-t border-border">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <p className="font-mono uppercase text-[10px] tracking-wider text-text-muted">
+              Trust Score Per Step
+            </p>
+            <p className="font-mono text-[10px] text-text-muted">
+              <span className="inline-block h-2 w-2 rounded-sm bg-status-nominal align-middle mr-1" />
+              healthy
+              <span className="inline-block h-2 w-2 rounded-sm bg-status-safemode align-middle ml-3 mr-1" />
+              recovering
+              <span className="inline-block h-2 w-2 rounded-sm bg-status-degraded align-middle ml-3 mr-1" />
+              degraded
+            </p>
+          </div>
+          <div className="space-y-1.5">
             {controllerIds.map((cid) => {
-              const snap = trustSnapshot?.[cid];
-              if (!snap) return null;
-              return <CurrentTrustRow key={cid} controllerId={cid} snapshot={snap} />;
+              const cells = trustByController[cid] ?? [];
+              if (cells.length === 0) return null;
+              return <TrustSparkRow key={cid} controllerId={cid} cells={cells} />;
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="space-y-2 pt-2 border-t border-border">
         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -247,7 +336,5 @@ export function TrustEvolution({ timeline, trustSnapshot }: TrustEvolutionProps)
   );
 }
 
-// Helper exported for tests that need to mock timeline shape without
-// pulling in a full StepResponse generator.
 export type TrustEvolutionTimelineEntry = TimelineEntry;
 export type TrustEvolutionController = ControllerOutput;

@@ -1,24 +1,7 @@
-// VotePanel — top-level "did the controllers agree?" view.
-//
-// Renders one comparison card per controller, then a single-line
-// rationale summarising the vote outcome and a small "Excluded" line
-// listing any rejected controllers with derived reasons. Exclusion
-// reasons are derived strictly from the controller's `valid` flag and
-// `response_time_ms` so the panel never invents motivation. If a
-// controller is in `vote.rejected_controllers` but neither flagged
-// invalid nor over the latency budget, we show "rejected" verbatim.
-//
-// Status coloring mirrors the rest of the operator console:
-//   * agreeing -> status-nominal
-//   * rejected -> status-degraded
-//   * other    -> neutral border / muted text
-//
-// The latency budget (150 ms) is hard-coded here as the operator
-// threshold. The backend's controller model doesn't yet emit a
-// per-controller budget — see the report for the field gap.
-
 import type { ComponentTrustSnapshot, ControllerOutput, VoteResult } from "@/types/api";
 
+// Mirrors the kernel's controller latency budget. The backend doesn't
+// yet emit a per-controller value, so it stays hard-coded here.
 const LATENCY_BUDGET_MS = 150;
 
 interface VotePanelProps {
@@ -50,8 +33,6 @@ const STATUS_TOKEN: Record<string, string> = {
 };
 
 function formatControllerId(id: string): string {
-  // "controller_a" -> "Controller A"; fall back to title-cased id for
-  // anything we don't recognise.
   const m = /^controller_([a-z])$/i.exec(id);
   if (m) return `Controller ${m[1].toUpperCase()}`;
   return id;
@@ -173,8 +154,8 @@ export function VotePanel({ controllers, vote, trustSnapshot }: VotePanelProps) 
   const agreeing = vote.agreeing_controllers ?? [];
   const rejected = vote.rejected_controllers ?? [];
 
-  // Build exclusion strings from per-controller cards so we cite real
-  // evidence (latency / invalid) and never invent rationale.
+  // Exclusion reasons are derived from each controller's valid flag and
+  // latency, never invented.
   const rejectedOutputs = controllers.filter((c) => rejected.includes(c.controller_id));
   const exclusions = rejectedOutputs.map(exclusionReason);
 

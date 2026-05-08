@@ -1,17 +1,3 @@
-// HeaderNav — client-side navigation strip for the global header.
-//
-// Extracted out of `app/layout.tsx` (a server component) because
-// it needs `usePathname()` to mark the active link with
-// `aria-current="page"`.
-//
-// Routes: brand link → /, plus Dashboard and Scenarios. The
-// "source" link and the ThemeToggle live next to the nav inside
-// `layout.tsx`, so this component intentionally only renders the
-// in-app navigation.
-//
-// Mobile: `flex flex-wrap` is preserved so narrow viewports
-// line-wrap cleanly without horizontal scroll.
-
 "use client";
 
 import * as React from "react";
@@ -21,7 +7,7 @@ import { usePathname } from "next/navigation";
 interface NavLink {
   href: string;
   label: string;
-  /** When true, only the exact path activates this link. Used for "/" so it doesn't match every route. */
+  /** When true, only the exact path activates this link. */
   exact?: boolean;
 }
 
@@ -30,9 +16,6 @@ const LINKS: readonly NavLink[] = [
   { href: "/scenarios", label: "Scenarios" },
 ];
 
-// Internal helper exported for unit tests so we can verify the
-// matching rule directly without rendering against a contrived
-// `usePathname` mock.
 export function isActive(pathname: string | null, href: string, exact?: boolean): boolean {
   if (!pathname) return false;
   if (exact) return pathname === href;

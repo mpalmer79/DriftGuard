@@ -1,10 +1,5 @@
-// Playwright config (Phase 6.2b).
-//
-// The smoke test runs against a locally-started Next.js dev server.
-// We deliberately do NOT depend on a live backend in CI: the smoke
-// test mounts the public landing + dashboard routes and verifies
-// they render. Anything that requires real API data is left to the
-// vitest unit tests with stubbed fetch.
+// Smoke test runs against a local `next dev`. CI does not depend on
+// a live backend; data-dependent assertions live in the vitest suite.
 
 import { defineConfig, devices } from "@playwright/test";
 
@@ -31,8 +26,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // `next dev` is faster to boot than `next start` and the smoke
-    // test only checks markup, not perf.
+    // `next dev` boots faster; the smoke test only checks markup.
     command: `npx next dev --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,

@@ -1,12 +1,22 @@
-# DriftGuard Architecture (v2)
+# DriftGuard Architecture
+
+> Baseline architecture document. Subsequent decisions are recorded
+> in [`docs/adr/`](docs/adr) and rolled up in [`CHANGELOG.md`](CHANGELOG.md).
+> The current source-mapped block diagram lives at
+> [`docs/ARCHITECTURE_DIAGRAM.md`](docs/ARCHITECTURE_DIAGRAM.md).
 
 ## 1. Mission
 
-DriftGuard is a deterministic, fault-tolerant control system simulation platform designed to model how mission-critical systems maintain safe operation under uncertainty, partial failure, and conflicting control signals.
+DriftGuard is a deterministic, fault-tolerant control-system
+simulation. It models how a vehicle that receives imperfect sensor
+data, dispatches that data to redundant controllers, and reaches
+decisions through majority voting can detect faults over time and
+transition into degraded or safe operational modes when system
+trust boundaries are violated.
 
-The system simulates a vehicle receiving imperfect sensor data, processing that data through redundant controller modules, reaching decisions through consensus mechanisms, detecting faults over time, and transitioning into degraded or safe operational modes when system trust boundaries are violated.
-
-This project reflects aerospace and defense-grade system thinking, emphasizing reliability, determinism, traceability, and controlled failure handling.
+The design priorities are reliability, determinism, traceability,
+and bounded failure handling — the properties safety-critical
+control systems live or die on.
 
 ---
 

@@ -9,6 +9,7 @@ from .repository_serialization import (
     event_row_to_dict,
     fault_row,
     sensor_row,
+    trust_snapshot_row,
     vote_row,
 )
 from .repository_writes import (
@@ -17,6 +18,7 @@ from .repository_writes import (
     save_output,
     save_sensor,
     save_state,
+    save_trust_snapshot,
     save_vote,
 )
 
@@ -43,6 +45,8 @@ class SimulationRepository:
             save_output(conn, simulation_id, out)
         save_vote(conn, simulation_id, record.state.step, record.vote)
         save_decision(conn, simulation_id, record.decision)
+        if record.trust_snapshot:
+            save_trust_snapshot(conn, simulation_id, record.state.step, record.trust_snapshot)
         for ev in record.events:
             save_event(conn, simulation_id, ev)
         conn.commit()
@@ -68,11 +72,9 @@ class SimulationRepository:
         conn.commit()
 
     def list_events(self, simulation_id: str) -> list[dict]:
-        # Order by ROWID within a step so events come back in insertion
-        # order, not in the random order produced by sorting on the UUID
-        # event_id. Insertion order is meaningful (sensor -> controllers
-        # -> vote -> ... -> state) and is the order required for the
-        # replay-fingerprint canonicalization (Phase 1.3) to be stable.
+        # ROWID within a step preserves insertion order (sensor →
+        # controllers → vote → ... → state). The replay-fingerprint
+        # canonicalisation (Phase 1.3) depends on this ordering.
         conn = self.db.connect()
         rows = conn.execute(
             "SELECT * FROM events WHERE simulation_id = ? ORDER BY step ASC, ROWID ASC",
@@ -107,11 +109,10 @@ class SimulationRepository:
         return [dict(r) for r in rows]
 
     def get_trajectory(self, simulation_id: str) -> list[dict]:
-        """Position-vs-time trajectory for plotting (Phase 2.7).
+        """Position-vs-time trajectory rows (Phase 2.7).
 
-        Returns one dict per persisted step with the minimum data
-        the frontend trajectory chart needs: step, timestamp, x, y,
-        altitude, and system_mode (for color-coding the trail).
+        One row per persisted step: step, timestamp, x, y, altitude,
+        and system_mode (used by the trajectory chart).
         """
 
         conn = self.db.connect()
@@ -165,6 +166,20 @@ class SimulationRepository:
     def get_events(self, simulation_id: str) -> list[dict]:
         return self.list_events(simulation_id)
 
+    def get_trust_snapshots(self, simulation_id: str) -> list[dict]:
+        """Per-step TrustDetector snapshots in step order.
+
+        Each entry is ``{"step": int, "snapshot": {...}}``. Empty list
+        when no snapshots were persisted (legacy or in-memory-only runs).
+        """
+
+        conn = self.db.connect()
+        rows = conn.execute(
+            "SELECT step, payload FROM trust_snapshots WHERE simulation_id = ? ORDER BY step ASC",
+            (simulation_id,),
+        ).fetchall()
+        return [trust_snapshot_row(r) for r in rows]
+
     def get_timeline(self, simulation_id: str) -> list[dict]:
         states = {s["step"]: s for s in self.get_step_records(simulation_id)}
         sensors = {s["step"]: s for s in self.get_sensor_readings(simulation_id)}
@@ -177,9 +192,8 @@ class SimulationRepository:
         for e in self.get_events(simulation_id):
             events_by_step.setdefault(e["step"], []).append(e)
 
-        # A timeline entry only exists where a decision was made; the initial
-        # pre-step state is excluded so each entry has a complete control-loop
-        # snapshot.
+        # An entry exists only where a decision was made; the initial
+        # pre-step state is omitted so every entry is a full snapshot.
         timeline = []
         for step in sorted(decisions):
             timeline.append(

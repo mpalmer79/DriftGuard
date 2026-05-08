@@ -1,18 +1,5 @@
-// EmptyState / ErrorState — operator-tone empty / error / completed surfaces.
-//
-// Coverage:
-//   * default (no kind) renders neutral border stripe and the title.
-//   * each `kind` variant applies the expected stripe class.
-//   * `hint` aliases `description` (operator copy preference).
-//   * descriptor-form `action` renders an internal Link.
-//   * legacy ReactNode-form `action` is rendered through unchanged
-//     (existing call sites in simulations/* still work).
-//   * `severe` adds a coloured bullet.
-//   * ErrorState named export still exists with `message` + `retry`.
-//
-// We avoid asserting against the full className string — instead we
-// rely on the `data-empty-kind` attribute (intentional public hook
-// for tests / styling overrides) to prove the variant routed.
+// We don't assert on full className strings — `data-empty-kind` is
+// the intentional public hook for variant routing.
 //
 // The current call sites we're protecting from regressions:
 //   - frontend/app/simulations/[id]/{page,report,live}/page.tsx

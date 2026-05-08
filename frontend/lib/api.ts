@@ -10,15 +10,14 @@ import type {
   StepResponse,
   TimelineEntry,
   TrajectoryPoint,
+  TrustSnapshotEntry,
   VehicleState,
 } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
-// Phase 6.3: state-mutating calls go through the same-origin
-// `/api/proxy/<path>` handler so the bearer token can be injected
-// server-side. Reads stay on the public NEXT_PUBLIC_API_BASE — they
-// don't need the token and adding a hop would just slow them down.
+// Phase 6.3: write calls route through the same-origin proxy so the
+// bearer token can be injected server-side. Reads stay direct.
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function targetFor(path: string, method: string): string {
@@ -147,8 +146,7 @@ export const api = {
   },
 
   createScenario: async (yamlBody: string) => {
-    // YAML upload — content-type is preserved by the proxy
-    // (Phase 6.3) so the FastAPI parse_yaml branch still fires.
+    // YAML body; the Phase 6.3 proxy preserves Content-Type.
     const res = await fetch(targetFor("/scenarios", "POST"), {
       method: "POST",
       headers: { "Content-Type": "text/yaml" },
@@ -176,6 +174,8 @@ export const api = {
 
   getReplayFingerprint: (id: string) =>
     request<ReplayFingerprintResponse>(`/simulations/${id}/replay-fingerprint`),
+
+  getTrustHistory: (id: string) => request<TrustSnapshotEntry[]>(`/simulations/${id}/trust`),
 };
 
 export type { ApiError };

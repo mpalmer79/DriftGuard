@@ -80,8 +80,8 @@ export interface SystemDecision {
   justification: string;
   trusted_controllers: string[];
   rejected_controllers: string[];
-  // Causality fields (additive — optional for backward compatibility
-  // with simulations persisted before the wave-1 schema bump).
+  // Causality fields — optional for backward compatibility with
+  // simulations persisted before the wave-1 schema bump.
   previous_mode?: SystemMode | null;
   trigger_reason?: string;
   active_fault_ids?: string[];
@@ -122,6 +122,14 @@ export interface StepResponse {
   vote: VoteResult;
   decision: SystemDecision;
   state: VehicleState;
+  // Optional: runs persisted before the trust_snapshots table won't
+  // carry this.
+  trust_snapshot?: Record<string, ComponentTrustSnapshot | { disagreement_rate?: number }>;
+}
+
+export interface TrustSnapshotEntry {
+  step: number;
+  snapshot: Record<string, ComponentTrustSnapshot | { disagreement_rate?: number }>;
 }
 
 export interface TimelineEntry {
@@ -192,7 +200,7 @@ export interface DecisionRecord {
   justification: string;
   trusted_controllers: string[];
   rejected_controllers: string[];
-  // Causality fields (additive — see SystemDecision for context).
+  // See SystemDecision for context.
   previous_mode?: SystemMode | null;
   trigger_reason?: string;
   active_fault_ids?: string[];

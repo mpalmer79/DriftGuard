@@ -1,11 +1,3 @@
-// InfoCallout — neutral context callout with three tones.
-//
-// Coverage:
-//   * default tone is "neutral"; tone surfaces via the `data-tone`
-//     attribute (intentional public hook).
-//   * title is rendered when supplied and omitted otherwise.
-//   * children render inside the callout body.
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
@@ -47,11 +39,8 @@ describe("InfoCallout", () => {
 
   it("omits the title element when no title is provided", () => {
     render(<InfoCallout>body only</InfoCallout>);
-    // No uppercase title row should exist; only the body paragraph.
     expect(screen.getByText("body only")).toBeTruthy();
     const note = screen.getByRole("note");
-    // The title is rendered in a <p>; with no title there should be
-    // no <p> child of the callout.
     expect(note.querySelector("p")).toBeNull();
   });
 });

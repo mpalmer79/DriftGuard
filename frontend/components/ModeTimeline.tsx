@@ -1,30 +1,3 @@
-// ModeTimeline — visual mode-progression band for a single run.
-//
-// Given the per-step DecisionRecord stream, the component collapses
-// adjacent steps that share the same `system_mode` into a single
-// segment. Each segment renders a coloured chip showing:
-//
-//   * the mode name (NORMAL / DEGRADED / SAFE_MODE / FAILED),
-//   * the inclusive step range (e.g. `step 3–7`),
-//   * and — on hover via the native `title` attribute — the first
-//     decision's `justification` so an operator can see why that
-//     mode segment opened.
-//
-// `currentStep` is optional. When present, the segment that contains
-// that step is rendered with a thicker border + accent ring so the
-// operator can scan to "here is where I am right now". The marker
-// is a static class lookup so Tailwind's content scanner emits the
-// concrete utility names at build time.
-//
-// Layout responsiveness:
-//   * `flex flex-wrap` keeps segments on one row at small widths and
-//     wraps them onto a vertical column once the container is too
-//     narrow. Each segment fills its row on `< sm` for legibility.
-//
-// Empty state:
-//   * If `decisions` is empty, we render a neutral hint that the
-//     operator should run a step. No skeleton — empty is meaningful.
-
 import type { DecisionRecord, SystemMode } from "@/types/api";
 
 interface ModeTimelineProps {
@@ -39,8 +12,8 @@ interface ModeSegment {
   justification: string;
 }
 
-// Static class lookup — Tailwind's content scanner needs concrete
-// utility names, so we cannot interpolate `bg-${token}` here.
+// Static class lookup — Tailwind's content scanner can't see dynamic
+// `bg-${token}` strings.
 const MODE_SEGMENT_CLASS: Record<SystemMode, string> = {
   NORMAL: "text-status-nominal border-status-nominal/40 bg-status-nominal/10",
   DEGRADED: "text-status-degraded border-status-degraded/40 bg-status-degraded/10",
@@ -57,10 +30,8 @@ function modeSegmentClass(mode: string): string {
   return "text-text-muted border-border bg-surface";
 }
 
-// Collapse adjacent decisions with the same `system_mode` into a
-// single inclusive `[startStep, endStep]` segment. The first
-// decision in each segment supplies the justification surfaced via
-// the `title` attribute on hover.
+// Collapse adjacent decisions sharing `system_mode` into one inclusive
+// segment. The first decision per segment supplies the hover tooltip.
 export function buildSegments(decisions: DecisionRecord[]): ModeSegment[] {
   if (!decisions || decisions.length === 0) return [];
   const sorted = [...decisions].sort((a, b) => a.step - b.step);
@@ -132,8 +103,6 @@ export function ModeTimeline({ decisions, currentStep }: ModeTimelineProps) {
           const active = segmentContains(seg, currentStep);
           const baseClass = modeSegmentClass(seg.mode);
           const ringClass = active ? "ring-2 ring-accent border-2" : "border";
-          // `title` carries the long justification so hover reveals it
-          // without forcing a tooltip dependency.
           const tooltip = seg.justification
             ? `${seg.mode} (${formatRange(seg)}) — ${seg.justification}`
             : `${seg.mode} (${formatRange(seg)})`;

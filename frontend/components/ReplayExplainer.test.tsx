@@ -1,14 +1,3 @@
-// ReplayExplainer — replay fingerprint inline panel tests.
-//
-// Coverage:
-//   * empty state when fingerprint is null
-//   * truncated hash with full hash in title/aria-label
-//   * three-bullet explanation list
-//   * "How verified" line links to docs/DETERMINISM.md and
-//     docs/formal/SafeMode.tla
-//   * copy button calls navigator.clipboard.writeText with the full
-//     hash and flips to "Copied" briefly
-
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 

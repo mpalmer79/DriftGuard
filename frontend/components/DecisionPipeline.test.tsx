@@ -1,16 +1,3 @@
-// DecisionPipeline — sensor → controllers → voter → detectors → mode
-// → action chain visualisation.
-//
-// Coverage:
-//   * empty state when step prop is null
-//   * each of the six stages renders with the right label
-//   * sensor stage colors: OK + no flags → nominal; INVALID → failed
-//   * controller stage colors: any invalid controller → degraded
-//   * voter stage shows outcome + selected_action and surfaces the
-//     vote_split.reason as a tooltip / second line
-//   * detectors stage falls back to "no findings" when empty
-//   * mode stage shows previous → current and trigger_reason
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

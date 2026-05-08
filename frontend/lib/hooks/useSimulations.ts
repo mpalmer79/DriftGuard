@@ -10,13 +10,9 @@ import type {
   SimulationEvent,
   TimelineEntry,
   TrajectoryPoint,
+  TrustSnapshotEntry,
   VehicleState,
 } from "@/types/api";
-
-// SWR fetchers — each one routes through the typed api client so the
-// error contract stays consistent and the hook return shape mirrors
-// the backend payload exactly. Per RESEARCH.md §7 the kernel produces
-// evidence; these hooks read it.
 
 const swrConfig = {
   revalidateOnFocus: false,
@@ -89,6 +85,14 @@ export function useDecisions(id: string | null) {
   return useSWR<DecisionRecord[] | null>(
     id ? ["/simulations", id, "decisions"] : null,
     async () => (id ? api.getDecisions(id) : null),
+    swrConfig
+  );
+}
+
+export function useTrustHistory(id: string | null) {
+  return useSWR<TrustSnapshotEntry[] | null>(
+    id ? ["/simulations", id, "trust"] : null,
+    async () => (id ? api.getTrustHistory(id) : null),
     swrConfig
   );
 }

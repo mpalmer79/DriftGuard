@@ -1,5 +1,3 @@
-// ControllerOutputTable — compact 3-row table tests.
-
 import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 

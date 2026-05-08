@@ -1,31 +1,13 @@
 "use client";
 
-// FaultEvidenceCard — operator-readable expansion of a single active
-// fault. The kernel emits faults with a stable type token (e.g.
-// SENSOR_DRIFT, CONTROLLER_LATENCY) and a free-form metadata blob.
-// Operators don't read the raw token easily, so this card translates
-// the type into a human title, attaches a short interpretation line,
-// and exposes the metadata under a `<details>` disclosure for anyone
-// who wants the structured payload.
-//
-// The interpretation table below is the single source of truth for
-// how each fault is described to the operator. Keep the wording
-// short, technical, and side-effect-aware — the operator should be
-// able to read one line and know what the fault means without diving
-// into the metadata.
-
 import type { FaultRecord } from "@/types/api";
 
-// Severity → status-token classes. We re-derive these locally rather
-// than share with CausalityPanel so each component stays
-// self-contained per Agent B constraints.
 const SEVERITY_CLASS: Record<string, string> = {
   WARNING: "text-status-degraded border-status-degraded/40 bg-status-degraded/10",
   CRITICAL: "text-status-failed border-status-failed/40 bg-status-failed/10",
 };
 
-// Operator interpretation table — keep wording aligned with the
-// fault model documented in docs/FAULT_MODEL.md.
+// Wording must stay aligned with docs/FAULT_MODEL.md.
 const INTERPRETATION: Record<string, string> = {
   SENSOR_DRIFT: "Sensor reading is drifting from truth.",
   SENSOR_DROPOUT: "Sensor returns no/probabilistic readings.",
@@ -45,7 +27,6 @@ const INTERPRETATION: Record<string, string> = {
 };
 
 function humanizeType(type: string): string {
-  // Replace underscores with spaces, then title-case each token.
   return type
     .split("_")
     .map((tok) => (tok.length === 0 ? tok : tok[0]?.toUpperCase() + tok.slice(1).toLowerCase()))
@@ -55,8 +36,6 @@ function humanizeType(type: string): string {
 function interpret(type: string): string {
   const known = INTERPRETATION[type];
   if (known) return known;
-  // Fallback: generic phrase plus the raw token so the operator
-  // still gets something to act on.
   return `Unrecognized fault category (${type}).`;
 }
 

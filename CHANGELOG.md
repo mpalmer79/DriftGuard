@@ -16,8 +16,8 @@ in the relevant phase notes.
 
 ## [0.3.0] — 2026-05-05
 
-A principal-grade review pass. The 0.2.0 → 0.3.0 release rolls up
-the action plan in `CLAUDE.md` (Phases 0 → 8): cleanup of
+A senior review pass. The 0.2.0 → 0.3.0 release rolls up the
+action plan in `CLAUDE.md` (Phases 0 → 8): cleanup of
 `ARCHITECTURE.md`, claim audits of `README.md` + the portfolio case
 study, the navigation-pipeline (INS+GPS+EKF) wiring, the
 dynamics-integrator config flag, safe-mode recovery hysteresis,
@@ -92,7 +92,7 @@ the auth proxy, and `/healthz` / `/readyz` separation.
   next `reset_state_for_tests()`.
 - **4.2** Compose volume + DEPLOYMENT.md. Backend service mounts
   named volume `sentinel-data` at `/data` and sets
-  `SENTINEL_DB_PATH=/data/sentinelnav.db`. Container stays
+  `SENTINEL_DB_PATH=/data/driftguard.db`. Container stays
   `read_only: true`. New deployment subsection covers the WAL
   guarantee, multi-replica non-guarantee, backup/restore tar
   recipe, and a smoke-test recipe.

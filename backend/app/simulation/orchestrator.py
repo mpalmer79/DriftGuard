@@ -53,6 +53,9 @@ class StepRecord:
     vote: VoteResult
     decision: SystemDecision
     events: list[Event] = field(default_factory=list)
+    # TrustDetector snapshot after this step. Deterministic given the
+    # seed, but excluded from the replay fingerprint — see canonical.py.
+    trust_snapshot: dict[str, dict] = field(default_factory=dict)
 
 
 class Simulation:
@@ -164,10 +167,8 @@ class Simulation:
         next_step = self.state.step + 1
         ts = self.state.timestamp + 1.0
         active_faults = self.faults.active_at(next_step)
-        # Capture the published mode from the previous step BEFORE the
-        # detector/safe-mode updates run. For step 1 the SafeModeManager
-        # is in NORMAL by construction (see SafeModeManager.__init__);
-        # subsequent steps read whatever the manager last published.
+        # Capture last step's published mode BEFORE the detector / safe-
+        # mode updates so the causality field reflects the prior state.
         previous_mode = self.safe_mode.current_mode
         active_fault_ids = [f.fault_id for f in active_faults]
 
@@ -225,9 +226,9 @@ class Simulation:
 
         with t.start_as_current_span("persistence"):
             if self.config.use_substep_integrator:
-                # Phase 2.1: opt-in continuous-time integrator. Default
-                # off — see ADR 0007. The legacy `apply_action` is
-                # what the replay-fingerprint contract pins.
+                # Opt-in continuous-time integrator (ADR 0007).
+                # Default-off because the replay-fingerprint contract
+                # is pinned to the legacy `apply_action`.
                 new_state = integrate_action(
                     self.state,
                     decision.final_action,
@@ -255,6 +256,7 @@ class Simulation:
             vote=vote_result,
             decision=decision,
             events=self.events.since(next_step),
+            trust_snapshot=self.trust.snapshot(),
         )
         self.step_history.append(record)
         self.last_decision = decision
