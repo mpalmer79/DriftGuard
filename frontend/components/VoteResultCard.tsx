@@ -12,8 +12,7 @@ interface VoteResultCardProps {
 const OUTCOME_CHIP: Record<string, string> = {
   CONSENSUS: "text-status-nominal border-status-nominal/40 bg-status-nominal/10",
   SPLIT: "text-status-degraded border-status-degraded/40 bg-status-degraded/10",
-  INSUFFICIENT_DATA:
-    "text-status-safemode border-status-safemode/40 bg-status-safemode/10",
+  INSUFFICIENT_DATA: "text-status-safemode border-status-safemode/40 bg-status-safemode/10",
 };
 
 function rationale(vote: VoteResult): string {
@@ -65,9 +64,7 @@ export function VoteResultCard({ vote }: VoteResultCardProps) {
       </p>
       <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
         <div>
-          <p className="uppercase tracking-wider text-text-muted text-[10px] mb-0.5">
-            Agreeing
-          </p>
+          <p className="uppercase tracking-wider text-text-muted text-[10px] mb-0.5">Agreeing</p>
           {vote.agreeing_controllers.length === 0 ? (
             <p className="text-text-muted">—</p>
           ) : (
@@ -81,9 +78,7 @@ export function VoteResultCard({ vote }: VoteResultCardProps) {
           )}
         </div>
         <div>
-          <p className="uppercase tracking-wider text-text-muted text-[10px] mb-0.5">
-            Rejected
-          </p>
+          <p className="uppercase tracking-wider text-text-muted text-[10px] mb-0.5">Rejected</p>
           {vote.rejected_controllers.length === 0 ? (
             <p className="text-text-muted">—</p>
           ) : (

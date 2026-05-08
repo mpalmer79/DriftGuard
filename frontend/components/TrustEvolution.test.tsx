@@ -23,9 +23,7 @@ import type {
   SystemDecision,
 } from "@/types/api";
 
-function makeController(
-  overrides: Partial<ControllerOutput> = {},
-): ControllerOutput {
+function makeController(overrides: Partial<ControllerOutput> = {}): ControllerOutput {
   return {
     controller_id: "controller_a",
     step: 1,
@@ -92,10 +90,7 @@ function makeDecision(step: number): SystemDecision {
   };
 }
 
-function makeEntry(
-  step: number,
-  controllers: ControllerOutput[],
-): TimelineEntry {
+function makeEntry(step: number, controllers: ControllerOutput[]): TimelineEntry {
   return {
     step,
     state: makeState(step),
@@ -112,9 +107,7 @@ afterEach(() => cleanup());
 describe("TrustEvolution", () => {
   it("renders the empty-state copy when timeline is empty and no snapshot", () => {
     render(<TrustEvolution timeline={[]} />);
-    expect(
-      screen.getByText(/No trust history yet — run a scenario to populate/i),
-    ).toBeTruthy();
+    expect(screen.getByText(/No trust history yet — run a scenario to populate/i)).toBeTruthy();
   });
 
   it("renders one current-trust row per controller in the snapshot", () => {
@@ -150,12 +143,7 @@ describe("TrustEvolution", () => {
         repeat_count: 0,
       },
     };
-    render(
-      <TrustEvolution
-        timeline={[]}
-        trustSnapshot={snapshot}
-      />,
-    );
+    render(<TrustEvolution timeline={[]} trustSnapshot={snapshot} />);
     // Status words.
     expect(screen.getByText("HEALTHY")).toBeTruthy();
     expect(screen.getByText("DEGRADED")).toBeTruthy();
@@ -196,9 +184,7 @@ describe("TrustEvolution", () => {
 
   it("falls back to 'Trust snapshot unavailable' when snapshot is missing but timeline has data", () => {
     const timeline: TimelineEntry[] = [
-      makeEntry(1, [
-        makeController({ controller_id: "controller_a" }),
-      ]),
+      makeEntry(1, [makeController({ controller_id: "controller_a" })]),
     ];
     render(<TrustEvolution timeline={timeline} />);
     expect(screen.getByTestId("trust-current-empty")).toBeTruthy();
@@ -230,11 +216,9 @@ describe("TrustEvolution", () => {
         repeat_count: 0,
       },
     };
-    const { container } = render(
-      <TrustEvolution timeline={[]} trustSnapshot={snapshot} />,
-    );
+    const { container } = render(<TrustEvolution timeline={[]} trustSnapshot={snapshot} />);
     const rows = Array.from(
-      container.querySelectorAll('[data-testid^="trust-current-controller_"]'),
+      container.querySelectorAll('[data-testid^="trust-current-controller_"]')
     ).map((el) => el.getAttribute("data-testid"));
     expect(rows).toEqual([
       "trust-current-controller_a",

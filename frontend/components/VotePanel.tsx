@@ -57,11 +57,7 @@ function formatControllerId(id: string): string {
   return id;
 }
 
-function bucketFor(
-  controllerId: string,
-  agreeing: string[],
-  rejected: string[]
-): Bucket {
+function bucketFor(controllerId: string, agreeing: string[], rejected: string[]): Bucket {
   if (agreeing.includes(controllerId)) return "agreeing";
   if (rejected.includes(controllerId)) return "rejected";
   return "neutral";
@@ -105,9 +101,7 @@ function TrustMeter({ snapshot }: { snapshot: ComponentTrustSnapshot }) {
   return (
     <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-2">
-        <span
-          className={`font-mono text-[10px] uppercase tracking-wider ${statusClass}`}
-        >
+        <span className={`font-mono text-[10px] uppercase tracking-wider ${statusClass}`}>
           {snapshot.status}
         </span>
         <span className="font-mono text-[10px] text-text-muted">{pct}%</span>
@@ -162,14 +156,10 @@ function ControllerCard({
         >
           {output.action}
         </span>
-        <span className="font-mono text-[11px] text-text-muted">
-          {confidencePct}% conf
-        </span>
+        <span className="font-mono text-[11px] text-text-muted">{confidencePct}% conf</span>
       </div>
       <div className="flex items-center justify-between gap-2 font-mono text-[11px]">
-        <span className="text-text-muted uppercase tracking-wider text-[10px]">
-          response
-        </span>
+        <span className="text-text-muted uppercase tracking-wider text-[10px]">response</span>
         <span className={overBudget ? "text-status-failed" : "text-text-primary"}>
           {output.response_time_ms} ms
         </span>
@@ -234,9 +224,7 @@ export function VotePanel({ controllers, vote, trustSnapshot }: VotePanelProps) 
         >
           {rationale(vote)}
         </p>
-        {vote.reason && (
-          <p className="text-xs text-text-muted leading-relaxed">{vote.reason}</p>
-        )}
+        {vote.reason && <p className="text-xs text-text-muted leading-relaxed">{vote.reason}</p>}
       </div>
 
       <div>
@@ -248,10 +236,7 @@ export function VotePanel({ controllers, vote, trustSnapshot }: VotePanelProps) 
         ) : (
           <ul className="space-y-0.5">
             {exclusions.map((line) => (
-              <li
-                key={line}
-                className="font-mono text-[11px] text-status-degraded leading-snug"
-              >
+              <li key={line} className="font-mono text-[11px] text-status-degraded leading-snug">
                 {line}
               </li>
             ))}

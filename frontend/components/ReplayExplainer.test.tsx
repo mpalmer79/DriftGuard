@@ -42,9 +42,7 @@ describe("ReplayExplainer", () => {
   });
 
   it("renders the three-bullet explanation and verification links", () => {
-    render(
-      <ReplayExplainer simulationId="sim-1" fingerprint={FINGERPRINT} stepCount={120} />
-    );
+    render(<ReplayExplainer simulationId="sim-1" fingerprint={FINGERPRINT} stepCount={120} />);
     expect(screen.getByText(/Same seed produces the same trajectory/i)).toBeTruthy();
     expect(screen.getByText(/Same trajectory produces the same fingerprint/i)).toBeTruthy();
     expect(screen.getByText(/A regression changes the fingerprint/i)).toBeTruthy();
@@ -62,9 +60,7 @@ describe("ReplayExplainer", () => {
       value: { writeText },
     });
 
-    render(
-      <ReplayExplainer simulationId="sim-1" fingerprint={FINGERPRINT} stepCount={120} />
-    );
+    render(<ReplayExplainer simulationId="sim-1" fingerprint={FINGERPRINT} stepCount={120} />);
     const button = screen.getByTestId("replay-fingerprint-copy");
     expect(button.textContent).toBe("Copy");
 
@@ -91,9 +87,7 @@ describe("ReplayExplainer", () => {
     });
 
     vi.useFakeTimers();
-    render(
-      <ReplayExplainer simulationId="sim-1" fingerprint={FINGERPRINT} stepCount={120} />
-    );
+    render(<ReplayExplainer simulationId="sim-1" fingerprint={FINGERPRINT} stepCount={120} />);
 
     const button = screen.getByTestId("replay-fingerprint-copy");
     await act(async () => {

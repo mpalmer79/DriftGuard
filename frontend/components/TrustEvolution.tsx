@@ -19,11 +19,7 @@
 //
 // No charting library — only Tailwind layout primitives.
 
-import type {
-  ComponentTrustSnapshot,
-  ControllerOutput,
-  TimelineEntry,
-} from "@/types/api";
+import type { ComponentTrustSnapshot, ControllerOutput, TimelineEntry } from "@/types/api";
 
 interface TrustEvolutionProps {
   timeline: TimelineEntry[];
@@ -54,7 +50,7 @@ function formatControllerId(id: string): string {
 
 function gatherControllerIds(
   timeline: TimelineEntry[],
-  trustSnapshot?: Record<string, ComponentTrustSnapshot>,
+  trustSnapshot?: Record<string, ComponentTrustSnapshot>
 ): string[] {
   const seen = new Set<string>();
   for (const entry of timeline) {
@@ -105,9 +101,7 @@ function CurrentTrustRow({
       <span className="font-mono text-[11px] text-right tabular-nums text-text-primary">
         {pct}%
       </span>
-      <span
-        className={`col-start-2 font-mono text-[10px] uppercase tracking-wider ${statusClass}`}
-      >
+      <span className={`col-start-2 font-mono text-[10px] uppercase tracking-wider ${statusClass}`}>
         {status}
       </span>
     </div>
@@ -122,10 +116,7 @@ function ValidityBitmapRow({
   cells: { step: number; valid: boolean }[];
 }) {
   return (
-    <div
-      data-testid={`validity-row-${controllerId}`}
-      className="flex items-center gap-2"
-    >
+    <div data-testid={`validity-row-${controllerId}`} className="flex items-center gap-2">
       <span className="font-mono text-[11px] uppercase tracking-wider text-text-primary w-[110px] shrink-0">
         {formatControllerId(controllerId)}
       </span>
@@ -145,10 +136,7 @@ function ValidityBitmapRow({
   );
 }
 
-export function TrustEvolution({
-  timeline,
-  trustSnapshot,
-}: TrustEvolutionProps) {
+export function TrustEvolution({ timeline, trustSnapshot }: TrustEvolutionProps) {
   if ((!timeline || timeline.length === 0) && !trustSnapshot) {
     return (
       <section
@@ -169,10 +157,7 @@ export function TrustEvolution({
   // controllers that actually appeared in `entry.controllers` get a
   // cell for that step; missing controllers are skipped (no synthetic
   // values).
-  const validityByController: Record<
-    string,
-    { step: number; valid: boolean }[]
-  > = {};
+  const validityByController: Record<string, { step: number; valid: boolean }[]> = {};
   for (const cid of controllerIds) {
     validityByController[cid] = [];
   }
@@ -196,9 +181,7 @@ export function TrustEvolution({
     }
   }
 
-  const hasValidity = timeline.some(
-    (e) => (e.controllers ?? []).length > 0,
-  );
+  const hasValidity = timeline.some((e) => (e.controllers ?? []).length > 0);
 
   return (
     <section
@@ -220,10 +203,7 @@ export function TrustEvolution({
           Current Trust
         </p>
         {controllerIds.length === 0 || !trustSnapshot ? (
-          <p
-            data-testid="trust-current-empty"
-            className="font-mono text-[11px] text-text-muted"
-          >
+          <p data-testid="trust-current-empty" className="font-mono text-[11px] text-text-muted">
             Trust snapshot unavailable.
           </p>
         ) : (
@@ -231,13 +211,7 @@ export function TrustEvolution({
             {controllerIds.map((cid) => {
               const snap = trustSnapshot?.[cid];
               if (!snap) return null;
-              return (
-                <CurrentTrustRow
-                  key={cid}
-                  controllerId={cid}
-                  snapshot={snap}
-                />
-              );
+              return <CurrentTrustRow key={cid} controllerId={cid} snapshot={snap} />;
             })}
           </div>
         )}
@@ -256,10 +230,7 @@ export function TrustEvolution({
           </p>
         </div>
         {!hasValidity ? (
-          <p
-            data-testid="validity-empty"
-            className="font-mono text-[11px] text-text-muted"
-          >
+          <p data-testid="validity-empty" className="font-mono text-[11px] text-text-muted">
             No per-step controller data.
           </p>
         ) : (
@@ -267,13 +238,7 @@ export function TrustEvolution({
             {controllerIds.map((cid) => {
               const cells = validityByController[cid] ?? [];
               if (cells.length === 0) return null;
-              return (
-                <ValidityBitmapRow
-                  key={cid}
-                  controllerId={cid}
-                  cells={cells}
-                />
-              );
+              return <ValidityBitmapRow key={cid} controllerId={cid} cells={cells} />;
             })}
           </div>
         )}

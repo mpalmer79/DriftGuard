@@ -200,7 +200,13 @@ export function CausalityPanel({
         </Row>
 
         <Row label="Fault Evidence">
-          {activeFaultIds.length === 0 ? (
+          {activeFaults && activeFaults.length > 0 ? (
+            <div className="flex flex-col gap-2" data-testid="causality-active-fault-cards">
+              {activeFaults.map((f) => (
+                <FaultEvidenceCard key={f.fault_id} fault={f} />
+              ))}
+            </div>
+          ) : activeFaultIds.length === 0 ? (
             <span className="font-mono text-xs text-text-muted">no active faults</span>
           ) : (
             <span className="flex flex-wrap gap-1.5">
@@ -223,19 +229,31 @@ export function CausalityPanel({
           </span>
         </Row>
 
-        <Row label="Replay Fingerprint">
-          {replayFingerprint ? (
-            <span
-              title={replayFingerprint}
-              className="font-mono text-xs text-text-primary break-all"
-            >
-              {replayFingerprint.slice(0, 12)}…
-            </span>
-          ) : (
-            <span className="font-mono text-xs text-text-muted">—</span>
-          )}
-        </Row>
+        {!expanded && (
+          <Row label="Replay Fingerprint">
+            {replayFingerprint ? (
+              <span
+                title={replayFingerprint}
+                className="font-mono text-xs text-text-primary break-all"
+              >
+                {replayFingerprint.slice(0, 12)}…
+              </span>
+            ) : (
+              <span className="font-mono text-xs text-text-muted">—</span>
+            )}
+          </Row>
+        )}
       </dl>
+
+      {expanded && (
+        <div className="pt-2 border-t border-border" data-testid="causality-replay-explainer">
+          <ReplayExplainer
+            simulationId={simulationId ?? ""}
+            fingerprint={replayFingerprint ?? null}
+            stepCount={stepCount ?? decision.step}
+          />
+        </div>
+      )}
 
       {findings.length > 0 && (
         <div className="pt-2 border-t border-border space-y-2">

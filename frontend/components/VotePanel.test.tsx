@@ -10,11 +10,7 @@ import { describe, expect, it, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 import { VotePanel } from "./VotePanel";
-import type {
-  ComponentTrustSnapshot,
-  ControllerOutput,
-  VoteResult,
-} from "@/types/api";
+import type { ComponentTrustSnapshot, ControllerOutput, VoteResult } from "@/types/api";
 
 function makeController(overrides: Partial<ControllerOutput> = {}): ControllerOutput {
   return {
@@ -48,9 +44,9 @@ afterEach(() => cleanup());
 describe("VotePanel", () => {
   it("renders consensus rationale and no exclusions", () => {
     render(<VotePanel controllers={CONTROLLERS_OK} vote={CONSENSUS_VOTE} />);
-    expect(
-      screen.getByTestId("vote-rationale").textContent
-    ).toMatch(/Majority consensus: MAINTAIN/);
+    expect(screen.getByTestId("vote-rationale").textContent).toMatch(
+      /Majority consensus: MAINTAIN/
+    );
     expect(screen.getByText(/No exclusions/i)).toBeTruthy();
     expect(screen.getByText(/all controllers agreed on MAINTAIN/i)).toBeTruthy();
     // Outcome chip mirrors the outcome word.
@@ -82,12 +78,10 @@ describe("VotePanel", () => {
       makeController({ controller_id: "controller_c", action: "DECELERATE" }),
     ];
     render(<VotePanel controllers={controllers} vote={split} />);
-    expect(
-      screen.getByTestId("vote-rationale").textContent
-    ).toMatch(/No consensus — controllers disagree/);
-    expect(
-      screen.getByText("controller_b excluded: latency 230ms exceeds 150ms")
-    ).toBeTruthy();
+    expect(screen.getByTestId("vote-rationale").textContent).toMatch(
+      /No consensus — controllers disagree/
+    );
+    expect(screen.getByText("controller_b excluded: latency 230ms exceeds 150ms")).toBeTruthy();
   });
 
   it("cites invalid output when a rejected controller is invalid", () => {
@@ -108,9 +102,9 @@ describe("VotePanel", () => {
       }),
     ];
     render(<VotePanel controllers={controllers} vote={split} />);
-    expect(
-      screen.getByTestId("vote-rationale").textContent
-    ).toMatch(/Insufficient valid controllers — defaulting to safe action/);
+    expect(screen.getByTestId("vote-rationale").textContent).toMatch(
+      /Insufficient valid controllers — defaulting to safe action/
+    );
     expect(screen.getByText("controller_a excluded: invalid output")).toBeTruthy();
     expect(screen.getByText("controller_b excluded: invalid output")).toBeTruthy();
     // controller_c is valid + within budget but still in rejected_controllers
@@ -142,13 +136,7 @@ describe("VotePanel", () => {
         repeat_count: 0,
       },
     };
-    render(
-      <VotePanel
-        controllers={CONTROLLERS_OK}
-        vote={CONSENSUS_VOTE}
-        trustSnapshot={trust}
-      />
-    );
+    render(<VotePanel controllers={CONTROLLERS_OK} vote={CONSENSUS_VOTE} trustSnapshot={trust} />);
     // Status words for all three rendered.
     expect(screen.getAllByText("HEALTHY").length).toBe(2);
     expect(screen.getByText("DEGRADED")).toBeTruthy();
@@ -195,9 +183,9 @@ describe("VotePanel", () => {
     render(<VotePanel controllers={[]} vote={vote} />);
     expect(screen.getByText("No controller outputs.")).toBeTruthy();
     // Still renders the rationale + exclusions block.
-    expect(
-      screen.getByTestId("vote-rationale").textContent
-    ).toMatch(/Insufficient valid controllers/);
+    expect(screen.getByTestId("vote-rationale").textContent).toMatch(
+      /Insufficient valid controllers/
+    );
     expect(screen.getByText(/No exclusions/i)).toBeTruthy();
   });
 });

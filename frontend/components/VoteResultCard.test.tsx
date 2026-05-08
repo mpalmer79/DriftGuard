@@ -26,9 +26,7 @@ describe("VoteResultCard", () => {
     render(<VoteResultCard vote={vote} />);
     expect(screen.getByText("CONSENSUS")).toBeTruthy();
     expect(screen.getByText("→ MAINTAIN")).toBeTruthy();
-    expect(
-      screen.getByText(/Majority consensus: MAINTAIN/i),
-    ).toBeTruthy();
+    expect(screen.getByText(/Majority consensus: MAINTAIN/i)).toBeTruthy();
     expect(screen.getByText("controller_a")).toBeTruthy();
     expect(screen.getByText("controller_b")).toBeTruthy();
   });
@@ -43,9 +41,7 @@ describe("VoteResultCard", () => {
     };
     render(<VoteResultCard vote={vote} />);
     expect(screen.getByText("SPLIT")).toBeTruthy();
-    expect(
-      screen.getByText(/No consensus — controllers disagree/i),
-    ).toBeTruthy();
+    expect(screen.getByText(/No consensus — controllers disagree/i)).toBeTruthy();
     expect(screen.getByText("controller_b")).toBeTruthy();
     expect(screen.getByText("controller_c")).toBeTruthy();
   });

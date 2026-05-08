@@ -181,9 +181,7 @@ describe("DecisionPipeline", () => {
     const mode = screen.getByTestId("pipeline-mode");
     expect(mode.textContent).toMatch(/NORMAL/);
     expect(mode.textContent).toMatch(/DEGRADED/);
-    expect(screen.getByTestId("pipeline-mode-reason").textContent).toMatch(
-      /controller timed out/i
-    );
+    expect(screen.getByTestId("pipeline-mode-reason").textContent).toMatch(/controller timed out/i);
   });
 
   it("escalates the action stage to safemode when safe_mode_active is true", () => {
