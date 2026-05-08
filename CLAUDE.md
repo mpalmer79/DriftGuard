@@ -1,414 +1,599 @@
-# DriftGuard Principal-Level Hardening Prompt
+# DriftGuard Phase 2: Operator Experience and Explainability Upgrade
 
-You are acting as a principal engineer and technical product architect.
+You are continuing work on DriftGuard after completion of Phase 1 hardening.
 
-Your goal is to harden DriftGuard methodically without overlapping work, breaking existing behavior, or creating noisy rewrites. Attention to detail matters more than speed.
+Phase 1 already addressed:
+- branding consistency
+- causality field exposure
+- architecture/documentation cleanup
+- production-boundary clarification
+- baseline frontend improvements
+- claim verification
+- operator-console foundation work
 
-## Primary objective
+This Phase 2 prompt is NOT a cleanup pass.
 
-Address the following weaknesses and priority fixes:
+This is a focused product-interpretation and operator-experience upgrade.
 
-1. Remove all SentinelNav branding leftovers and standardize the project as DriftGuard.
-2. Strengthen the live app so it feels like an expert operator console, not just a demo.
-3. Improve frontend depth so the UI explains causality, decisions, and risk.
-4. Review production limitations and make them explicit, bounded, and professionally documented in code/docs where appropriate.
-5. Validate bold repo claims against the actual codebase and CI state.
-6. Add a clear “What this demonstrates” section to the repo documentation.
-7. Improve dashboard causality:
-   - previous mode
-   - current mode
-   - trigger reason
-   - active faults
-   - vote split
-   - detector finding
-   - final action
-8. Add one architecture diagram file.
-9. Add a live demo script showing the scenario flow:
-   - run sensor drift scenario
-   - observe DEGRADED mode
-   - inject controller fault
-   - observe SAFE_MODE behavior
+The goal is to transform DriftGuard from:
+- a technically impressive engineering dashboard
 
-Exclude README screenshot/GIF work. Do not add screenshots.
+into:
+- an interactive explainable systems simulation platform.
+
+The UI/UX is now the highest-priority surface in the entire project.
 
 ---
 
-# Operating rules
+# Strategic objective
 
-Work in phases. Do not mix unrelated changes.
+A reviewer should be able to open DriftGuard and immediately understand:
 
-Use multiple Claude Code agents in parallel, but assign them non-overlapping scopes.
+1. What DriftGuard is
+2. What system is being simulated
+3. What fault occurred
+4. What evidence was detected
+5. Which controllers agreed or disagreed
+6. Why the system changed modes
+7. What action the system took
+8. Why deterministic replay matters
+9. Why this project demonstrates principal-level engineering thinking
 
-Before editing, inspect the repo structure and identify:
-- frontend framework and app paths
-- backend framework and app paths
-- documentation paths
-- test paths
-- CI paths
-- deployment config paths
+The app itself must communicate this.
 
-Do not guess. Inspect first.
+The reviewer should NOT need to:
+- read architecture docs first
+- inspect backend code
+- infer system behavior manually
+- mentally connect unrelated panels
 
-Do not perform broad rewrites unless necessary.
+The interface must become:
+- guided
+- causal
+- explainable
+- operational
+- technically credible
 
-Do not remove tests to make the build pass.
-
-Do not weaken security, validation, deterministic behavior, replay behavior, or simulation correctness.
-
-Do not rename public API fields unless you update all consumers and tests.
-
-Every code change must be supported by tests when reasonable.
-
-Every documentation claim must match the repo as it exists after your work.
+NOT:
+- flashy
+- marketing-heavy
+- decorative
+- overly animated
+- generic SaaS styling
 
 ---
 
-# Parallel agent assignments
+# Critical mindset
 
-Run these agents in parallel only after initial repo inspection.
+DriftGuard is NOT a CRUD app.
 
-## Agent A: Branding and terminology cleanup
+It is:
+- a deterministic safety simulation platform
+- a fault-analysis system
+- a replayable decision engine
+- an explainable systems-thinking portfolio artifact
+
+The frontend must explain:
+- escalation
+- trust degradation
+- fault detection
+- majority voting
+- replayability
+- operator reasoning
+- final system behavior
+
+The app should feel like:
+- a lightweight operational command interface
+- an engineering investigation tool
+- a safety-review console
+
+NOT:
+- a startup analytics dashboard
+- a template admin panel
+- a generic monitoring UI
+
+---
+
+# Existing sources to inspect
+
+Use these as primary interpretation sources:
+- docs/PORTFOLIO_CASE_STUDY.md
+- architecture docs
+- scenario docs
+- ADRs
+- backend schemas
+- replay docs
+- detector docs
+- safe-mode docs
+- event model docs
+
+Extract the best ideas from these documents and surface them naturally inside the UI.
+
+Do not copy long paragraphs into the frontend.
+
+Compress concepts into:
+- operator explanations
+- evidence summaries
+- contextual callouts
+- guided interpretation panels
+
+---
+
+# Parallel agent structure
+
+Run multiple agents in parallel.
+
+Agents MUST NOT overlap ownership.
+
+If a shared file is needed:
+- establish ownership
+- complete work sequentially
+- avoid merge conflicts
+
+---
+
+# Agent A: Landing experience and onboarding flow
 
 Scope:
-- Search the entire repo for:
-  - SentinelNav
-  - sentinelnav
-  - Sentinel Nav
-  - sentinel-nav
-  - old project names or mismatched product references
-- Standardize external-facing product name as DriftGuard.
-- Preserve historical references only if they are clearly labeled as legacy migration notes.
-- Update:
-  - app metadata
-  - package names only if safe
-  - docs
-  - page titles
-  - OpenGraph metadata
-  - API docs text
-  - architecture docs
-  - deployment docs
-  - comments that leak old branding
-  - tests that assert visible text
+Own the landing page and first-run user experience.
 
-Constraints:
-- Do not rename files, modules, packages, or import paths unless the rename is low-risk and all tests are updated.
-- Prefer text cleanup over structural rename unless structural rename is clearly necessary.
-- If any internal module names remain for compatibility, document why.
+Goal:
+A reviewer should understand DriftGuard within 30 seconds.
 
-Deliverable:
-- A concise report listing every file changed and any intentional leftovers.
+Required upgrades:
+
+## 1. Landing-page restructuring
+
+The landing page must clearly answer:
+- What is DriftGuard?
+- What problem does it simulate?
+- Why does redundant control matter?
+- Why do safe modes matter?
+- Why does deterministic replay matter?
+
+Avoid:
+- buzzwords
+- startup language
+- generic AI claims
+- empty hero sections
+
+Prefer:
+- technical clarity
+- concise system framing
+- operational language
 
 ---
 
-## Agent B: Frontend operator-console upgrade
+## 2. Guided demo entrypoint
+
+Add a highly visible:
+- "Start Guided Demo"
+or
+- "Run First Scenario"
+
+The user should not wonder where to begin.
+
+---
+
+## 3. Demo preview cards
+
+Add short scenario preview cards showing:
+- scenario name
+- injected fault
+- expected system behavior
+- expected escalation level
+- what the reviewer should observe
+
+Examples:
+- Sensor Drift
+- Controller Disagreement
+- Safe Mode Escalation
+- Critical Fault Isolation
+
+---
+
+## 4. Embedded portfolio framing
+
+Add concise in-app callouts:
+- "Demonstrates deterministic replay"
+- "Demonstrates explainable fault escalation"
+- "Demonstrates redundant controller voting"
+
+These should be subtle and technical.
+
+Not marketing blurbs.
+
+---
+
+Deliverables:
+- improved landing experience
+- guided first-run flow
+- clearer onboarding
+- scenario entry improvements
+
+---
+
+# Agent B: Decision explainability system
 
 Scope:
-- Inspect the live frontend structure.
-- Identify dashboard, scenario, scenario authoring, results, run detail, and navigation pages.
-- Improve the app so it better communicates operator-level system behavior.
+Own all decision interpretation surfaces.
 
-Required UI improvements:
-- Add or improve a dashboard causality panel that clearly shows:
-  - previous mode
-  - current mode
-  - trigger reason
-  - active faults
-  - vote split
-  - detector finding
-  - final action
-- Add empty states that explain what the user should do next.
-- Add inline explanations for safety modes:
-  - NORMAL
-  - DEGRADED
-  - SAFE_MODE
-  - FAILED
-- Add operator-style labels such as:
-  - System State
-  - Decision Reason
-  - Fault Evidence
-  - Controller Vote
-  - Final Command
-  - Replay Fingerprint
-- Improve scenario pages so a reviewer understands the story of each scenario without reading the backend code.
+Goal:
+Every important system decision must explain itself.
 
-Constraints:
-- Do not create fake data if real backend data exists.
-- If a field is unavailable from the backend, add a graceful fallback and note the missing backend field in the final report.
-- Keep the UI clean and technical.
-- Avoid generic marketing copy.
-- Avoid large visual redesign unless necessary.
-- Preserve mobile responsiveness.
-- Preserve existing routing and deployment behavior.
+Required upgrades:
 
-Testing:
-- Add or update frontend tests if the repo has a frontend test setup.
-- Run type checks and lint checks if available.
+## 1. Unified decision explanation panel
 
-Deliverable:
-- A report explaining the before and after behavior for each edited page.
+Create or improve a reusable panel showing:
+- previous mode
+- current mode
+- transition reason
+- detector finding
+- active faults
+- trust degradation
+- vote outcome
+- final action
+- replay fingerprint
+
+This component should become a core UI primitive.
 
 ---
 
-## Agent C: Backend causality and API review
+## 2. Event-to-decision pipeline visualization
+
+Create a visual chain like:
+
+Sensor Drift
+↓
+Detector Triggered
+↓
+Controller Disagreement Increased
+↓
+Trust Reduced
+↓
+Mode Escalated to DEGRADED
+↓
+Safe Action Applied
+
+This is one of the highest-value additions.
+
+Keep it:
+- readable
+- operational
+- deterministic
+- minimal
+
+---
+
+## 3. Fault evidence interpretation
+
+Transform raw fault output into operator-readable evidence.
+
+Show:
+- what triggered detection
+- what threshold/rule was crossed
+- which component was affected
+- what action was taken
+
+Avoid raw JSON dumps unless expandable.
+
+---
+
+## 4. Replay explainability
+
+Replay fingerprints are a strong engineering signal.
+
+Explain:
+- what replayability means
+- why deterministic replay matters
+- how it supports auditability and verification
+
+Do this inside the UI where replay data appears.
+
+---
+
+Deliverables:
+- reusable explanation components
+- causal pipeline views
+- replay interpretation surfaces
+- operator-readable evidence system
+
+---
+
+# Agent C: Controller voting and trust visualization
 
 Scope:
-- Inspect backend decision, simulation, scenario, event, incident, metrics, and replay models.
-- Determine whether the backend already exposes enough causality data for the frontend.
+Own controller visualization and trust-state interpretation.
 
-Required review:
-- Confirm whether these fields exist in responses:
-  - previous mode
-  - current mode
-  - trigger reason
-  - active faults
-  - vote split
-  - detector finding
-  - final action
-- If missing, add minimal, well-typed response fields using existing domain data.
-- Do not invent causality. Derive it from actual simulation, voting, detector, and safe-mode state.
-- Ensure responses remain deterministic and replayable.
-- Ensure added fields do not break existing clients.
+Goal:
+A reviewer should understand majority voting in under 5 seconds.
 
-Constraints:
-- Prefer additive API changes.
-- Preserve existing schemas unless a breaking change is unavoidable.
-- Update serializers, models, OpenAPI schemas, and tests.
-- Do not weaken validation or fault injection protections.
+Required upgrades:
 
-Testing:
-- Add or update backend tests proving causality fields are correct for:
-  - normal run
-  - sensor drift scenario
-  - controller disagreement scenario
-  - safe-mode escalation
-  - replay or deterministic comparison if applicable
+## 1. Controller vote visualization
 
-Deliverable:
-- A field-by-field causality mapping table:
-  - field name
-  - source domain object
-  - endpoint
-  - test coverage
+Show:
+- Controller A recommendation
+- Controller B recommendation
+- Controller C recommendation
+- majority outcome
+- excluded/invalid controller if applicable
+
+Use:
+- compact comparison cards
+- vote status indicators
+- trust indicators
+
+Avoid:
+- clutter
+- giant tables
+- unnecessary charts
 
 ---
 
-## Agent D: Production limits and claims audit
+## 2. Trust degradation visibility
+
+Add explicit trust-state interpretation:
+- stable
+- warning
+- degraded
+- critical disagreement
+
+Trust state should evolve visibly during escalation.
+
+---
+
+## 3. Confidence and reliability communication
+
+If backend data supports it:
+- expose confidence
+- expose trust score
+- expose detector severity
+
+If unavailable:
+- gracefully fallback
+- document missing backend support
+
+---
+
+## 4. Voting rationale summaries
+
+Add short summaries like:
+- "Majority consensus maintained."
+- "Controller disagreement exceeded tolerance."
+- "Controller C excluded due to invalid output."
+
+Keep these concise and operational.
+
+---
+
+Deliverables:
+- voting visualization system
+- trust-state interpretation
+- disagreement communication
+- reliability indicators
+
+---
+
+# Agent D: Scenario storytelling and operator cognition
 
 Scope:
-- Audit repo claims against reality.
-- Review README, docs, badges, CI workflows, deployment docs, comments, and app copy.
+Own scenario interpretation and flow comprehension.
 
-Required audit:
-- Verify claims about:
-  - test count
-  - coverage percentage
-  - TLA+ or formal specification
-  - OpenTelemetry
-  - supply-chain CI
-  - security scanning
-  - rate limiting
-  - replay fingerprints
-  - deterministic simulation
-  - SQLite persistence
-  - single-replica deployment limits
-  - open read endpoints
-  - bearer-token proxy
-- Adjust wording so claims are accurate and defensible.
+Goal:
+Reduce reviewer cognitive load.
 
-Documentation requirements:
-- Add or improve a “Production Boundaries” section covering:
-  - single replica assumption
-  - SQLite deployment limitations
-  - in-memory rate limit or registry limitations
-  - demo auth boundaries
-  - what would be required for multi-tenant production
-  - what is intentionally out of scope
-- Add or improve a “What this demonstrates” section:
-  - deterministic control simulation
-  - redundant controller voting
-  - fault injection
-  - safe-mode escalation
-  - replayability
-  - audit logging
-  - operator-facing explainability
-  - CI-backed engineering discipline
+The system should assemble the story automatically.
 
-Constraints:
-- Do not exaggerate.
-- Do not remove strong claims if they are true.
-- Replace vague claims with specific, verifiable ones.
+Required upgrades:
 
-Deliverable:
-- A claim audit table:
-  - original claim
-  - true, partially true, false, or unverifiable
-  - action taken
-  - file changed
+## 1. Scenario narrative structure
+
+Each scenario page should explain:
+- scenario purpose
+- injected condition
+- expected behavior
+- escalation expectation
+- what to inspect after execution
 
 ---
 
-## Agent E: Architecture diagram and live demo script
+## 2. Mode transition timeline
+
+Create a mode progression timeline:
+- NORMAL
+- DEGRADED
+- SAFE_MODE
+- FAILED
+
+Highlight:
+- current state
+- transition cause
+- transition timestamp if available
+
+---
+
+## 3. Execution summary cards
+
+After scenario execution:
+summarize:
+- fault introduced
+- detector response
+- controller agreement state
+- escalation result
+- final system action
+
+This should feel like:
+- incident review
+- operational debrief
+- post-event summary
+
+---
+
+## 4. Operator cognition optimization
+
+The reviewer should NOT need to manually correlate:
+- faults
+- votes
+- detector state
+- mode
+- action
+
+The UI should correlate these automatically.
+
+---
+
+Deliverables:
+- scenario interpretation improvements
+- mode timelines
+- execution summaries
+- lower cognitive overhead
+
+---
+
+# Agent E: Interaction polish and operational UX
 
 Scope:
-- Create one architecture diagram file and one live demo script document.
+Own operational usability and interaction quality.
 
-Architecture diagram requirements:
-- Add a repo-native diagram file.
-- Prefer Mermaid if the repo already uses Markdown docs.
-- Diagram should show:
-  - frontend
-  - API layer
-  - scenario runner
-  - simulation orchestrator
-  - sensor model
-  - redundant controllers
-  - voter
-  - detector
-  - safe-mode manager
-  - persistence/audit log
-  - replay/fingerprint path
-  - observability or metrics if implemented
-- The diagram must match actual code, not idealized architecture.
+Goal:
+Make the application feel coherent and intentional.
 
-Live demo script requirements:
-- Add a document that walks a reviewer through the live app:
-  1. Open DriftGuard
-  2. Go to scenarios
-  3. Run sensor drift scenario
-  4. Observe DEGRADED behavior
-  5. Inject or run controller fault scenario
-  6. Observe SAFE_MODE behavior
-  7. Inspect decision evidence
-  8. Review replay fingerprint or audit output if available
-- Include expected observations, not exact values unless deterministic values are guaranteed.
-- Add troubleshooting notes for Railway/live deployment if the app is cold-starting or the backend health check is unavailable.
+Required upgrades:
 
-Constraints:
-- Do not include screenshots.
-- Do not invent unavailable pages.
-- Link to existing pages only if routes exist.
-- If the current app lacks a step, document the gap and add a TODO.
+## 1. Empty states
 
-Deliverable:
-- File paths created.
-- Short explanation of how the diagram and demo script support portfolio review.
+Replace generic empty states with:
+- explanation
+- next action
+- operational guidance
 
 ---
 
-# Required phase plan
+## 2. Loading states
 
-## Phase 0: Baseline inspection
+Loading should feel:
+- stable
+- technical
+- operational
 
-Before editing:
-1. Print repo tree summary.
-2. Identify frontend, backend, docs, tests, and CI locations.
-3. Run available tests, lint, and type checks.
-4. Capture current failures without fixing them yet.
-5. Identify live app route structure if route files exist.
-
-Output:
-- Baseline status
-- Known failures
-- Agent work plan with exact file boundaries
-
-Do not edit during Phase 0.
+Avoid:
+- generic skeleton overload
+- flashy loaders
 
 ---
 
-## Phase 1: Non-overlapping parallel work
+## 3. Error states
 
-Run Agents A through E with the scopes above.
-
-Rules:
-- Agents may inspect the whole repo.
-- Agents may only edit files in their assigned scope.
-- If two agents need the same file, pause and coordinate ownership.
-- Shared files such as README or ARCHITECTURE.md must have one owner at a time.
-- Prefer separate commits or grouped diffs per agent if Git is available.
+Error messaging should:
+- explain probable cause
+- suggest next action
+- distinguish backend outage vs no data vs invalid scenario
 
 ---
 
-## Phase 2: Integration pass
+## 4. Navigation clarity
 
-After agents complete:
-1. Review all changed files together.
-2. Resolve naming inconsistencies.
-3. Ensure docs match actual code.
-4. Ensure frontend fields match backend schema.
-5. Ensure no duplicate sections were created.
-6. Ensure no broken links were introduced.
-7. Ensure no stale SentinelNav wording remains in user-facing surfaces.
+Improve:
+- route discoverability
+- page hierarchy
+- scenario navigation
+- return paths
 
-Run searches again:
-- SentinelNav
-- sentinelnav
-- Sentinel Nav
+The reviewer should never feel trapped.
+
+---
+
+## 5. Mobile operational usability
+
+Preserve readability on mobile:
+- stacked cards
+- readable timelines
+- compact evidence panels
+- usable voting views
+
+---
+
+Deliverables:
+- improved UX coherence
+- operational-state polish
+- mobile usability preservation
+- navigation improvements
+
+---
+
+# Integration phase
+
+After all agents complete:
+
+1. Review all UI surfaces together
+2. Ensure terminology consistency
+3. Ensure no duplicated explanation systems exist
+4. Ensure explanations remain concise
+5. Ensure all backend fields map correctly
+6. Ensure no fake data was introduced
+7. Ensure accessibility/readability remain acceptable
+8. Ensure mobile responsiveness remains functional
+
+Search again for:
+- placeholder
 - TODO
 - FIXME
-- placeholder
-- screenshot
-- fake
 - mock
+- fake
 - lorem
-- hardcoded
+- temporary
 
-Do not remove valid TODOs blindly. Classify them.
+Classify rather than blindly removing.
 
 ---
 
-## Phase 3: Verification
+# Verification phase
 
-Run the strongest available verification commands:
-- backend tests
+Run:
 - frontend tests
+- backend tests affected by UI contracts
 - type checks
 - lint
-- coverage if available
-- formatting checks
-- security scan if configured
-- CI-equivalent local command if documented
+- formatting
+- build verification
 
-If a command fails:
-- Diagnose the cause.
-- Fix if within scope.
-- If not within scope, document it clearly.
+Verify:
+- no broken routes
+- no hydration errors
+- no missing field crashes
+- no undefined causality chains
 
-Do not claim success unless commands actually pass.
+Do not claim completion unless verification succeeds.
 
 ---
 
-## Phase 4: Final principal-level report
+# Final report requirements
 
-Produce a final report with:
-
+Produce:
 1. Executive summary
-2. Files changed by category
-3. Branding cleanup summary
-4. Dashboard/operator-console improvements
-5. Backend causality fields added or confirmed
-6. Production-boundary documentation added
-7. Claims audit summary
-8. Architecture diagram location
-9. Live demo script location
-10. Tests/checks run and results
-11. Remaining risks
-12. Recommended next phase
+2. Major UX improvements
+3. New reusable components
+4. New operator explanation systems
+5. New visualization systems
+6. Scenario storytelling improvements
+7. Replay explainability improvements
+8. Voting/trust visualization improvements
+9. Mobile usability notes
+10. Remaining UX gaps
+11. Recommended Phase 3 improvements
 
-Use concise technical language.
+Keep the tone technical and concise.
 
 ---
 
 # Quality bar
 
-The final result should make DriftGuard look like a serious portfolio-grade engineering system.
+The final result should make DriftGuard feel like:
+- a safety-system simulation platform
+- an explainable engineering system
+- a replayable operational console
+- a principal-level systems-thinking portfolio project
 
-The repo should communicate:
-- what the system does
-- why the architecture matters
-- how decisions are made
-- how faults change system behavior
-- where the production boundaries are
-- what is verified by tests
-- what is intentionally demo scope
-
-Do not optimize for cosmetic changes. Optimize for credibility, consistency, explainability, and defensible engineering claims.
+The UI must expose the sophistication already present in the backend and documentation.
