@@ -17,7 +17,7 @@ export function Skeleton({
       role="status"
       aria-busy="true"
       aria-label="loading"
-      className={`bg-sentinel-border/50 rounded animate-pulse motion-reduce:animate-none ${className}`}
+      className={`bg-dg-border/50 rounded animate-pulse motion-reduce:animate-none ${className}`}
       style={{ width, height, ...style }}
       {...rest}
     />

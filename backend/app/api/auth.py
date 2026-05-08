@@ -24,6 +24,12 @@ _PREFIX = "bearer "
 
 
 def _expected_token() -> str | None:
+    # NOTE: ``SENTINEL_API_TOKEN`` is a legacy env-var name kept for
+    # backwards compatibility with existing Railway / docker-compose
+    # deployments that pre-date the SentinelNav -> DriftGuard rename
+    # (2026-05). Renaming would silently break those deployments, so
+    # the prefix is intentionally retained. See docs/DEPLOYMENT.md
+    # ("Env var naming") for the full list.
     raw = os.environ.get("SENTINEL_API_TOKEN")
     if raw is None:
         return None

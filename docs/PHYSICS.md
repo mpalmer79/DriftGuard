@@ -1,8 +1,8 @@
-# SentinelNav Physics Model
+# DriftGuard Physics Model
 
 This page describes the vehicle dynamics, sensor models, and state
 estimator that ship in the backend. It is intentionally honest about
-what is and is not modeled. The point of SentinelNav is the
+what is and is not modeled. The point of DriftGuard is the
 redundancy / safe-mode story (RESEARCH.md §3); the physics exists to
 give that story credible inputs.
 

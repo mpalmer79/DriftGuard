@@ -76,7 +76,7 @@ export default function HomePage() {
           body="Run named mission profiles: nominal cruise, sensor drift, split vote escalation, multi-fault failure, intermittent fault."
         />
         <FeatureCard
-          href="https://github.com/mpalmer79/SentinelNav"
+          href="https://github.com/mpalmer79/driftguard"
           stripeClass="bg-accent"
           title="Source"
           body="Backend (FastAPI), simulation core (Python), persistence (SQLite), and this frontend (Next.js + TypeScript)."

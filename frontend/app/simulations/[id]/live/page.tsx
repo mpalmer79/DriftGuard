@@ -110,7 +110,7 @@ export default function LiveSimulationPage() {
               max={500}
               onChange={(e) => setSteps(Math.max(1, Math.min(500, Number(e.target.value))))}
               disabled={running}
-              className="bg-sentinel-panel border border-sentinel-border rounded px-2 py-1 w-20"
+              className="bg-dg-panel border border-dg-border rounded px-2 py-1 w-20"
               aria-label="number of steps to stream"
             />
           </label>

@@ -1,4 +1,4 @@
-# SentinelNav Backlog
+# DriftGuard Backlog
 
 Drift control: anything I notice while working on phase X but that is
 not on phase X's task list lands here. The backlog is sacred. Items

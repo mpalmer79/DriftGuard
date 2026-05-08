@@ -2,7 +2,7 @@ services:
   backend:
     build:
       context: ./backend
-    image: sentinelnav-backend:local
+    image: driftguard-backend:local
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -14,7 +14,7 @@ services:
       # Phase 4.2: persist SQLite to the named volume so simulations
       # survive container restart. The container is read_only:true,
       # so /data is the only writable mount apart from /tmp tmpfs.
-      - SENTINEL_DB_PATH=/data/sentinelnav.db
+      - SENTINEL_DB_PATH=/data/driftguard.db
     volumes:
       - sentinel-data:/data
     healthcheck:
@@ -46,7 +46,7 @@ services:
   frontend:
     build:
       context: ./frontend
-    image: sentinelnav-frontend:local
+    image: driftguard-frontend:local
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -83,7 +83,7 @@ services:
 
 volumes:
   # Phase 4.2: backend persistence. WAL-mode SQLite (Phase 4.1)
-  # lives at /data/sentinelnav.db inside the backend container.
+  # lives at /data/driftguard.db inside the backend container.
   # To back up:
   #   docker run --rm -v sentinel-data:/data alpine tar c /data > backup.tar
   sentinel-data:

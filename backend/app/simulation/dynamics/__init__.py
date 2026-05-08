@@ -29,7 +29,7 @@ from __future__ import annotations
 import math
 
 # Limits and rates. Centralized so the integrator and the tests share
-# the same numbers. They are intentionally small: SentinelNav is not a
+# the same numbers. They are intentionally small: DriftGuard is not a
 # flight-dynamics simulator, it is a redundancy and assurance test bed.
 MAX_ROLL_DEG = 25.0
 MAX_PITCH_DEG = 15.0

@@ -97,8 +97,8 @@ a:hover {
   nav {
     display: none !important;
   }
-  .bg-sentinel-panel,
-  .bg-sentinel-bg {
+  .bg-dg-panel,
+  .bg-dg-bg {
     background: #ffffff !important;
     border-color: #d1d5db !important;
   }

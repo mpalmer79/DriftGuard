@@ -36,7 +36,7 @@ export function TrustScorePanel({ snapshot }: { snapshot: TrustSnapshot }) {
         </thead>
         <tbody>
           {entries.map(([cid, h]) => (
-            <tr key={cid} className="border-t border-sentinel-border">
+            <tr key={cid} className="border-t border-dg-border">
               <td className="py-1">{cid}</td>
               <td>{h.status}</td>
               <td>{h.trust}</td>

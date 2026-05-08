@@ -1,4 +1,4 @@
-# SentinelNav API
+# DriftGuard API
 
 All endpoints return JSON unless otherwise noted. Errors use a unified shape:
 

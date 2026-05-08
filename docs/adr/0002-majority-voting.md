@@ -59,7 +59,7 @@ the wrong signal to weight by in an adversarial / fault context.
 ### Bayesian fusion
 Genuinely more expressive but introduces a numerical posterior that
 makes the decision path harder to reason about. The whole point of
-SentinelNav is "deterministic, auditable, explainable." Bayesian
+DriftGuard is "deterministic, auditable, explainable." Bayesian
 fusion fights that.
 
 ## References

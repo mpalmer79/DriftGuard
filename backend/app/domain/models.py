@@ -82,3 +82,13 @@ class SystemDecision:
     justification: str
     trusted_controllers: list[str]
     rejected_controllers: list[str]
+    # Operator-causality fields (additive). Defaults keep legacy
+    # constructions of SystemDecision working — only the orchestrator
+    # populates these today, but they round-trip through persistence
+    # and the API so the operator console can render decision causality
+    # without having to cross-reference vote/sensor/fault tables.
+    previous_mode: SystemMode = SystemMode.NORMAL
+    trigger_reason: str = ""
+    active_fault_ids: list[str] = field(default_factory=list)
+    detector_findings: list[dict[str, Any]] = field(default_factory=list)
+    vote_split: dict[str, Any] = field(default_factory=dict)

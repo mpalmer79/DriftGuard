@@ -24,10 +24,16 @@ from opentelemetry.sdk.trace.export import (
 )
 
 _INITIALIZED = False
-_TRACER_NAME = "sentinelnav"
+_TRACER_NAME = "driftguard"
 
 
 def _enabled_via_env() -> bool:
+    # NOTE: ``SENTINEL_TRACING`` is a legacy env-var name kept for
+    # backwards compatibility with existing Railway / docker-compose
+    # deployments that pre-date the SentinelNav -> DriftGuard rename
+    # (2026-05). Renaming would silently break those deployments, so
+    # the prefix is intentionally retained. See docs/DEPLOYMENT.md
+    # ("Env var naming") for the full list.
     return os.environ.get("SENTINEL_TRACING", "").lower() in ("1", "true", "yes")
 
 

@@ -1,5 +1,8 @@
 # Changelog
 
+> **Note:** this repository was renamed from SentinelNav to DriftGuard.
+> Historical references below are preserved for archival accuracy.
+
 All notable changes are recorded here. Dates are the merge date of the
 phase PR into `main`. Sub-phases are atomic conventional commits; this
 changelog rolls them up by phase.

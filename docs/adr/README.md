@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Each load-bearing decision in SentinelNav has an ADR. New decisions are
+Each load-bearing decision in DriftGuard has an ADR. New decisions are
 appended sequentially. Old ADRs are never rewritten — when a decision
 changes, supersede it with a new ADR and mark the old one accordingly.
 

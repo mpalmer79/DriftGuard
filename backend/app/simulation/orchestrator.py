@@ -164,6 +164,12 @@ class Simulation:
         next_step = self.state.step + 1
         ts = self.state.timestamp + 1.0
         active_faults = self.faults.active_at(next_step)
+        # Capture the published mode from the previous step BEFORE the
+        # detector/safe-mode updates run. For step 1 the SafeModeManager
+        # is in NORMAL by construction (see SafeModeManager.__init__);
+        # subsequent steps read whatever the manager last published.
+        previous_mode = self.safe_mode.current_mode
+        active_fault_ids = [f.fault_id for f in active_faults]
 
         with t.start_as_current_span("sensor"):
             if self.config.navigation_pipeline_enabled:
@@ -197,7 +203,23 @@ class Simulation:
             new_mode, justification = self.safe_mode.evaluate(vote_result, sensor)
             if self.safe_mode.transition(new_mode):
                 log_mode_change(self.events, next_step, ts, new_mode, justification)
-            decision = build_decision(next_step, vote_result, new_mode, justification)
+            finding_payloads = [
+                {
+                    "component": f.component,
+                    "severity": f.severity.value,
+                    "message": f.message,
+                }
+                for f in findings
+            ]
+            decision = build_decision(
+                next_step,
+                vote_result,
+                new_mode,
+                justification,
+                previous_mode=previous_mode,
+                active_fault_ids=active_fault_ids,
+                detector_findings=finding_payloads,
+            )
             log_decision(self.events, next_step, ts, decision)
             record_decision(decision)
 

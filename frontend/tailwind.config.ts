@@ -6,7 +6,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        sentinel: {
+        dg: {
           bg: "#0b0f17",
           panel: "#111827",
           border: "#1f2937",

@@ -27,7 +27,7 @@ export default function ReplayPage() {
       .catch((e) => setError(e.message));
   }, [id]);
 
-  if (error) return <p className="text-sentinel-bad">{error}</p>;
+  if (error) return <p className="text-dg-bad">{error}</p>;
   if (timeline.length === 0) return <p className="text-gray-400">No timeline available yet.</p>;
 
   const current = timeline[index];
@@ -66,7 +66,7 @@ export default function ReplayPage() {
             <div className="text-sm space-y-1">
               <div>
                 <span className="text-gray-400">action: </span>
-                <span className="text-sentinel-accent">{decision.final_action}</span>
+                <span className="text-dg-accent">{decision.final_action}</span>
               </div>
               <div>
                 <span className="text-gray-400">mode: </span>

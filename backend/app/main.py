@@ -15,7 +15,7 @@ from .core.cors import allowed_origins
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="SentinelNav",
+        title="DriftGuard",
         description="Deterministic, fault-tolerant control system simulation.",
         version="0.3.0",
     )

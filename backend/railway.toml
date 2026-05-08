@@ -1,4 +1,4 @@
-# Railway service config for the SentinelNav backend.
+# Railway service config for the DriftGuard backend.
 #
 # Railway reads this file when the service's root directory is set to
 # `backend/` in the Railway dashboard. The Dockerfile-based builder

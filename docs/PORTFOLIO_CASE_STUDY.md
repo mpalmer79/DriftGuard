@@ -1,4 +1,4 @@
-# SentinelNav — Portfolio Case Study
+# DriftGuard — Portfolio Case Study
 
 ## Problem
 
@@ -20,7 +20,7 @@ Safety-critical software lives or dies on three properties:
 3. **Bounded failure** — when something goes wrong, the system should
    degrade in known ways, not in arbitrary ones.
 
-Most prototypes get one of these. SentinelNav is built so all three
+Most prototypes get one of these. DriftGuard is built so all three
 are visible to the reader.
 
 ## System design

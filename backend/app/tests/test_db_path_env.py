@@ -26,7 +26,7 @@ from app.main import create_app
 def fs_db(monkeypatch, tmp_path):
     """Hand control of the singleton DB to a tmp filesystem path."""
 
-    db_file = tmp_path / "sentinelnav.db"
+    db_file = tmp_path / "driftguard.db"
     monkeypatch.setenv("SENTINEL_DB_PATH", str(db_file))
     reset_state_for_tests()
     yield db_file
