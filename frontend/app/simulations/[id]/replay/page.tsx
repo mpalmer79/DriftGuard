@@ -1,19 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
-import type { TimelineEntry } from "@/types/api";
+import type { DecisionRecord, FaultRecord, TimelineEntry } from "@/types/api";
 import { Card } from "@/components/Card";
+import { CausalityPanel } from "@/components/CausalityPanel";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
 import { ControllerOutputTable } from "@/components/ControllerOutputTable";
 import { VoteResultCard } from "@/components/VoteResultCard";
 import { StepReplayControls } from "@/components/StepReplayControls";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function ReplayPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  const [faults, setFaults] = useState<FaultRecord[]>([]);
+  const [fingerprint, setFingerprint] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,13 +30,38 @@ export default function ReplayPage() {
         setIndex(0);
       })
       .catch((e) => setError(e.message));
+    api
+      .getFaults(id)
+      .then(setFaults)
+      .catch(() => setFaults([]));
+    api
+      .getReplayFingerprint(id)
+      .then((r) => setFingerprint(r.fingerprint))
+      .catch(() => setFingerprint(null));
   }, [id]);
 
   if (error) return <p className="text-dg-bad">{error}</p>;
-  if (timeline.length === 0) return <p className="text-gray-400">No timeline available yet.</p>;
+  if (timeline.length === 0) {
+    return (
+      <EmptyState
+        title="// NO TIMELINE AVAILABLE YET"
+        description="Run a scenario or step a simulation forward to populate the replay timeline."
+        action={
+          <Link
+            href="/scenarios"
+            className="inline-flex items-center font-mono uppercase text-xs tracking-wider text-accent hover:underline"
+          >
+            Browse scenarios →
+          </Link>
+        }
+      />
+    );
+  }
 
   const current = timeline[index];
   const decision = current?.decision;
+  const previousDecision: DecisionRecord | null =
+    index > 0 ? (timeline[index - 1].decision as DecisionRecord) : null;
   const sensor = current?.sensor;
 
   return (
@@ -45,6 +75,13 @@ export default function ReplayPage() {
       <Card>
         <StepReplayControls total={timeline.length} index={index} onChange={setIndex} />
       </Card>
+
+      <CausalityPanel
+        decision={(decision as DecisionRecord) ?? null}
+        previousDecision={previousDecision}
+        faults={faults}
+        replayFingerprint={fingerprint}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card title="Sensor reading">
@@ -61,24 +98,16 @@ export default function ReplayPage() {
             <p className="text-sm text-gray-500">No sensor reading.</p>
           )}
         </Card>
-        <Card title="Decision">
+        <Card title="Vote details">
           {decision ? (
-            <div className="text-sm space-y-1">
-              <div>
-                <span className="text-gray-400">action: </span>
-                <span className="text-dg-accent">{decision.final_action}</span>
-              </div>
-              <div>
-                <span className="text-gray-400">mode: </span>
-                {decision.system_mode}
-              </div>
-              <div className="text-gray-400">{decision.justification}</div>
-              <div className="text-xs text-gray-500 pt-2">
+            <div className="text-sm space-y-1 font-mono">
+              <div className="text-xs text-gray-500">
                 trusted: {(decision.trusted_controllers ?? []).join(", ") || "—"}
               </div>
               <div className="text-xs text-gray-500">
                 rejected: {(decision.rejected_controllers ?? []).join(", ") || "—"}
               </div>
+              <div className="text-gray-400 pt-2">{decision.justification}</div>
             </div>
           ) : (
             <p className="text-sm text-gray-500">No decision.</p>

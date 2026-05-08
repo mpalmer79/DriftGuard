@@ -7,7 +7,7 @@ import { SystemModeBadge } from "@/components/SystemModeBadge";
 import { TrajectoryMap } from "@/components/charts/TrajectoryMap";
 import { AltitudeChart, HorizontalSpeedChart } from "@/components/charts/TelemetryCharts";
 import { Button } from "@/components/ui/Button";
-import { ErrorState } from "@/components/ui/EmptyState";
+import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
 import { api } from "@/lib/api";
 import type { SystemMode } from "@/types/api";
 
@@ -149,12 +149,21 @@ export default function LiveSimulationPage() {
 
       {error && <ErrorState message={error} retry={start} />}
 
-      <TrajectoryMap points={points} />
+      {points.length === 0 ? (
+        <EmptyState
+          title="// AWAITING SSE STREAM"
+          description="Press Play to start the SSE stream. Steps will appear here as the simulation runs."
+        />
+      ) : (
+        <>
+          <TrajectoryMap points={points} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <AltitudeChart points={points} />
-        <HorizontalSpeedChart points={points} />
-      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <AltitudeChart points={points} />
+            <HorizontalSpeedChart points={points} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

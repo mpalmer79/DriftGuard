@@ -75,11 +75,19 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
 
         <p className="text-sm text-text-primary leading-relaxed">{scenario.description}</p>
 
-        <div>
-          <p className="font-mono uppercase text-xs text-text-muted tracking-wider mb-1">
-            Expected
+        <div className="border-l-2 border-accent/40 bg-surface/40 rounded-r-md pl-3 py-2 -ml-1">
+          <p className="font-mono uppercase text-[10px] text-text-muted tracking-wider mb-1">
+            {"// EXPECTED OPERATOR OBSERVATION"}
           </p>
-          <p className="text-sm text-text-muted leading-relaxed">{scenario.expected_behavior}</p>
+          <p className="text-sm text-text-primary leading-relaxed">{scenario.expected_behavior}</p>
+          {scenario.expected_final_modes.length > 0 && (
+            <p className="font-mono text-[11px] text-text-muted tracking-wide pt-2">
+              expected final mode →{" "}
+              <span className="text-text-primary">
+                {scenario.expected_final_modes.join(" | ")}
+              </span>
+            </p>
+          )}
         </div>
 
         <p className="font-mono text-xs uppercase text-text-muted tracking-wide">
