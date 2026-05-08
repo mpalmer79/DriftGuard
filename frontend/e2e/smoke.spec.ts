@@ -15,7 +15,7 @@ import { expect, test } from "@playwright/test";
 test.describe("public surface smoke", () => {
   test("landing page renders and links to dashboard", async ({ page }) => {
     await page.goto("/");
-    // Title is the H1 in app/page.tsx ("SentinelNav") — match the
+    // Title is the H1 in app/page.tsx ("DriftGuard") — match the
     // landmark, not the doc title, so a future copy tweak doesn't
     // break the test.
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

@@ -1,4 +1,4 @@
-# SentinelNav
+# DriftGuard
 
 A deterministic, fault-tolerant control-system simulation. Three
 redundant controllers process noisy sensor data, vote by majority, and
@@ -7,31 +7,44 @@ detection erodes trust. Every decision is reproducible from a seed and
 every step is logged for audit. The repo ships a Python/FastAPI backend
 with SQLite persistence and a Next.js + TypeScript dashboard.
 
+<details>
+<summary><strong>Claim audit (verified at HEAD)</strong></summary>
+
+| Claim | Verdict | Action |
+| --- | --- | --- |
+| 630 backend tests, 97% line coverage | true | `python -m pytest -q` → 630 passed, 11 deselected; `--cov=app` → TOTAL 97% |
+| TLA+ spec mirrored by exhaustive Python checker | true | [`docs/formal/SafeMode.tla`](docs/formal/SafeMode.tla); checker at [`backend/app/tests/properties/test_transition_exhaustive.py`](backend/app/tests/properties/test_transition_exhaustive.py) |
+| Hypothesis-driven property tests for invariants I1–I9 | corrected | Spec lists I1–I11 ([`docs/INVARIANTS.md`](docs/INVARIANTS.md)); README updated to I1–I11 |
+| Subprocess fuzz harness for safe-mode escapes | true | [`backend/app/tests/fuzz/test_orchestrator_no_escape.py`](backend/app/tests/fuzz/test_orchestrator_no_escape.py) |
+| Canonical replay fingerprint (SHA-256) | true | [`backend/app/core/canonical.py`](backend/app/core/canonical.py); endpoint `GET /simulations/{id}/replay-fingerprint` |
+| Causality fields on every decision | true | `previous_mode`, `trigger_reason`, `active_fault_ids`, `detector_findings`, `vote_split`; mapped in [`docs/API.md`](docs/API.md) |
+| Bearer-token guard on writes via `SENTINEL_API_TOKEN` | true | [`backend/app/api/auth.py`](backend/app/api/auth.py); reads are open by design |
+| Sliding-window rate limiter | true | [`backend/app/api/rate_limit.py`](backend/app/api/rate_limit.py); per-process, see Production Boundaries |
+| Single-replica deployment | true | `numReplicas = 1` in [`backend/railway.toml`](backend/railway.toml) and [`frontend/railway.toml`](frontend/railway.toml) |
+| WAL-mode SQLite at `/data/driftguard.db` | corrected | Path was `sentinelnav.db` in README; matches [`docker-compose.yml`](docker-compose.yml) |
+| Supply-chain CI (Trivy + CycloneDX SBOMs) | true | [`.github/workflows/supply-chain.yml`](.github/workflows/supply-chain.yml) — runs trivy fs scan + syft for backend & frontend |
+| Backend CI (ruff, bandit, pip-audit, pytest --cov) | true | [`.github/workflows/backend.yml`](.github/workflows/backend.yml) |
+| Prometheus `/metrics` + OTEL traces | true | See [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) |
+| 15 fault types with intermittent patterns / DSL | true | `FaultType` enum in [`backend/app/domain/enums.py`](backend/app/domain/enums.py); 15 members |
+| Architecture Decision Records | true | [`docs/adr/`](docs/adr) — 11 numbered ADRs (0001–0011) plus a template |
+
+</details>
+
 ## Why this exists
 
 Aerospace, defense, automotive, and medical systems frequently rely on
 triple-redundant controllers with majority voting and explicit safe-mode
-behavior. SentinelNav is a small, inspectable test bed for that
+behavior. DriftGuard is a small, inspectable test bed for that
 pattern: scenarios are reproducible, faults are first-class, and the
 mission report explains *why* the system behaved the way it did.
 
 ## Architecture
 
-```
-client (Next.js) ──► FastAPI ──► Simulation orchestrator
-                                  ├─ vehicle state engine
-                                  ├─ sensor model (with noise + fault hooks)
-                                  ├─ controllers A / B / C (different logic)
-                                  ├─ majority voting
-                                  ├─ legacy fault detector (counter-based)
-                                  ├─ trust detector (windowed + recovery)
-                                  ├─ safe-mode manager
-                                  └─ append-only event logger
-                                         │
-                                       SQLite
-                                         │
-                                  reporting / scenarios
-```
+The full block diagram (frontend, API layer, scenario runner, simulation
+orchestrator, sensor model, redundant controllers, voter, detector,
+safe-mode manager, persistence, replay fingerprint path, observability)
+lives in [`docs/ARCHITECTURE_DIAGRAM.md`](docs/ARCHITECTURE_DIAGRAM.md).
+The summary view of the step loop:
 
 ```mermaid
 flowchart LR
@@ -78,14 +91,20 @@ flowchart LR
 - Mission report (JSON + Markdown) with risk assessment
 
 ### Determinism & verification
-- Canonical replay fingerprint (SHA-256 over a scrubbed timeline)
+- Canonical replay fingerprint (SHA-256 over a scrubbed timeline) —
+  see [`backend/app/core/canonical.py`](backend/app/core/canonical.py)
 - Replay-equivalence harness — same seed + same scenario produces a
   byte-identical run hash across processes
-- Hypothesis-driven property tests for invariants I1–I9
-- TLA+ formal spec mirrored by an exhaustive Python checker
+- Hypothesis-driven property tests for invariants I1–I11
+  ([`docs/INVARIANTS.md`](docs/INVARIANTS.md))
+- TLA+ formal spec ([`docs/formal/SafeMode.tla`](docs/formal/SafeMode.tla))
+  mirrored by an exhaustive Python checker
+  ([`backend/app/tests/properties/test_transition_exhaustive.py`](backend/app/tests/properties/test_transition_exhaustive.py))
 - 1000-step soak tests across every scenario, asserting invariants
 - Subprocess fuzz harness that hunts for safe-mode escapes
-- 538 backend tests, 97% line coverage
+  ([`backend/app/tests/fuzz/test_orchestrator_no_escape.py`](backend/app/tests/fuzz/test_orchestrator_no_escape.py))
+- 630 backend tests, 97% line coverage (`pytest -q` default; 11 opt-in
+  slow tests excluded by the `slow` marker)
 
 ### API, observability, and ops
 - FastAPI app with typed schemas, consistent error taxonomy, CORS
@@ -158,16 +177,11 @@ exercises and the expected mode trajectory.
 
 Full taxonomy in [`docs/FAULT_MODEL.md`](docs/FAULT_MODEL.md).
 
-## Screenshots
+## Live demo walkthrough
 
-_Screenshots placeholder — capture after running locally._
-
-- Landing page (`/`)
-- Dashboard (`/dashboard`)
-- Scenarios (`/scenarios`)
-- Simulation detail (`/simulations/{id}`)
-- Replay (`/simulations/{id}/replay`)
-- Mission report (`/simulations/{id}/report`)
+For a step-by-step reviewer script — sensor-drift run → DEGRADED
+observation → controller-fault injection → SAFE_MODE observation →
+replay-fingerprint check — see [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
 
 ## Local setup
 
@@ -197,9 +211,10 @@ Open http://localhost:3000.
 docker compose up --build
 ```
 
-A named `sentinel-data` volume is mounted at `/data` so simulations
+A named `sentinel-data` volume (kept under its legacy name for
+backup-script compatibility) is mounted at `/data` so simulations
 survive container restart — the backend writes a WAL-mode SQLite
-database at `/data/sentinelnav.db`. See
+database at `/data/driftguard.db`. See
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full env-var
 matrix, backup commands, and the smoke-test recipe.
 
@@ -215,7 +230,7 @@ time: under 10 minutes from a fresh Railway account.
 
 ```bash
 cd backend
-pytest -q                       # full suite (538 tests, ~6s)
+pytest -q                       # full suite (630 tests, ~9s)
 pytest --cov=app -q             # with coverage (currently 97% line)
 pytest -m slow                  # opt-in fuzz / soak / property tests
 ```
@@ -265,28 +280,88 @@ out the operational boundaries that follow from them:
 
 These belong to a v1.0 plan, not portfolio polish.
 
-## Portfolio positioning
+## What this demonstrates
 
-SentinelNav is intentionally small in scope but rich in the details
-that real safety-critical systems demand: determinism, redundancy,
-explainable failure, persistence, and an auditable timeline. The
-project demonstrates the ability to take a system-design problem and
-ship a clean backend, a typed API, a usable UI, and a paper trail
-end-to-end — and to follow that with the depth a real engineering
-hand-off needs:
+DriftGuard is intentionally small in scope but rich in the details
+that real safety-critical systems demand. The list below maps each
+capability to where it actually lives in the repo.
 
-- a TLA+ spec mirrored by an exhaustive Python checker,
-- property and soak tests that pin invariants the unit suite misses,
-- a canonical replay fingerprint that makes "same seed, same answer"
-  a falsifiable claim,
-- Prometheus metrics, OpenTelemetry traces, and an SSE stream wired
-  through the same step loop,
-- supply-chain CI (CycloneDX SBOMs, Trivy filesystem scans), bandit,
-  pip-audit, ruff, hardened multi-stage Dockerfiles, healthchecks, a
-  bearer-token write guard, and a sliding-window rate limiter.
+- **Deterministic control simulation.** Named-RNG service
+  ([`backend/app/core/rng.py`](backend/app/core/rng.py)) feeds every
+  stochastic source from a single seed; canonical SHA-256 fingerprint
+  over a scrubbed step timeline ([`backend/app/core/canonical.py`](backend/app/core/canonical.py))
+  makes "same seed, same answer" a falsifiable claim
+  ([ADR 0004](docs/adr/0004-determinism-via-seeds.md)).
+- **Redundant controller voting.** Three controllers (Conservative,
+  Responsive, Balanced) with intentionally different decision
+  boundaries; majority vote over valid, on-time outputs
+  ([ADR 0002](docs/adr/0002-majority-voting.md)).
+- **Fault injection.** 15 fault types across sensor and controller
+  targets — including intermittent on/off masks, linear ramps, and
+  the `COMPOUND_FAULT` DSL ([`docs/FAULT_MODEL.md`](docs/FAULT_MODEL.md)).
+- **Safe-mode escalation.** `NORMAL → DEGRADED → SAFE_MODE → FAILED`,
+  with immediate escalation but a configurable `safe_mode_recovery_steps`
+  hysteresis on de-escalation ([ADR 0011](docs/adr/0011-safe-mode-recovery-hysteresis.md),
+  invariant I11).
+- **Replayability.** `GET /simulations/{id}/replay-fingerprint`
+  returns the canonical hash; two independent runs of the same
+  (seed, scenario) must agree byte-for-byte
+  ([`backend/app/tests/test_replay_fingerprint.py`](backend/app/tests/test_replay_fingerprint.py)).
+- **Audit logging.** Append-only `EventLogger` writes through to a
+  SQLite-backed timeline; the mission report reconstructs the run
+  from those records.
+- **Operator-facing explainability.** Every decision response carries
+  `previous_mode`, `trigger_reason`, `active_fault_ids`,
+  `detector_findings`, and `vote_split` so the UI can answer
+  "why this mode, why this action?" without re-running the sim. See
+  the causality table in [`docs/API.md`](docs/API.md).
+- **CI-backed engineering discipline.** Backend CI runs `ruff check`,
+  `ruff format --check`, `bandit`, `pip-audit`, and
+  `pytest --cov=app`. Frontend CI runs `vitest`, `prettier`, and
+  `eslint`. A weekly supply-chain workflow runs Trivy filesystem
+  scans and emits CycloneDX SBOMs (via `syft`) for both services
+  ([`.github/workflows/`](.github/workflows)).
 
 See [`docs/PORTFOLIO_CASE_STUDY.md`](docs/PORTFOLIO_CASE_STUDY.md) for
 the case-study write-up,
 [`docs/INVARIANTS.md`](docs/INVARIANTS.md) for the formal-spec
 mirror, and [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) for the
 metrics / traces / events signal map.
+
+## Production Boundaries
+
+DriftGuard is a single-replica portfolio system, not a multi-tenant
+SaaS. The following limits are deliberate and documented; promoting
+the system past them is a real piece of work, not a config flip.
+
+- **Single-replica assumption.** The simulation registry, sliding-
+  window rate limiter, and LRU eviction queue all live in-process. A
+  multi-replica deployment would shard simulations across replicas
+  (the registry is not consistent between them) and would need a
+  shared store like Redis for the rate limiter to be effective.
+  Railway deploys are pinned to one replica per service —
+  `numReplicas = 1` in both [`backend/railway.toml`](backend/railway.toml)
+  and [`frontend/railway.toml`](frontend/railway.toml).
+- **SQLite single-writer caveat.** Persistence uses WAL-mode SQLite
+  with a single writer, which is correct for a single backend
+  process. Horizontal scale requires PostgreSQL plus connection
+  pooling and migrations. The trade-off was made deliberately for
+  demo scope ([ADR 0003](docs/adr/0003-sqlite-not-postgres.md)).
+- **Demo auth boundary.** The bearer-token guard on writes
+  (`SENTINEL_API_TOKEN` — legacy env-var name kept for compat,
+  documented in [`backend/app/api/auth.py`](backend/app/api/auth.py))
+  is a single shared secret. Reads are open by design so observability
+  tools can scrape without auth. Multi-tenant production would require
+  per-tenant identity, RBAC, and signed reads — none of which are in
+  scope here.
+- **In-memory rate limiter.** The sliding-window limiter
+  ([`backend/app/api/rate_limit.py`](backend/app/api/rate_limit.py))
+  is per-process state with no cross-replica coordination. With one
+  replica it is correct; with N replicas the effective limit becomes
+  N × the configured limit.
+- **Out of scope.** Real hardware control (per [`RESEARCH.md`](RESEARCH.md)
+  §13: "AI or advanced controllers may advise, deterministic assurance
+  governs"), distributed `tlc` model checking, SLOs / error budgets,
+  and multi-tenant production. The non-goals enumerated under
+  [Roadmap](#roadmap) are the source of truth — this section is the
+  operator-facing summary, not a duplicate.

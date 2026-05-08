@@ -1,7 +1,18 @@
 # Deployment
 
-SentinelNav is a small two-process system: a FastAPI backend and a
+DriftGuard is a small two-process system: a FastAPI backend and a
 Next.js frontend. Both ship with Dockerfiles.
+
+### Env var naming
+
+The backend keeps the `SENTINEL_*` env-var prefix (`SENTINEL_API_TOKEN`,
+`SENTINEL_TRACING`, `SENTINEL_DB_PATH`, `SENTINEL_BACKEND_URL`,
+`SENTINEL_FUZZ_SECONDS`, `SENTINEL_FUZZ_SEED`,
+`SENTINEL_RATE_LIMIT_*`, `SENTINEL_TRUSTED_PROXIES`,
+`SENTINEL_CORS_ORIGINS`) for backwards compatibility with existing
+Railway and Compose deployments that pre-date the SentinelNav →
+DriftGuard rename. Renaming would silently break those deployments;
+the names are intentionally retained.
 
 ## Deployment targets
 
@@ -97,12 +108,12 @@ runs across restarts, set `SENTINEL_DB_PATH` to a path on a mounted
 volume:
 
 ```bash
-export SENTINEL_DB_PATH=/data/sentinelnav.db
+export SENTINEL_DB_PATH=/data/driftguard.db
 ```
 
 `docker-compose.yml` wires this up automatically — the backend
 service mounts a named volume `sentinel-data` at `/data` and sets
-`SENTINEL_DB_PATH=/data/sentinelnav.db`. The container stays
+`SENTINEL_DB_PATH=/data/driftguard.db`. The container stays
 `read_only: true`; `/data` is the only writable mount apart from
 the existing `/tmp` tmpfs.
 
@@ -123,11 +134,11 @@ for the known-limits enumeration.
 ```bash
 # Snapshot the volume to a tar:
 docker run --rm -v sentinel-data:/data alpine \
-    tar c /data > sentinelnav-backup.tar
+    tar c /data > driftguard-backup.tar
 
 # Restore:
 docker run --rm -v sentinel-data:/data -i alpine \
-    tar x -C / < sentinelnav-backup.tar
+    tar x -C / < driftguard-backup.tar
 ```
 
 #### Smoke test the persistence guarantee

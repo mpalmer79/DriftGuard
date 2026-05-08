@@ -7,7 +7,7 @@ import { SystemModeBadge } from "@/components/SystemModeBadge";
 import { TrajectoryMap } from "@/components/charts/TrajectoryMap";
 import { AltitudeChart, HorizontalSpeedChart } from "@/components/charts/TelemetryCharts";
 import { Button } from "@/components/ui/Button";
-import { ErrorState } from "@/components/ui/EmptyState";
+import { EmptyState, ErrorState } from "@/components/ui/EmptyState";
 import { api } from "@/lib/api";
 import type { SystemMode } from "@/types/api";
 
@@ -110,7 +110,7 @@ export default function LiveSimulationPage() {
               max={500}
               onChange={(e) => setSteps(Math.max(1, Math.min(500, Number(e.target.value))))}
               disabled={running}
-              className="bg-sentinel-panel border border-sentinel-border rounded px-2 py-1 w-20"
+              className="bg-dg-panel border border-dg-border rounded px-2 py-1 w-20"
               aria-label="number of steps to stream"
             />
           </label>
@@ -149,12 +149,21 @@ export default function LiveSimulationPage() {
 
       {error && <ErrorState message={error} retry={start} />}
 
-      <TrajectoryMap points={points} />
+      {points.length === 0 ? (
+        <EmptyState
+          title="// AWAITING SSE STREAM"
+          description="Press Play to start the SSE stream. Steps will appear here as the simulation runs."
+        />
+      ) : (
+        <>
+          <TrajectoryMap points={points} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <AltitudeChart points={points} />
-        <HorizontalSpeedChart points={points} />
-      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <AltitudeChart points={points} />
+            <HorizontalSpeedChart points={points} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

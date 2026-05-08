@@ -27,33 +27,30 @@ export function StepReplayControls({
 
   return (
     <div className="flex items-center gap-3 text-xs">
-      <button
-        onClick={() => onChange(0)}
-        className="px-2 py-1 border border-sentinel-border rounded"
-      >
+      <button onClick={() => onChange(0)} className="px-2 py-1 border border-dg-border rounded">
         ⏮
       </button>
       <button
         onClick={() => onChange(Math.max(0, index - 1))}
-        className="px-2 py-1 border border-sentinel-border rounded"
+        className="px-2 py-1 border border-dg-border rounded"
       >
         ◀
       </button>
       <button
         onClick={() => setPlaying((p) => !p)}
-        className="px-3 py-1 border border-sentinel-accent/40 bg-sentinel-accent/20 rounded"
+        className="px-3 py-1 border border-dg-accent/40 bg-dg-accent/20 rounded"
       >
         {playing ? "pause" : "play"}
       </button>
       <button
         onClick={() => onChange(Math.min(total - 1, index + 1))}
-        className="px-2 py-1 border border-sentinel-border rounded"
+        className="px-2 py-1 border border-dg-border rounded"
       >
         ▶
       </button>
       <button
         onClick={() => onChange(total - 1)}
-        className="px-2 py-1 border border-sentinel-border rounded"
+        className="px-2 py-1 border border-dg-border rounded"
       >
         ⏭
       </button>

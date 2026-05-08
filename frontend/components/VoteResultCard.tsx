@@ -13,9 +13,7 @@ export function VoteResultCard({ vote }: { vote: VoteResult | null }) {
     <Card title="Vote result">
       <div className="flex items-baseline gap-4 mb-2">
         <span className="text-lg font-semibold">{vote.outcome}</span>
-        {vote.selected_action && (
-          <span className="text-sentinel-accent">→ {vote.selected_action}</span>
-        )}
+        {vote.selected_action && <span className="text-dg-accent">→ {vote.selected_action}</span>}
       </div>
       <p className="text-sm text-gray-400">{vote.reason}</p>
       <div className="mt-3 grid grid-cols-2 gap-4 text-xs">

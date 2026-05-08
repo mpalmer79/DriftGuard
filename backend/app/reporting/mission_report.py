@@ -45,7 +45,7 @@ def build_report(repo: SimulationRepository, simulation_id: str) -> dict:
 
 def render_markdown(report: dict) -> str:
     lines = []
-    lines.append("# SentinelNav Mission Report")
+    lines.append("# DriftGuard Mission Report")
     lines.append("")
     lines.append(f"- **Simulation ID:** `{report['simulation_id']}`")
     lines.append(f"- **Seed:** `{report['seed']}`")

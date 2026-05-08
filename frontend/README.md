@@ -1,6 +1,6 @@
-# SentinelNav Frontend
+# DriftGuard Frontend
 
-Next.js 14 + TypeScript + Tailwind CSS dashboard for the SentinelNav
+Next.js 14 + TypeScript + Tailwind CSS dashboard for the DriftGuard
 backend.
 
 ## Pages

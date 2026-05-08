@@ -1,6 +1,6 @@
 # Determinism Audit
 
-This page is the auditable claim that SentinelNav's simulation core is
+This page is the auditable claim that DriftGuard's simulation core is
 deterministic: same seed plus same scenario plus same step count
 produces the same `SystemDecision` sequence and the same canonical
 event timeline, byte-for-byte, across processes.

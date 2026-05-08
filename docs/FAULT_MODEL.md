@@ -1,4 +1,4 @@
-# SentinelNav Fault Model
+# DriftGuard Fault Model
 
 Faults are first-class records. They have a target, a start step, an
 optional duration, and metadata that controls behavior. The

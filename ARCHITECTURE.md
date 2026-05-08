@@ -1,8 +1,8 @@
-# SentinelNav Architecture (v2)
+# DriftGuard Architecture (v2)
 
 ## 1. Mission
 
-SentinelNav is a deterministic, fault-tolerant control system simulation platform designed to model how mission-critical systems maintain safe operation under uncertainty, partial failure, and conflicting control signals.
+DriftGuard is a deterministic, fault-tolerant control system simulation platform designed to model how mission-critical systems maintain safe operation under uncertainty, partial failure, and conflicting control signals.
 
 The system simulates a vehicle receiving imperfect sensor data, processing that data through redundant controller modules, reaching decisions through consensus mechanisms, detecting faults over time, and transitioning into degraded or safe operational modes when system trust boundaries are violated.
 

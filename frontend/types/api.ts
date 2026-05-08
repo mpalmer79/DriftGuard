@@ -58,6 +58,20 @@ export interface SensorReading {
   fault_flags: string[];
 }
 
+export interface DetectorFinding {
+  component: string;
+  severity: string;
+  message: string;
+}
+
+export interface VoteSplitSummary {
+  outcome: VoteOutcome;
+  selected_action: string | null;
+  agreeing: string[];
+  rejected: string[];
+  reason: string;
+}
+
 export interface SystemDecision {
   step: number;
   final_action: string;
@@ -66,6 +80,13 @@ export interface SystemDecision {
   justification: string;
   trusted_controllers: string[];
   rejected_controllers: string[];
+  // Causality fields (additive — optional for backward compatibility
+  // with simulations persisted before the wave-1 schema bump).
+  previous_mode?: SystemMode | null;
+  trigger_reason?: string;
+  active_fault_ids?: string[];
+  detector_findings?: DetectorFinding[];
+  vote_split?: VoteSplitSummary;
 }
 
 export interface SimulationEvent {
@@ -171,6 +192,19 @@ export interface DecisionRecord {
   justification: string;
   trusted_controllers: string[];
   rejected_controllers: string[];
+  // Causality fields (additive — see SystemDecision for context).
+  previous_mode?: SystemMode | null;
+  trigger_reason?: string;
+  active_fault_ids?: string[];
+  detector_findings?: DetectorFinding[];
+  vote_split?: VoteSplitSummary;
+}
+
+export interface ReplayFingerprintResponse {
+  simulation_id: string;
+  step_count: number;
+  fingerprint: string;
+  algorithm: string;
 }
 
 export interface AnomalyVsDeterministicSummary {

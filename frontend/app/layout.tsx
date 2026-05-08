@@ -14,14 +14,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="font-mono">
         <ThemeProvider>
-          <header className="border-b border-sentinel-border bg-sentinel-panel/50 backdrop-blur sticky top-0 z-10">
+          <header className="border-b border-dg-border bg-dg-panel/50 backdrop-blur sticky top-0 z-10">
             <nav className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-6 text-sm">
               <Link href="/" className="font-semibold text-base">
                 DriftGuard
               </Link>
               <Link href="/scenarios">Scenarios</Link>
               <a
-                href="https://github.com/mpalmer79/SentinelNav"
+                href="https://github.com/mpalmer79/driftguard"
                 target="_blank"
                 rel="noreferrer"
                 className="ml-auto opacity-60 hover:opacity-100"

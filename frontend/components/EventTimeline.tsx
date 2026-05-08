@@ -3,8 +3,8 @@ import { Card } from "./Card";
 
 const severityColor: Record<string, string> = {
   INFO: "text-gray-400",
-  WARNING: "text-sentinel-warn",
-  CRITICAL: "text-sentinel-bad",
+  WARNING: "text-dg-warn",
+  CRITICAL: "text-dg-bad",
 };
 
 export function EventTimeline({
@@ -26,7 +26,7 @@ export function EventTimeline({
     <Card title={`Events (${events.length})`}>
       <ol className="space-y-1 text-xs max-h-96 overflow-y-auto">
         {shown.map((e) => (
-          <li key={e.event_id} className="flex gap-3 border-b border-sentinel-border/50 pb-1">
+          <li key={e.event_id} className="flex gap-3 border-b border-dg-border/50 pb-1">
             <span className="text-gray-500 w-12">step {e.step}</span>
             <span className="w-20 opacity-70">{e.component}</span>
             <span className="w-20 opacity-70">{e.type}</span>

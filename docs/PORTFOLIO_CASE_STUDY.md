@@ -1,4 +1,4 @@
-# SentinelNav — Portfolio Case Study
+# DriftGuard — Portfolio Case Study
 
 ## Problem
 
@@ -20,7 +20,7 @@ Safety-critical software lives or dies on three properties:
 3. **Bounded failure** — when something goes wrong, the system should
    degrade in known ways, not in arbitrary ones.
 
-Most prototypes get one of these. SentinelNav is built so all three
+Most prototypes get one of these. DriftGuard is built so all three
 are visible to the reader.
 
 ## System design
@@ -113,7 +113,9 @@ the run deterministically.
 - **Auth + rate-limit are opt-in** — the bearer-token write guard and
   sliding-window limiter exist (Phases 8.2, 8.3) but default off so
   the demo can be poked freely. Production would set
-  `SENTINEL_WRITE_TOKEN` and re-enable the limiter.
+  `SENTINEL_API_TOKEN` (the env-var name kept for legacy compat,
+  guarded by [`backend/app/api/auth.py`](../backend/app/api/auth.py))
+  and re-enable the limiter.
 - **Two detectors, not one** — the older counter-based detector still
   drives the safe-mode manager so existing behaviour and tests stay
   stable; the new trust detector layers on top with health states.
@@ -150,7 +152,7 @@ that prototype into something a senior reviewer can actually inspect:
 - **Formal model and property tests.** A TLA+ specification of the
   mode-transition state machine is mirrored by an exhaustive Python
   checker, and the runtime is exercised by `hypothesis`-driven
-  invariant tests covering I1–I9 (no escape from `FAILED`, monotone
+  invariant tests covering I1–I11 (no escape from `FAILED`, monotone
   controller-trust descent under repeated faults, etc.). 1000-step
   soak runs cross every scenario; a subprocess fuzz harness hunts
   for safe-mode escapes.
@@ -183,7 +185,7 @@ that prototype into something a senior reviewer can actually inspect:
 - Deterministic simulation engineering, with a falsifiable replay
   claim backed by canonical-fingerprint hashing.
 - Property-based, fuzz, and soak testing in addition to unit tests
-  (538 backend tests at handoff, 97% line coverage).
+  (630 backend tests at handoff, 97% line coverage).
 - Formal-spec mirroring: TLA+ → Python checker, with invariants
   pinned from both sides.
 - FastAPI with typed schemas, an error taxonomy, CORS allowlist,

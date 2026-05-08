@@ -1,4 +1,4 @@
-# SentinelNav Backend
+# DriftGuard Backend
 
 FastAPI + Python implementation of the deterministic, fault-tolerant
 control-system simulation described in [`../ARCHITECTURE.md`](../ARCHITECTURE.md).

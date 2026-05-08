@@ -1,5 +1,5 @@
 Summary
-Implements the SentinelNav backend per ARCHITECTURE.md across all execution phases.
+Implements the DriftGuard backend per ARCHITECTURE.md across all execution phases.
 
 Domain layer: VehicleState, SensorReading, ControllerOutput, VoteResult, FaultRecord, SystemDecision, Event, plus enums for actions, modes, fault types, sensor status, vote outcomes, event types/severities.
 Simulation core: deterministic vehicle state engine, noisy sensor model with fault hooks, controller interface and three differing controllers (controller_a conservative, controller_b responsive, controller_c balanced).

@@ -1,6 +1,6 @@
 # Observability
 
-SentinelNav emits three observability signals: events (the audit
+DriftGuard emits three observability signals: events (the audit
 log, source of truth), metrics (Prometheus, for monitoring), and
 traces (OpenTelemetry, for diagnosing per-step latency and call
 order). Plus a request id woven through HTTP responses and logs.

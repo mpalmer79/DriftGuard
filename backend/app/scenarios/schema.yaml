@@ -1,4 +1,4 @@
-# SentinelNav scenario schema (informational; see loader.py for the
+# DriftGuard scenario schema (informational; see loader.py for the
 # authoritative pydantic model).
 #
 # A scenario YAML file contains a single document with these keys:

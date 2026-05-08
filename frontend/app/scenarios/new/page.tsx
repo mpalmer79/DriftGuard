@@ -89,7 +89,7 @@ export default function NewScenarioPage() {
         <h1 className="text-2xl font-semibold">Author scenario</h1>
         <select
           aria-label="template"
-          className="bg-sentinel-panel border border-sentinel-border rounded px-2 py-1 text-sm"
+          className="bg-dg-panel border border-dg-border rounded px-2 py-1 text-sm"
           onChange={(e) => setYaml(TEMPLATES[e.target.value] ?? TEMPLATES.blank)}
         >
           <option value="blank">blank</option>
@@ -100,14 +100,14 @@ export default function NewScenarioPage() {
           <button
             onClick={validateOnly}
             disabled={busy}
-            className="px-3 py-1 rounded border border-sentinel-border text-sm disabled:opacity-50"
+            className="px-3 py-1 rounded border border-dg-border text-sm disabled:opacity-50"
           >
             validate
           </button>
           <button
             onClick={createAndRun}
             disabled={busy}
-            className="px-3 py-1 rounded bg-sentinel-accent/20 border border-sentinel-accent/40 text-sm disabled:opacity-50"
+            className="px-3 py-1 rounded bg-dg-accent/20 border border-dg-accent/40 text-sm disabled:opacity-50"
           >
             create + run
           </button>
@@ -119,7 +119,7 @@ export default function NewScenarioPage() {
           value={yaml}
           onChange={(e) => setYaml(e.target.value)}
           spellCheck={false}
-          className="w-full h-96 bg-black/40 border border-sentinel-border rounded p-3 text-xs font-mono"
+          className="w-full h-96 bg-black/40 border border-dg-border rounded p-3 text-xs font-mono"
         />
       </Card>
 

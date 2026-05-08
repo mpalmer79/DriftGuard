@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import type { FaultRecord, StepResponse, VehicleState } from "@/types/api";
+import type { DecisionRecord, FaultRecord, StepResponse, VehicleState } from "@/types/api";
+import { CausalityPanel } from "@/components/CausalityPanel";
+import { ModeLegend } from "@/components/ModeLegend";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
 
 interface SimSummary {
@@ -21,6 +23,9 @@ export default function DashboardPage() {
   const [stepCount, setStepCount] = useState(0);
   const [seed, setSeed] = useState(42);
   const [busy, setBusy] = useState(false);
+  const [lastDecision, setLastDecision] = useState<DecisionRecord | null>(null);
+  const [previousDecision, setPreviousDecision] = useState<DecisionRecord | null>(null);
+  const [fingerprint, setFingerprint] = useState<string | null>(null);
 
   async function refreshList() {
     try {
@@ -51,6 +56,28 @@ export default function DashboardPage() {
       .getSimulation(activeId)
       .then((d) => setStepCount(d.step_count))
       .catch(() => setStepCount(0));
+    // Pull the latest persisted decision so the causality panel
+    // shows real data even when the user just selected the
+    // simulation without stepping it themselves.
+    api
+      .getDecisions(activeId)
+      .then((decs) => {
+        if (decs.length === 0) {
+          setLastDecision(null);
+          setPreviousDecision(null);
+          return;
+        }
+        setLastDecision(decs[decs.length - 1]);
+        setPreviousDecision(decs.length > 1 ? decs[decs.length - 2] : null);
+      })
+      .catch(() => {
+        setLastDecision(null);
+        setPreviousDecision(null);
+      });
+    api
+      .getReplayFingerprint(activeId)
+      .then((r) => setFingerprint(r.fingerprint))
+      .catch(() => setFingerprint(null));
   }, [activeId]);
 
   async function create() {
@@ -73,13 +100,31 @@ export default function DashboardPage() {
     setError(null);
     try {
       let last: StepResponse | null = null;
+      let prevToLast: StepResponse | null = null;
       for (let i = 0; i < times; i += 1) {
+        prevToLast = last;
         last = await api.stepSimulation(activeId);
       }
       if (last) {
         setState(last.state);
         setStepCount(last.state.step);
+        setLastDecision(last.decision as DecisionRecord);
+        if (prevToLast) {
+          setPreviousDecision(prevToLast.decision as DecisionRecord);
+        } else {
+          // First step in this batch — fall back to whatever was
+          // previously cached so previous_mode resolution still works.
+          setPreviousDecision((prev) => prev ?? lastDecision);
+        }
       }
+      // Refresh the fingerprint after stepping — every new step
+      // changes the canonical hash.
+      api
+        .getReplayFingerprint(activeId)
+        .then((r) => setFingerprint(r.fingerprint))
+        .catch(() => {
+          /* keep stale fingerprint */
+        });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -126,6 +171,8 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      <ModeLegend />
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         <div className="lg:col-span-2 space-y-5">
           <section className="surface-elevated-grad border border-border rounded-md p-4">
@@ -134,7 +181,7 @@ export default function DashboardPage() {
             </h2>
             {sims.length === 0 ? (
               <p className="font-mono text-xs text-text-muted py-2">
-                {"// NO SIMULATIONS — CREATE ONE BELOW"}
+                {"// No simulations yet. Click Create to start one."}
               </p>
             ) : (
               <ul className="space-y-1" aria-label="simulation list">
@@ -257,6 +304,15 @@ export default function DashboardPage() {
               </>
             )}
           </section>
+
+          {activeId && (
+            <CausalityPanel
+              decision={lastDecision}
+              faults={faults}
+              replayFingerprint={fingerprint}
+              previousDecision={previousDecision}
+            />
+          )}
         </div>
       </div>
     </div>

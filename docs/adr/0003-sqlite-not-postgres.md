@@ -35,7 +35,7 @@ process starts clean; production deployments can mount a file path.
 
 ### Negative / Tradeoffs
 
-- No concurrent writers. SentinelNav has a single writer (the API
+- No concurrent writers. DriftGuard has a single writer (the API
   process) so this is not a current limitation; it would matter for a
   multi-vehicle fleet running in parallel processes.
 - No native JSON column type. We serialize complex fields with

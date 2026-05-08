@@ -1,4 +1,4 @@
-# SentinelNav System Invariants
+# DriftGuard System Invariants
 
 This document is the contract every release must keep. Each invariant
 is a property the simulation must hold across every (seed, scenario,

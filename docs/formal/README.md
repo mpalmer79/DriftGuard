@@ -1,6 +1,6 @@
 # Formal Specifications
 
-This directory holds machine-readable specifications of SentinelNav's
+This directory holds machine-readable specifications of DriftGuard's
 safety-critical state machines. They are aspirational per the Phase 3.5
 directive — the project is not formally verified end-to-end, but the
 core safe-mode transition logic is small enough that a real spec adds

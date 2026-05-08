@@ -1,16 +1,20 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { CausalityPanel } from "@/components/CausalityPanel";
 import { EventTimeline } from "@/components/EventTimeline";
 import { FaultTimeline } from "@/components/FaultTimeline";
+import { ModeLegend } from "@/components/ModeLegend";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
 import { VehicleStateCard } from "@/components/VehicleStateCard";
 import { AltitudeChart, HorizontalSpeedChart, ModeBand } from "@/components/charts/TelemetryCharts";
 import { TrajectoryMap } from "@/components/charts/TrajectoryMap";
 import { ErrorState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { api } from "@/lib/api";
 import {
   useDecisions,
   useEvents,
@@ -30,6 +34,23 @@ export default function SimulationDetail() {
   const faults = useFaults(id);
   const decisions = useDecisions(id);
   const trajectory = useTrajectory(id);
+  const [fingerprint, setFingerprint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    api
+      .getReplayFingerprint(id)
+      .then((r) => {
+        if (active) setFingerprint(r.fingerprint);
+      })
+      .catch(() => {
+        if (active) setFingerprint(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id, decisions.data?.length]);
 
   const errorStatus = (meta.error as { status?: number } | undefined)?.status;
   if (errorStatus === 404) return <SimulationNotFound id={id} />;
@@ -65,7 +86,23 @@ export default function SimulationDetail() {
           <DetailLink href={`/simulations/${id}/replay`}>replay →</DetailLink>
           <DetailLink href={`/simulations/${id}/report`}>report →</DetailLink>
         </nav>
+        <ModeLegend />
       </header>
+
+      <CausalityPanel
+        decision={
+          decisions.data && decisions.data.length > 0
+            ? decisions.data[decisions.data.length - 1]
+            : null
+        }
+        previousDecision={
+          decisions.data && decisions.data.length > 1
+            ? decisions.data[decisions.data.length - 2]
+            : null
+        }
+        faults={faults.data ?? []}
+        replayFingerprint={fingerprint}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <VehicleStateCard state={stateQ.data ?? null} />
@@ -120,9 +157,17 @@ export default function SimulationDetail() {
             </table>
           </div>
         ) : (
-          <p className="font-mono text-xs text-text-muted">
-            {"// NO DECISIONS YET. RUN THE SIMULATION FORWARD."}
-          </p>
+          <div className="space-y-2">
+            <p className="font-mono text-xs text-text-muted">
+              {"// NO DECISIONS YET. RUN THE SIMULATION FORWARD."}
+            </p>
+            <Link
+              href={`/simulations/${id}/live`}
+              className="inline-flex items-center font-mono uppercase text-xs tracking-wider text-accent hover:underline"
+            >
+              Run live →
+            </Link>
+          </div>
         )}
       </section>
 

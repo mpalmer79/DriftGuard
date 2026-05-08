@@ -1,4 +1,4 @@
-"""Per-axis Kalman position estimator for the SentinelNav navigation stack.
+"""Per-axis Kalman position estimator for the DriftGuard navigation stack.
 
 The state is 3D position only — the simulation already tracks
 velocity through the truth integrator and the INS, so we focus the

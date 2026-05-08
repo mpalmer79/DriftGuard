@@ -52,7 +52,7 @@ def test_markdown_render_is_readable():
     for r in sim.run(3):
         repo.save_step(sim.id, r)
     md = render_markdown(build_report(repo, sim.id))
-    assert "# SentinelNav Mission Report" in md
+    assert "# DriftGuard Mission Report" in md
     assert "## Summary" not in md  # markdown structure uses other headings
     assert "## Mode transitions" in md
     assert "## Reproducibility" in md

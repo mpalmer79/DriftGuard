@@ -1,11 +1,11 @@
-# SentinelNav Build Notes — Overnight Expansion
+# DriftGuard Build Notes — Overnight Expansion
 
 This document captures what existed prior to this expansion and what the
 expansion adds. It is intentionally short.
 
 ## Baseline (pre-expansion)
 
-The repository contained a working backend implementation of SentinelNav,
+The repository contained a working backend implementation of DriftGuard,
 merged via PR #1. Concretely:
 
 - `backend/app/domain/` — enums (`Action`, `SystemMode`, `FaultType`,

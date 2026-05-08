@@ -3,6 +3,7 @@ import type {
   DecisionRecord,
   FaultRecord,
   MissionReport,
+  ReplayFingerprintResponse,
   Scenario,
   ScenarioResult,
   SimulationEvent,
@@ -172,6 +173,9 @@ export const api = {
   getReport: (id: string) => request<MissionReport>(`/simulations/${id}/report`),
 
   getMarkdownReport: (id: string) => requestText(`/simulations/${id}/report/markdown`),
+
+  getReplayFingerprint: (id: string) =>
+    request<ReplayFingerprintResponse>(`/simulations/${id}/replay-fingerprint`),
 };
 
 export type { ApiError };
