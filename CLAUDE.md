@@ -1,516 +1,414 @@
-# SentinelNav Overnight Build Plan
+# DriftGuard Principal-Level Hardening Prompt
 
-You are working inside the existing SentinelNav repository.
+You are acting as a principal engineer and technical product architect.
 
-The backend foundation already exists and passes the current test suite. Do not restart the project. Do not replace working code unnecessarily. Extend the project into a portfolio-grade deterministic fault-tolerant navigation simulation platform.
+Your goal is to harden DriftGuard methodically without overlapping work, breaking existing behavior, or creating noisy rewrites. Attention to detail matters more than speed.
 
-You are in uninterrupted execution mode.
+## Primary objective
 
-## Operating Rules
+Address the following weaknesses and priority fixes:
 
-- Do not ask for clarification.
-- Do not stop after small phases.
-- Make reasonable engineering assumptions.
-- Preserve all existing passing behavior.
-- Add tests for every meaningful feature.
-- Keep code clean, readable, and human-written.
-- Avoid over-engineering, but build enough depth to make the project impressive.
-- Do not leave placeholder functions.
-- Do not create fake features that are not wired into the app.
-- Update documentation as features are implemented.
-- At the end, all tests must pass.
+1. Remove all SentinelNav branding leftovers and standardize the project as DriftGuard.
+2. Strengthen the live app so it feels like an expert operator console, not just a demo.
+3. Improve frontend depth so the UI explains causality, decisions, and risk.
+4. Review production limitations and make them explicit, bounded, and professionally documented in code/docs where appropriate.
+5. Validate bold repo claims against the actual codebase and CI state.
+6. Add a clear “What this demonstrates” section to the repo documentation.
+7. Improve dashboard causality:
+   - previous mode
+   - current mode
+   - trigger reason
+   - active faults
+   - vote split
+   - detector finding
+   - final action
+8. Add one architecture diagram file.
+9. Add a live demo script showing the scenario flow:
+   - run sensor drift scenario
+   - observe DEGRADED mode
+   - inject controller fault
+   - observe SAFE_MODE behavior
 
-## Primary Objective
+Exclude README screenshot/GIF work. Do not add screenshots.
 
-Transform SentinelNav from a backend simulation prototype into a full-stack, portfolio-grade simulation platform that demonstrates:
+---
 
-1. Redundant control architecture
-2. Deterministic autonomous system simulation
-3. Sensor faults and controller faults
-4. Majority voting and disagreement handling
-5. Safe mode escalation
-6. Persistent audit trail
-7. Scenario-driven testing
-8. Replayable timeline
-9. Operational dashboard
-10. Exportable mission report
-11. Deployment-ready project structure
+# Operating rules
 
-## Phase 0: Repo Assessment and Safety Pass
+Work in phases. Do not mix unrelated changes.
 
-Before changing code:
+Use multiple Claude Code agents in parallel, but assign them non-overlapping scopes.
 
-1. Read README.md, ARCHITECTURE.md, CLAUDE.md, backend README if present, all backend modules, and all tests.
-2. Identify current API routes, simulation lifecycle, persistence model, domain models, event model, fault types, and safe mode behavior.
-3. Preserve compatibility with all existing tests.
-4. Add `docs/BUILD_NOTES.md` explaining what existed before this expansion and what this build pass adds.
+Before editing, inspect the repo structure and identify:
+- frontend framework and app paths
+- backend framework and app paths
+- documentation paths
+- test paths
+- CI paths
+- deployment config paths
 
-## Phase 1: Strengthen Backend Architecture
+Do not guess. Inspect first.
 
-Improve backend structure without breaking the app.
+Do not perform broad rewrites unless necessary.
 
-Target structure:
+Do not remove tests to make the build pass.
 
-backend/app/api/
-backend/app/core/
-backend/app/domain/
-backend/app/persistence/
-backend/app/reporting/
-backend/app/scenarios/
-backend/app/simulation/
-backend/tests/
+Do not weaken security, validation, deterministic behavior, replay behavior, or simulation correctness.
 
-Add or improve:
+Do not rename public API fields unless you update all consumers and tests.
 
-backend/app/api/dependencies.py
-backend/app/api/errors.py
-backend/app/core/exceptions.py
-backend/app/core/time.py
-backend/app/core/ids.py
-backend/app/scenarios/
-backend/app/reporting/
+Every code change must be supported by tests when reasonable.
 
-Requirements:
+Every documentation claim must match the repo as it exists after your work.
 
-- Centralize ID generation.
-- Centralize deterministic timestamp handling.
-- Add typed application exceptions.
-- Add consistent API error responses.
-- Keep existing behavior working.
-- Avoid unnecessary rewrites.
+---
 
-## Phase 2: Persistent Simulation Recovery
+# Parallel agent assignments
 
-The current API should not depend only on in-memory simulation state.
+Run these agents in parallel only after initial repo inspection.
 
-Implement repository methods:
+## Agent A: Branding and terminology cleanup
 
-- get_simulation(simulation_id)
-- list_simulations()
-- get_step_records(simulation_id)
-- get_faults(simulation_id)
-- get_decisions(simulation_id)
-- get_sensor_readings(simulation_id)
-- get_controller_outputs(simulation_id)
-- get_votes(simulation_id)
-- get_events(simulation_id)
+Scope:
+- Search the entire repo for:
+  - SentinelNav
+  - sentinelnav
+  - Sentinel Nav
+  - sentinel-nav
+  - old project names or mismatched product references
+- Standardize external-facing product name as DriftGuard.
+- Preserve historical references only if they are clearly labeled as legacy migration notes.
+- Update:
+  - app metadata
+  - package names only if safe
+  - docs
+  - page titles
+  - OpenGraph metadata
+  - API docs text
+  - architecture docs
+  - deployment docs
+  - comments that leak old branding
+  - tests that assert visible text
 
-Add API routes:
+Constraints:
+- Do not rename files, modules, packages, or import paths unless the rename is low-risk and all tests are updated.
+- Prefer text cleanup over structural rename unless structural rename is clearly necessary.
+- If any internal module names remain for compatibility, document why.
 
-- GET /simulations
-- GET /simulations/{id}
-- GET /simulations/{id}/decisions
-- GET /simulations/{id}/faults
-- GET /simulations/{id}/timeline
+Deliverable:
+- A concise report listing every file changed and any intentional leftovers.
 
-Acceptance criteria:
+---
 
-- Existing simulations can be queried from SQLite.
-- Timeline output combines state, sensor reading, controller outputs, vote, decision, and events per step.
-- Tests prove timeline reconstruction works.
+## Agent B: Frontend operator-console upgrade
 
-## Phase 3: Scenario System
+Scope:
+- Inspect the live frontend structure.
+- Identify dashboard, scenario, scenario authoring, results, run detail, and navigation pages.
+- Improve the app so it better communicates operator-level system behavior.
 
-Create a scenario engine so users can run named mission profiles.
+Required UI improvements:
+- Add or improve a dashboard causality panel that clearly shows:
+  - previous mode
+  - current mode
+  - trigger reason
+  - active faults
+  - vote split
+  - detector finding
+  - final action
+- Add empty states that explain what the user should do next.
+- Add inline explanations for safety modes:
+  - NORMAL
+  - DEGRADED
+  - SAFE_MODE
+  - FAILED
+- Add operator-style labels such as:
+  - System State
+  - Decision Reason
+  - Fault Evidence
+  - Controller Vote
+  - Final Command
+  - Replay Fingerprint
+- Improve scenario pages so a reviewer understands the story of each scenario without reading the backend code.
 
-Add scenario models:
+Constraints:
+- Do not create fake data if real backend data exists.
+- If a field is unavailable from the backend, add a graceful fallback and note the missing backend field in the final report.
+- Keep the UI clean and technical.
+- Avoid generic marketing copy.
+- Avoid large visual redesign unless necessary.
+- Preserve mobile responsiveness.
+- Preserve existing routing and deployment behavior.
 
-- Scenario
-- ScenarioStep
-- ScenarioFault
-- ScenarioInitialState
-- ScenarioResult
+Testing:
+- Add or update frontend tests if the repo has a frontend test setup.
+- Run type checks and lint checks if available.
 
-Create built-in scenarios:
+Deliverable:
+- A report explaining the before and after behavior for each edited page.
 
-1. nominal_cruise
-   - No faults
-   - Stable control behavior
-   - Expected mode remains NORMAL
+---
 
-2. single_controller_latency
-   - One controller exceeds latency threshold
-   - Expected mode moves to DEGRADED or SAFE_MODE depending duration
+## Agent C: Backend causality and API review
 
-3. sensor_drift_recovery
-   - Sensor drift affects readings for several steps
-   - System detects degraded trust and restricts unsafe action
+Scope:
+- Inspect backend decision, simulation, scenario, event, incident, metrics, and replay models.
+- Determine whether the backend already exposes enough causality data for the frontend.
 
-4. split_vote_escalation
-   - Controllers disagree repeatedly
-   - System enters SAFE_MODE
+Required review:
+- Confirm whether these fields exist in responses:
+  - previous mode
+  - current mode
+  - trigger reason
+  - active faults
+  - vote split
+  - detector finding
+  - final action
+- If missing, add minimal, well-typed response fields using existing domain data.
+- Do not invent causality. Derive it from actual simulation, voting, detector, and safe-mode state.
+- Ensure responses remain deterministic and replayable.
+- Ensure added fields do not break existing clients.
 
-5. multi_fault_failure
-   - Sensor fault plus controller failures
-   - System eventually enters FAILED
+Constraints:
+- Prefer additive API changes.
+- Preserve existing schemas unless a breaking change is unavoidable.
+- Update serializers, models, OpenAPI schemas, and tests.
+- Do not weaken validation or fault injection protections.
 
-6. intermittent_fault
-   - Fault appears, clears, then returns
-   - Timeline shows escalation and recovery behavior
+Testing:
+- Add or update backend tests proving causality fields are correct for:
+  - normal run
+  - sensor drift scenario
+  - controller disagreement scenario
+  - safe-mode escalation
+  - replay or deterministic comparison if applicable
 
-Add API routes:
+Deliverable:
+- A field-by-field causality mapping table:
+  - field name
+  - source domain object
+  - endpoint
+  - test coverage
 
-- GET /scenarios
-- GET /scenarios/{name}
-- POST /scenarios/{name}/run
-- POST /scenarios/{name}/run/{steps}
+---
 
-Acceptance criteria:
+## Agent D: Production limits and claims audit
 
-- Each scenario runs deterministically.
-- Same seed plus same scenario produces same decisions and events.
-- Scenario output includes final mode, number of steps, fault summary, decision summary, and event counts.
+Scope:
+- Audit repo claims against reality.
+- Review README, docs, badges, CI workflows, deployment docs, comments, and app copy.
 
-## Phase 4: Advanced Fault Injection
+Required audit:
+- Verify claims about:
+  - test count
+  - coverage percentage
+  - TLA+ or formal specification
+  - OpenTelemetry
+  - supply-chain CI
+  - security scanning
+  - rate limiting
+  - replay fingerprints
+  - deterministic simulation
+  - SQLite persistence
+  - single-replica deployment limits
+  - open read endpoints
+  - bearer-token proxy
+- Adjust wording so claims are accurate and defensible.
 
-Expand fault support.
+Documentation requirements:
+- Add or improve a “Production Boundaries” section covering:
+  - single replica assumption
+  - SQLite deployment limitations
+  - in-memory rate limit or registry limitations
+  - demo auth boundaries
+  - what would be required for multi-tenant production
+  - what is intentionally out of scope
+- Add or improve a “What this demonstrates” section:
+  - deterministic control simulation
+  - redundant controller voting
+  - fault injection
+  - safe-mode escalation
+  - replayability
+  - audit logging
+  - operator-facing explainability
+  - CI-backed engineering discipline
 
-Support these fault types:
+Constraints:
+- Do not exaggerate.
+- Do not remove strong claims if they are true.
+- Replace vague claims with specific, verifiable ones.
 
-- sensor_noise_spike
-- sensor_drift
-- sensor_dropout
-- controller_invalid_output
-- controller_latency
-- controller_confidence_drop
-- controller_action_bias
-- controller_silent_failure
-- conflicting_controller
-- compound_fault
+Deliverable:
+- A claim audit table:
+  - original claim
+  - true, partially true, false, or unverifiable
+  - action taken
+  - file changed
 
-Fault metadata should support:
+---
 
-- magnitude
-- bias
-- forced_action
-- latency_ms
-- confidence
-- probability
-- intermittent_pattern
-- affected_fields
+## Agent E: Architecture diagram and live demo script
+
+Scope:
+- Create one architecture diagram file and one live demo script document.
+
+Architecture diagram requirements:
+- Add a repo-native diagram file.
+- Prefer Mermaid if the repo already uses Markdown docs.
+- Diagram should show:
+  - frontend
+  - API layer
+  - scenario runner
+  - simulation orchestrator
+  - sensor model
+  - redundant controllers
+  - voter
+  - detector
+  - safe-mode manager
+  - persistence/audit log
+  - replay/fingerprint path
+  - observability or metrics if implemented
+- The diagram must match actual code, not idealized architecture.
+
+Live demo script requirements:
+- Add a document that walks a reviewer through the live app:
+  1. Open DriftGuard
+  2. Go to scenarios
+  3. Run sensor drift scenario
+  4. Observe DEGRADED behavior
+  5. Inject or run controller fault scenario
+  6. Observe SAFE_MODE behavior
+  7. Inspect decision evidence
+  8. Review replay fingerprint or audit output if available
+- Include expected observations, not exact values unless deterministic values are guaranteed.
+- Add troubleshooting notes for Railway/live deployment if the app is cold-starting or the backend health check is unavailable.
+
+Constraints:
+- Do not include screenshots.
+- Do not invent unavailable pages.
+- Link to existing pages only if routes exist.
+- If the current app lacks a step, document the gap and add a TODO.
+
+Deliverable:
+- File paths created.
+- Short explanation of how the diagram and demo script support portfolio review.
+
+---
+
+# Required phase plan
+
+## Phase 0: Baseline inspection
+
+Before editing:
+1. Print repo tree summary.
+2. Identify frontend, backend, docs, tests, and CI locations.
+3. Run available tests, lint, and type checks.
+4. Capture current failures without fixing them yet.
+5. Identify live app route structure if route files exist.
+
+Output:
+- Baseline status
+- Known failures
+- Agent work plan with exact file boundaries
+
+Do not edit during Phase 0.
+
+---
+
+## Phase 1: Non-overlapping parallel work
+
+Run Agents A through E with the scopes above.
 
 Rules:
-
-- Faults must be deterministic.
-- Fault behavior must be explainable through events.
-- Faults must be visible through the API.
-- Fault state must persist.
-
-Acceptance criteria:
-
-- Tests cover each major fault type.
-- Injected faults produce observable changes in sensor readings, controller outputs, votes, or decisions.
-- Fault events include metadata showing why the system changed behavior.
-
-## Phase 5: Better Fault Detection and Recovery Logic
-
-Improve fault detection from simple counters into time-windowed logic.
-
-Add:
-
-- Sliding window disagreement tracking
-- Per-controller trust score
-- Per-sensor confidence score
-- Recovery cooldown
-- Escalation thresholds
-- De-escalation thresholds
-- Repeated fault memory
-
-Domain concepts:
-
-- TrustState
-- ComponentHealth
-- HealthStatus
-- DetectionFinding
-
-Health statuses:
-
-- HEALTHY
-- SUSPECT
-- DEGRADED
-- CRITICAL
-- RECOVERING
-
-Acceptance criteria:
-
-- A temporary fault does not permanently poison the system.
-- Repeated faults escalate faster.
-- Recovery requires stable behavior for multiple steps.
-- Tests prove escalation and recovery logic.
-
-## Phase 6: Mission Report Generator
-
-Create report generation in:
-
-backend/app/reporting/
-
-Add:
-
-- mission_report.py
-- summary.py
-- risk.py
-
-Create API routes:
-
-- GET /simulations/{id}/report
-- GET /simulations/{id}/report/markdown
-- GET /simulations/{id}/report/json
-
-Report must include:
-
-- Simulation ID
-- Seed
-- Total steps
-- Initial state
-- Final state
-- Final system mode
-- All injected faults
-- Mode transition timeline
-- Controller trust summary
-- Sensor health summary
-- Vote outcome counts
-- Rejected controller counts
-- Critical events
-- Final safety assessment
-- Deterministic reproducibility note
-
-Acceptance criteria:
-
-- Reports are generated from persisted data, not only live memory.
-- Tests verify report sections exist.
-- Markdown report is readable and professional.
-
-## Phase 7: Frontend App
-
-Create a frontend application.
-
-Use:
-
-- Next.js
-- TypeScript
-- Tailwind CSS
-
-Create:
-
-frontend/app/
-frontend/components/
-frontend/lib/
-frontend/types/
-
-Pages:
-
-1. /
-   - Project landing page
-   - Explain SentinelNav in plain language
-   - Link to dashboard and scenarios
-
-2. /dashboard
-   - List simulations
-   - Create simulation
-   - Run one step
-   - Run multiple steps
-   - Show current state
-   - Show current mode
-   - Show latest decision
-
-3. /scenarios
-   - List built-in scenarios
-   - Run scenario
-   - Show scenario description
-   - Show expected behavior
-
-4. /simulations/[id]
-   - Detailed simulation view
-   - Current vehicle state
-   - Faults
-   - Decisions
-   - Events
-   - Timeline
-
-5. /simulations/[id]/replay
-   - Step-by-step replay of simulation timeline
-   - Show sensor reading
-   - Show controller outputs
-   - Show vote result
-   - Show final decision
-   - Show system mode transition
-
-6. /simulations/[id]/report
-   - Render mission report
-   - Copy markdown button
-   - Download JSON button if simple to implement
-
-Frontend components:
-
-- SystemModeBadge
-- VehicleStateCard
-- ControllerOutputTable
-- VoteResultCard
-- FaultTimeline
-- EventTimeline
-- ScenarioCard
-- MissionReportView
-- StepReplayControls
-- TrustScorePanel
-
-Acceptance criteria:
-
-- Frontend builds successfully.
-- Frontend talks to backend through a typed API client.
-- UI uses real backend data.
-- No fake-only dashboard.
-
-## Phase 8: API Client and Shared Types
-
-Create frontend API client:
-
-frontend/lib/api.ts
-frontend/types/api.ts
-
-Requirements:
-
-- All backend calls go through the API client.
-- Use typed responses.
-- Handle errors cleanly.
-- Expose backend URL through environment configuration.
-- Include useful error messages when backend is unreachable.
-
-Required methods:
-
-- listSimulations()
-- createSimulation()
-- stepSimulation(id)
-- injectFault(id, payload)
-- getSimulation(id)
-- getTimeline(id)
-- listScenarios()
-- getScenario(name)
-- runScenario(name, steps)
-- getReport(id)
-- getMarkdownReport(id)
-
-## Phase 9: Deployment Readiness
-
-Add deployment assets.
-
-Create or update:
-
-- README.md
-- backend/README.md
-- frontend/README.md
-- docs/DEPLOYMENT.md
-- docs/API.md
-- docs/SCENARIOS.md
-- docs/FAULT_MODEL.md
-- docs/PORTFOLIO_CASE_STUDY.md
-- .env.example
-- backend/.env.example
-- frontend/.env.example
-
-Add Docker support if reasonable:
-
-- backend/Dockerfile
-- frontend/Dockerfile
-- docker-compose.yml
-
-Documentation must explain:
-
-- What SentinelNav is
-- Why redundant control systems matter
-- How the simulation loop works
-- How voting works
-- How faults are injected
-- How safe mode escalation works
-- How to run backend tests
-- How to run frontend
-- How to run scenarios
-- How to read the mission report
-- What makes this portfolio-worthy
-
-## Phase 10: Testing Expansion
-
-Add or expand tests.
-
-Backend test targets:
-
-- persistence recovery
-- timeline reconstruction
-- scenario determinism
-- all new fault types
-- report generation
-- safe mode escalation
-- safe mode recovery
-- API route contracts
-- event logging
-- invalid input handling
-
-Frontend test targets if test tooling is already simple to add:
-
-- API client shape
-- component rendering smoke tests
-- scenario page smoke test
-- dashboard smoke test
-
-Do not spend excessive time fighting frontend test tooling. Backend tests matter most.
-
-Acceptance criteria:
-
-- Existing 29 tests still pass.
-- New backend tests pass.
-- Test count should grow meaningfully.
-- No broken imports.
-- No dead modules.
-
-## Phase 11: Portfolio Polish
-
-Improve public presentation.
-
-README must include:
-
-- Project title
-- One-paragraph executive summary
-- Architecture diagram in text or Mermaid
-- Features
-- Backend routes
-- Scenario examples
-- Fault model examples
-- Screenshots placeholder section
-- Local setup
-- Test command
-- Deployment notes
-- Portfolio positioning paragraph
-
-Add `docs/PORTFOLIO_CASE_STUDY.md` with:
-
-- Problem
-- Why this matters
-- System design
-- Simulation architecture
-- Safety model
-- Fault handling
-- Tradeoffs
-- What I would improve next
-- Skills demonstrated
-
-Keep this written in a professional but natural voice.
-
-## Phase 12: Final Validation
-
-Run:
-
+- Agents may inspect the whole repo.
+- Agents may only edit files in their assigned scope.
+- If two agents need the same file, pause and coordinate ownership.
+- Shared files such as README or ARCHITECTURE.md must have one owner at a time.
+- Prefer separate commits or grouped diffs per agent if Git is available.
+
+---
+
+## Phase 2: Integration pass
+
+After agents complete:
+1. Review all changed files together.
+2. Resolve naming inconsistencies.
+3. Ensure docs match actual code.
+4. Ensure frontend fields match backend schema.
+5. Ensure no duplicate sections were created.
+6. Ensure no broken links were introduced.
+7. Ensure no stale SentinelNav wording remains in user-facing surfaces.
+
+Run searches again:
+- SentinelNav
+- sentinelnav
+- Sentinel Nav
+- TODO
+- FIXME
+- placeholder
+- screenshot
+- fake
+- mock
+- lorem
+- hardcoded
+
+Do not remove valid TODOs blindly. Classify them.
+
+---
+
+## Phase 3: Verification
+
+Run the strongest available verification commands:
 - backend tests
-- frontend build
-- lint/type checks if configured
+- frontend tests
+- type checks
+- lint
+- coverage if available
+- formatting checks
+- security scan if configured
+- CI-equivalent local command if documented
 
-Fix failures.
+If a command fails:
+- Diagnose the cause.
+- Fix if within scope.
+- If not within scope, document it clearly.
 
-At the end, provide a final summary containing:
+Do not claim success unless commands actually pass.
 
-- Files changed
-- Features added
-- Tests added
-- Commands run
-- Known tradeoffs
-- Recommended next steps
+---
 
-Do not claim success unless tests and builds actually pass.
+## Phase 4: Final principal-level report
+
+Produce a final report with:
+
+1. Executive summary
+2. Files changed by category
+3. Branding cleanup summary
+4. Dashboard/operator-console improvements
+5. Backend causality fields added or confirmed
+6. Production-boundary documentation added
+7. Claims audit summary
+8. Architecture diagram location
+9. Live demo script location
+10. Tests/checks run and results
+11. Remaining risks
+12. Recommended next phase
+
+Use concise technical language.
+
+---
+
+# Quality bar
+
+The final result should make DriftGuard look like a serious portfolio-grade engineering system.
+
+The repo should communicate:
+- what the system does
+- why the architecture matters
+- how decisions are made
+- how faults change system behavior
+- where the production boundaries are
+- what is verified by tests
+- what is intentionally demo scope
+
+Do not optimize for cosmetic changes. Optimize for credibility, consistency, explainability, and defensible engineering claims.
