@@ -2,6 +2,8 @@
 // Translates a DecisionRecord + active faults into one short, human sentence
 // so non-engineers can read what the system is doing without jargon.
 
+import type { JSX } from "react";
+
 import type { DecisionRecord, FaultRecord } from "@/types/api";
 
 export interface ReplayNarratorProps {
