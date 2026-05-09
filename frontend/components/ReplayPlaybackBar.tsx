@@ -4,7 +4,7 @@
 
 "use client";
 
-import type { KeyboardEvent } from "react";
+import type { JSX, KeyboardEvent } from "react";
 
 import type { ReplayClockHandle, Speed } from "@/lib/hooks/useReplayClock";
 import type { SystemMode } from "@/types/api";
