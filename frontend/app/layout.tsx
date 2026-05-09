@@ -1,4 +1,5 @@
 import "./globals.css";
+import * as React from "react";
 import type { Metadata } from "next";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { ThemeToggle } from "../components/ThemeToggle";
