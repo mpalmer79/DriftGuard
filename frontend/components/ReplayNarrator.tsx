@@ -14,8 +14,7 @@ const STATUS_LINES: Record<string, string> = {
   NORMAL: "All three controllers agree. The system is operating normally.",
   DEGRADED:
     "One controller is unhealthy. The system is still producing actions, but with restrictions.",
-  SAFE_MODE:
-    "The system has lost confidence in its inputs. It is restricted to safe actions only.",
+  SAFE_MODE: "The system has lost confidence in its inputs. It is restricted to safe actions only.",
   FAILED: "Multiple critical failures. The system has aborted.",
 };
 
@@ -73,11 +72,7 @@ function buildSentence(decision: DecisionRecord, faults: FaultRecord[]): string 
   return parts.join(" ");
 }
 
-export function ReplayNarrator({
-  decision,
-  faults,
-  className,
-}: ReplayNarratorProps): JSX.Element {
+export function ReplayNarrator({ decision, faults, className }: ReplayNarratorProps): JSX.Element {
   const sectionClass = [
     "surface-elevated-grad border border-border rounded-md p-4",
     "border-l-4 border-l-accent",

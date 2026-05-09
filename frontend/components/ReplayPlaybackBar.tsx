@@ -258,11 +258,7 @@ export function ReplayPlaybackBar(props: ReplayPlaybackBarProps): JSX.Element {
         />
       )}
 
-      <div
-        role="group"
-        aria-label="Playback speed"
-        className="flex items-center gap-1.5 flex-wrap"
-      >
+      <div role="group" aria-label="Playback speed" className="flex items-center gap-1.5 flex-wrap">
         {SPEED_OPTIONS.map((opt) => {
           const active = clock.speedMultiplier === opt.value;
           const stateClass = active

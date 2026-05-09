@@ -86,7 +86,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, isPlaying: true };
     }
     case "tick": {
-      if (action.totalSteps <= 0) return { currentStep: 0, isPlaying: false, speedMultiplier: state.speedMultiplier };
+      if (action.totalSteps <= 0)
+        return { currentStep: 0, isPlaying: false, speedMultiplier: state.speedMultiplier };
       const lastIndex = action.totalSteps - 1;
       const next = state.currentStep + 1;
       if (next >= lastIndex) {

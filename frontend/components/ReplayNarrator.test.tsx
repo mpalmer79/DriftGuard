@@ -79,9 +79,7 @@ describe("ReplayNarrator", () => {
       trigger_reason: "critical fault",
     };
     render(<ReplayNarrator decision={decision} faults={[]} />);
-    expect(
-      screen.getByText(/Multiple critical failures\. The system has aborted\./)
-    ).toBeTruthy();
+    expect(screen.getByText(/Multiple critical failures\. The system has aborted\./)).toBeTruthy();
   });
 
   it("appends 'Active fault: a sensor stopped reporting.' for SENSOR_DROPOUT", () => {
@@ -105,9 +103,7 @@ describe("ReplayNarrator", () => {
     const fault = buildFault({ type: "CONTROLLER_LATENCY", fault_id: "f-latency" });
     render(<ReplayNarrator decision={decision} faults={[fault]} />);
     const para = screen.getByTestId("replay-narrator").querySelector("p");
-    expect(para?.textContent).toMatch(
-      /Active fault: a controller is responding too slowly\./
-    );
+    expect(para?.textContent).toMatch(/Active fault: a controller is responding too slowly\./);
   });
 
   it("renders the trigger-reason sentence for 'sensor drift detected' (case-insensitive)", () => {
