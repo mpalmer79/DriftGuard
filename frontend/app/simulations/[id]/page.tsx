@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { CausalityPanel } from "@/components/CausalityPanel";
@@ -12,6 +12,8 @@ import { FingerprintBadge } from "@/components/FingerprintBadge";
 import { ModeLegend } from "@/components/ModeLegend";
 import { ModeTimeline } from "@/components/ModeTimeline";
 import { ReplayExplainer } from "@/components/ReplayExplainer";
+import { ReplayNarrator } from "@/components/ReplayNarrator";
+import { ReplayPlaybackBar } from "@/components/ReplayPlaybackBar";
 import { ReplayVerificationPanel } from "@/components/ReplayVerificationPanel";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
 import { TrustEvolution } from "@/components/TrustEvolution";
@@ -22,16 +24,17 @@ import { TrajectoryMap } from "@/components/charts/TrajectoryMap";
 import { ErrorState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { api } from "@/lib/api";
+import { useReplayClock } from "@/lib/hooks/useReplayClock";
 import {
   useDecisions,
   useEvents,
   useFaults,
   useSimulation,
-  useSimulationState,
   useTimeline,
   useTrajectory,
   useTrustHistory,
 } from "@/lib/hooks/useSimulations";
+import type { SystemMode } from "@/types/api";
 
 export default function SimulationDetail() {
   const params = useParams<{ id: string }>();
@@ -40,7 +43,6 @@ export default function SimulationDetail() {
   const scenarioName = searchParams?.get("scenario") ?? null;
 
   const meta = useSimulation(id);
-  const stateQ = useSimulationState(id);
   const events = useEvents(id);
   const faults = useFaults(id);
   const decisions = useDecisions(id);
@@ -48,6 +50,29 @@ export default function SimulationDetail() {
   const timeline = useTimeline(id);
   const trustHistory = useTrustHistory(id);
   const [fingerprint, setFingerprint] = useState<string | null>(null);
+
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReducedMotion(mq.matches);
+    const listener = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener("change", listener);
+    return () => mq.removeEventListener("change", listener);
+  }, []);
+
+  const totalSteps = decisions.data?.length ?? 0;
+  const clock = useReplayClock({ totalSteps, prefersReducedMotion });
+  const { play: startPlayback } = clock;
+
+  const hasAutoPlayedRef = useRef(false);
+  useEffect(() => {
+    if (hasAutoPlayedRef.current) return;
+    if (prefersReducedMotion) return;
+    if (totalSteps < 2) return;
+    hasAutoPlayedRef.current = true;
+    startPlayback();
+  }, [prefersReducedMotion, totalSteps, startPlayback]);
 
   useEffect(() => {
     if (!id) return;
@@ -65,6 +90,15 @@ export default function SimulationDetail() {
     };
   }, [id, decisions.data?.length]);
 
+  const decisionsList = decisions.data;
+  const modeAtStep = useCallback(
+    (step: number): SystemMode | null => {
+      const d = decisionsList?.[step];
+      return d?.system_mode ?? null;
+    },
+    [decisionsList]
+  );
+
   const errorStatus = (meta.error as { status?: number } | undefined)?.status;
   if (errorStatus === 404) return <SimulationNotFound id={id} />;
   if (meta.error) return <ErrorState message={meta.error.message} retry={meta.mutate} />;
@@ -81,12 +115,15 @@ export default function SimulationDetail() {
 
   const seed = meta.data.simulation?.seed;
 
-  const latestStep =
-    timeline.data && timeline.data.length > 0 ? timeline.data[timeline.data.length - 1] : null;
-  const latestDecision =
-    decisions.data && decisions.data.length > 0 ? decisions.data[decisions.data.length - 1] : null;
+  const currentTimelineEntry = timeline.data?.[clock.currentStep] ?? null;
+  const currentDecision = decisions.data?.[clock.currentStep] ?? null;
   const previousDecision =
-    decisions.data && decisions.data.length > 1 ? decisions.data[decisions.data.length - 2] : null;
+    clock.currentStep > 0 ? (decisions.data?.[clock.currentStep - 1] ?? null) : null;
+  const activeFaults = (faults.data ?? []).filter(
+    (f) =>
+      f.start_step <= clock.currentStep && (f.end_step === null || f.end_step > clock.currentStep)
+  );
+
   const decisionRows = (decisions.data ?? []) as {
     step: number;
     system_mode: string;
@@ -102,7 +139,7 @@ export default function SimulationDetail() {
         </p>
         <p className="font-mono text-xs text-text-muted break-all">{id}</p>
         <div className="flex flex-wrap items-center gap-3">
-          {stateQ.data && <SystemModeBadge mode={stateQ.data.system_mode} />}
+          {currentDecision && <SystemModeBadge mode={currentDecision.system_mode} />}
           <span className="font-mono text-xs text-text-muted uppercase tracking-wider">
             SEED {seed} / {meta.data.step_count} STEPS
           </span>
@@ -118,23 +155,30 @@ export default function SimulationDetail() {
         <ModeLegend />
       </header>
 
+      <ReplayNarrator decision={currentDecision} faults={activeFaults} />
+
       <CausalityPanel
-        decision={latestDecision}
+        decision={currentDecision}
         previousDecision={previousDecision}
         faults={faults.data ?? []}
         replayFingerprint={fingerprint}
       />
 
-      <ModeTimeline decisions={decisions.data ?? []} />
+      <ModeTimeline decisions={decisions.data ?? []} currentStep={clock.currentStep} />
 
-      {latestStep && <DecisionPipeline step={latestStep} />}
+      {currentTimelineEntry && <DecisionPipeline step={currentTimelineEntry} />}
 
-      {latestStep && <VotePanel controllers={latestStep.controllers} vote={latestStep.vote} />}
+      {currentTimelineEntry && (
+        <VotePanel
+          controllers={currentTimelineEntry.controllers}
+          vote={currentTimelineEntry.vote}
+        />
+      )}
 
       <TrustEvolution timeline={timeline.data ?? []} trustHistory={trustHistory.data ?? []} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <VehicleStateCard state={stateQ.data ?? null} />
+        <VehicleStateCard state={currentTimelineEntry?.state ?? null} />
         <FaultTimeline faults={faults.data ?? []} />
       </div>
 
@@ -226,6 +270,13 @@ export default function SimulationDetail() {
       />
 
       <EventTimeline events={events.data ?? []} limit={120} />
+
+      <div
+        data-testid="replay-playback-sticky"
+        className="sticky bottom-0 z-40 -mx-6 px-6 py-2 bg-dg-panel/95 backdrop-blur border-t border-border"
+      >
+        <ReplayPlaybackBar clock={clock} totalSteps={totalSteps} modeAtStep={modeAtStep} />
+      </div>
     </div>
   );
 }
