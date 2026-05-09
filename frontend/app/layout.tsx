@@ -63,7 +63,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="border-b border-dg-border bg-dg-panel/50 backdrop-blur sticky top-0 z-10">
             <nav className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <HeaderNav />
-              <a href="https://github.com/mpalmer79/DriftGuard" target="_blank" rel="noreferrer" className="ml-auto opacity-60 hover:opacity-100">source</a>
+              
+                href="https://github.com/mpalmer79/DriftGuard"
+                target="_blank"
+                rel="noreferrer"
+                className="ml-auto opacity-60 hover:opacity-100"
+              >
+                source
+              </a>
               <ThemeToggle />
             </nav>
           </header>
