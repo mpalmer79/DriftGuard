@@ -10,6 +10,7 @@ import { DecisionPipeline } from "@/components/DecisionPipeline";
 import { EventTimeline } from "@/components/EventTimeline";
 import { FaultTimeline } from "@/components/FaultTimeline";
 import { FingerprintBadge } from "@/components/FingerprintBadge";
+import { HeroErrorBoundary } from "@/components/HeroErrorBoundary";
 import { ModeLegend } from "@/components/ModeLegend";
 import { ModeTimeline } from "@/components/ModeTimeline";
 import { ReplayExplainer } from "@/components/ReplayExplainer";
@@ -194,13 +195,15 @@ export default function SimulationDetail() {
         <ModeLegend />
       </header>
 
-      <TriplexHero3D
-        controllers={sceneControllers}
-        systemMode={sceneSystemMode}
-        modeJustChanged={sceneModeJustChanged}
-        faultsJustInjected={sceneFaultsJustInjected}
-        prefersReducedMotion={prefersReducedMotion}
-      />
+      <HeroErrorBoundary>
+        <TriplexHero3D
+          controllers={sceneControllers}
+          systemMode={sceneSystemMode}
+          modeJustChanged={sceneModeJustChanged}
+          faultsJustInjected={sceneFaultsJustInjected}
+          prefersReducedMotion={prefersReducedMotion}
+        />
+      </HeroErrorBoundary>
 
       <ReplayNarrator decision={currentDecision} faults={activeFaults} />
 
