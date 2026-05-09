@@ -28,12 +28,21 @@ export const metadata: Metadata = {
     title: "DriftGuard",
     description:
       "Deterministic, fault-tolerant control-system simulation with triple-redundant controllers, majority voting, safe-mode escalation, and replayable runs.",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 627,
+        alt: "DriftGuard — deterministic, fault-tolerant control-system simulation",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "DriftGuard",
     description:
       "Deterministic, fault-tolerant control-system simulation with replayable runs and an auditable mission report.",
+    images: ["/og.png"],
   },
   robots: { index: true, follow: true },
 };
