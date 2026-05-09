@@ -14,19 +14,19 @@ const STORAGE_KEY = "driftguard-theme";
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>("dark");
 
   useEffect(() => {
-    let initial: Theme = "light";
+    let initial: Theme = "dark";
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored === "light" || stored === "dark") {
         initial = stored;
-      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        initial = "dark";
+      } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+        initial = "light";
       }
     } catch {
-      // localStorage access can throw in restricted contexts; fall back to light.
+      // localStorage access can throw in restricted contexts; fall back to dark.
     }
     setThemeState(initial);
     document.documentElement.dataset.theme = initial;
