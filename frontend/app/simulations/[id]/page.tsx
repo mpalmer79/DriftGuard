@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { CausalityPanel } from "@/components/CausalityPanel";
@@ -16,7 +17,6 @@ import { ReplayNarrator } from "@/components/ReplayNarrator";
 import { ReplayPlaybackBar } from "@/components/ReplayPlaybackBar";
 import { ReplayVerificationPanel } from "@/components/ReplayVerificationPanel";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
-import TriplexHero3D from "@/components/TriplexHero3D";
 import { TrustEvolution } from "@/components/TrustEvolution";
 import { VehicleStateCard } from "@/components/VehicleStateCard";
 import { VotePanel } from "@/components/VotePanel";
@@ -41,6 +41,13 @@ import {
   modeJustChangedAt,
 } from "@/lib/replay/sceneState";
 import type { SystemMode } from "@/types/api";
+
+// Three.js + R3F load lazily on the client only — the Canvas component and
+// its imports must never run server-side or during the static build trace.
+const TriplexHero3D = dynamic(() => import("@/components/TriplexHero3D"), {
+  ssr: false,
+  loading: () => <div className="aspect-[16/7] w-full" aria-hidden="true" />,
+});
 
 export default function SimulationDetail() {
   const params = useParams<{ id: string }>();
