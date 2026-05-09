@@ -41,12 +41,19 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=localStorage.getItem('driftguard-theme');var t=(s==='light'||s==='dark')?s:(window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='dark';}})();`,
+          }}
+        />
+      </head>
       <body className="font-mono">
         <ThemeProvider>
           <header className="border-b border-dg-border bg-dg-panel/50 backdrop-blur sticky top-0 z-10">
             <nav className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <HeaderNav />
-              <a
+              
                 href="https://github.com/mpalmer79/driftguard"
                 target="_blank"
                 rel="noreferrer"
