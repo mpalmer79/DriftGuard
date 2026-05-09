@@ -138,7 +138,6 @@ export default function TriplexHero3D({
       <span className="sr-only">{summary}</span>
       {webglAvailable && (
         <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
-          <color attach="background" args={["transparent"]} />
           <fog attach="fog" args={["#0a0a0a", 6, 14]} />
           <ambientLight intensity={0.4} />
           <directionalLight intensity={0.8} position={[5, 5, 5]} />
