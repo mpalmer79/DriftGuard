@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { CausalityPanel } from "@/components/CausalityPanel";
@@ -16,11 +16,12 @@ import { ReplayNarrator } from "@/components/ReplayNarrator";
 import { ReplayPlaybackBar } from "@/components/ReplayPlaybackBar";
 import { ReplayVerificationPanel } from "@/components/ReplayVerificationPanel";
 import { SystemModeBadge } from "@/components/SystemModeBadge";
+import TriplexHero3D from "@/components/TriplexHero3D";
 import { TrustEvolution } from "@/components/TrustEvolution";
 import { VehicleStateCard } from "@/components/VehicleStateCard";
 import { VotePanel } from "@/components/VotePanel";
+import { LiveTrajectoryCanvas } from "@/components/charts/LiveTrajectoryCanvas";
 import { AltitudeChart, HorizontalSpeedChart, ModeBand } from "@/components/charts/TelemetryCharts";
-import { TrajectoryMap } from "@/components/charts/TrajectoryMap";
 import { ErrorState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { api } from "@/lib/api";
@@ -34,6 +35,11 @@ import {
   useTrajectory,
   useTrustHistory,
 } from "@/lib/hooks/useSimulations";
+import {
+  controllerHealthAt,
+  faultsJustInjectedAt,
+  modeJustChangedAt,
+} from "@/lib/replay/sceneState";
 import type { SystemMode } from "@/types/api";
 
 export default function SimulationDetail() {
@@ -90,14 +96,49 @@ export default function SimulationDetail() {
     };
   }, [id, decisions.data?.length]);
 
-  const decisionsList = decisions.data;
+  const decisionsList = decisions.data ?? null;
+  const trustHistoryList = trustHistory.data ?? null;
+  const faultsList = faults.data ?? null;
+  const currentStep = clock.currentStep;
+  const currentDecision = decisionsList?.[currentStep] ?? null;
+  const previousDecision = currentStep > 0 ? (decisionsList?.[currentStep - 1] ?? null) : null;
+  const currentTimelineEntry = timeline.data?.[currentStep] ?? null;
+
   const modeAtStep = useCallback(
-    (step: number): SystemMode | null => {
-      const d = decisionsList?.[step];
-      return d?.system_mode ?? null;
-    },
+    (step: number): SystemMode | null => decisionsList?.[step]?.system_mode ?? null,
     [decisionsList]
   );
+
+  const controllerTrustAtStep = useCallback(
+    (step: number): number => {
+      const entries = controllerHealthAt(decisionsList?.[step] ?? null, trustHistoryList, step);
+      if (entries.length === 0) return 1;
+      const sum = entries.reduce((acc, h) => acc + h.trust, 0);
+      return sum / entries.length;
+    },
+    [decisionsList, trustHistoryList]
+  );
+
+  const activeFaults = useMemo(
+    () =>
+      (faultsList ?? []).filter(
+        (f) => f.start_step <= currentStep && (f.end_step === null || f.end_step > currentStep)
+      ),
+    [faultsList, currentStep]
+  );
+  const sceneControllers = useMemo(
+    () => controllerHealthAt(currentDecision, trustHistoryList, currentStep),
+    [currentDecision, trustHistoryList, currentStep]
+  );
+  const sceneFaultsJustInjected = useMemo(
+    () => faultsJustInjectedAt(faultsList ?? [], currentStep),
+    [faultsList, currentStep]
+  );
+  const sceneModeJustChanged = useMemo(
+    () => modeJustChangedAt(decisionsList, currentStep),
+    [decisionsList, currentStep]
+  );
+  const sceneSystemMode: SystemMode = currentDecision?.system_mode ?? "NORMAL";
 
   const errorStatus = (meta.error as { status?: number } | undefined)?.status;
   if (errorStatus === 404) return <SimulationNotFound id={id} />;
@@ -114,15 +155,6 @@ export default function SimulationDetail() {
   if (!meta.data.simulation) return <SimulationNotFound id={id} />;
 
   const seed = meta.data.simulation?.seed;
-
-  const currentTimelineEntry = timeline.data?.[clock.currentStep] ?? null;
-  const currentDecision = decisions.data?.[clock.currentStep] ?? null;
-  const previousDecision =
-    clock.currentStep > 0 ? (decisions.data?.[clock.currentStep - 1] ?? null) : null;
-  const activeFaults = (faults.data ?? []).filter(
-    (f) =>
-      f.start_step <= clock.currentStep && (f.end_step === null || f.end_step > clock.currentStep)
-  );
 
   const decisionRows = (decisions.data ?? []) as {
     step: number;
@@ -154,6 +186,14 @@ export default function SimulationDetail() {
         </nav>
         <ModeLegend />
       </header>
+
+      <TriplexHero3D
+        controllers={sceneControllers}
+        systemMode={sceneSystemMode}
+        modeJustChanged={sceneModeJustChanged}
+        faultsJustInjected={sceneFaultsJustInjected}
+        prefersReducedMotion={prefersReducedMotion}
+      />
 
       <ReplayNarrator decision={currentDecision} faults={activeFaults} />
 
@@ -192,7 +232,12 @@ export default function SimulationDetail() {
           </span>
         </summary>
         <div className="p-4 pt-0 space-y-4">
-          <TrajectoryMap points={trajectory.data ?? []} />
+          <LiveTrajectoryCanvas
+            points={trajectory.data ?? []}
+            currentStep={clock.currentStep}
+            controllerTrustAtStep={controllerTrustAtStep}
+            prefersReducedMotion={prefersReducedMotion}
+          />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <AltitudeChart points={trajectory.data ?? []} />
             <HorizontalSpeedChart points={trajectory.data ?? []} />
