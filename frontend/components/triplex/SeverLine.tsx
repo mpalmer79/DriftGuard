@@ -132,15 +132,7 @@ export function SeverLine({ from, to, health, prefersReducedMotion }: SeverLineP
   // tick is read so React keeps re-rendering during the transition.
   void tick;
 
-  return (
-    <Line
-      points={points}
-      color={color}
-      opacity={opacity}
-      lineWidth={lineWidth}
-      transparent
-    />
-  );
+  return <Line points={points} color={color} opacity={opacity} lineWidth={lineWidth} transparent />;
 }
 
 export default SeverLine;

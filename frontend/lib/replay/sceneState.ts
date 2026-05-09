@@ -43,18 +43,13 @@ export type ActiveFaultAt = {
 
 export type ModeChangeAt = { from: SystemMode; to: SystemMode } | null;
 
-const CONTROLLER_IDS: readonly ControllerId[] = [
-  "controller_a",
-  "controller_b",
-  "controller_c",
-];
+const CONTROLLER_IDS: readonly ControllerId[] = ["controller_a", "controller_b", "controller_c"];
 
 const STATUS_LINES: Record<SystemMode, string> = {
   NORMAL: "All three controllers agree. The system is operating normally.",
   DEGRADED:
     "One controller is unhealthy. The system is still producing actions, but with restrictions.",
-  SAFE_MODE:
-    "The system has lost confidence in its inputs. It is restricted to safe actions only.",
+  SAFE_MODE: "The system has lost confidence in its inputs. It is restricted to safe actions only.",
   FAILED: "Multiple critical failures. The system has aborted.",
 };
 
@@ -106,10 +101,7 @@ export function describeFault(fault: { type: string; target: string }): string {
   return key.toLowerCase().replace(/_/g, "-");
 }
 
-export function statusAt(
-  decision: DecisionRecord | null,
-  faults: FaultRecord[]
-): StatusAt {
+export function statusAt(decision: DecisionRecord | null, faults: FaultRecord[]): StatusAt {
   if (decision === null) {
     return { headline: "", cause: null, mode: "UNKNOWN" };
   }
@@ -144,9 +136,7 @@ export function statusAt(
   return { headline, cause: null, mode };
 }
 
-function isComponentTrustSnapshot(
-  value: unknown
-): value is ComponentTrustSnapshot {
+function isComponentTrustSnapshot(value: unknown): value is ComponentTrustSnapshot {
   if (value === null || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
   return typeof record.trust === "number" && typeof record.status === "string";
@@ -230,20 +220,14 @@ export function activeFaultsAt(faults: FaultRecord[], step: number): ActiveFault
     .sort(sortFaults);
 }
 
-export function faultsJustInjectedAt(
-  faults: FaultRecord[],
-  step: number
-): ActiveFaultAt[] {
+export function faultsJustInjectedAt(faults: FaultRecord[], step: number): ActiveFaultAt[] {
   return faults
     .filter((fault) => fault.start_step === step)
     .map(toActiveFaultAt)
     .sort(sortFaults);
 }
 
-export function modeJustChangedAt(
-  decisions: DecisionRecord[] | null,
-  step: number
-): ModeChangeAt {
+export function modeJustChangedAt(decisions: DecisionRecord[] | null, step: number): ModeChangeAt {
   if (step <= 0) return null;
   if (!decisions || decisions.length === 0) return null;
   if (step >= decisions.length) return null;

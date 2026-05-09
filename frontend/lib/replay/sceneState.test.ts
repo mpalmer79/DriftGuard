@@ -8,12 +8,7 @@ import {
   modeJustChangedAt,
   statusAt,
 } from "./sceneState";
-import type {
-  DecisionRecord,
-  FaultRecord,
-  SystemMode,
-  TrustSnapshotEntry,
-} from "@/types/api";
+import type { DecisionRecord, FaultRecord, SystemMode, TrustSnapshotEntry } from "@/types/api";
 
 function makeDecision(overrides: Partial<DecisionRecord> = {}): DecisionRecord {
   return {
@@ -54,9 +49,7 @@ describe("statusAt", () => {
       trigger_reason: "all components healthy",
     });
     const result = statusAt(decision, []);
-    expect(result.headline).toBe(
-      "All three controllers agree. The system is operating normally."
-    );
+    expect(result.headline).toBe("All three controllers agree. The system is operating normally.");
     expect(result.cause).toBeNull();
     expect(result.mode).toBe("NORMAL");
   });
@@ -76,9 +69,7 @@ describe("statusAt", () => {
     expect(result.headline).toBe(
       "One controller is unhealthy. The system is still producing actions, but with restrictions."
     );
-    expect(result.cause).toBe(
-      "Active fault: a controller is responding too slowly."
-    );
+    expect(result.cause).toBe("Active fault: a controller is responding too slowly.");
     expect(result.mode).toBe("DEGRADED");
   });
 
@@ -293,18 +284,12 @@ describe("modeJustChangedAt", () => {
   });
 
   it("two adjacent decisions with same mode -> null", () => {
-    const decisions = [
-      decisionWithMode(0, "NORMAL"),
-      decisionWithMode(1, "NORMAL"),
-    ];
+    const decisions = [decisionWithMode(0, "NORMAL"), decisionWithMode(1, "NORMAL")];
     expect(modeJustChangedAt(decisions, 1)).toBeNull();
   });
 
   it("two adjacent decisions with different modes -> { from, to } object", () => {
-    const decisions = [
-      decisionWithMode(0, "NORMAL"),
-      decisionWithMode(1, "DEGRADED"),
-    ];
+    const decisions = [decisionWithMode(0, "NORMAL"), decisionWithMode(1, "DEGRADED")];
     expect(modeJustChangedAt(decisions, 1)).toEqual({
       from: "NORMAL",
       to: "DEGRADED",
@@ -312,10 +297,7 @@ describe("modeJustChangedAt", () => {
   });
 
   it("step >= decisions.length -> null", () => {
-    const decisions = [
-      decisionWithMode(0, "NORMAL"),
-      decisionWithMode(1, "DEGRADED"),
-    ];
+    const decisions = [decisionWithMode(0, "NORMAL"), decisionWithMode(1, "DEGRADED")];
     expect(modeJustChangedAt(decisions, 2)).toBeNull();
     expect(modeJustChangedAt(decisions, 99)).toBeNull();
   });

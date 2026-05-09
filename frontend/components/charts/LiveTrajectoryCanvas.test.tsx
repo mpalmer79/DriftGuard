@@ -120,9 +120,7 @@ describe("LiveTrajectoryCanvas", () => {
         prefersReducedMotion={true}
       />
     );
-    const highCorridor = highContainer.querySelector(
-      '[data-testid="live-trajectory-corridor"]'
-    );
+    const highCorridor = highContainer.querySelector('[data-testid="live-trajectory-corridor"]');
     const highWidth = Number(highCorridor?.getAttribute("stroke-width"));
 
     cleanup();
@@ -135,9 +133,7 @@ describe("LiveTrajectoryCanvas", () => {
         prefersReducedMotion={true}
       />
     );
-    const lowCorridor = lowContainer.querySelector(
-      '[data-testid="live-trajectory-corridor"]'
-    );
+    const lowCorridor = lowContainer.querySelector('[data-testid="live-trajectory-corridor"]');
     const lowWidth = Number(lowCorridor?.getAttribute("stroke-width"));
 
     expect(Number.isFinite(highWidth)).toBe(true);
@@ -146,9 +142,7 @@ describe("LiveTrajectoryCanvas", () => {
   });
 
   it("schedules no requestAnimationFrame calls when prefersReducedMotion is true", () => {
-    const rafSpy = vi
-      .spyOn(window, "requestAnimationFrame")
-      .mockImplementation(() => 0);
+    const rafSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 0);
 
     const points: TrajectoryPoint[] = [
       makePoint(0, 0, 0),
@@ -185,9 +179,7 @@ describe("LiveTrajectoryCanvas", () => {
   });
 
   it("schedules at least one requestAnimationFrame call when prefersReducedMotion is false", () => {
-    const rafSpy = vi
-      .spyOn(window, "requestAnimationFrame")
-      .mockImplementation(() => 0);
+    const rafSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 0);
 
     const points: TrajectoryPoint[] = [
       makePoint(0, 0, 0),
@@ -208,10 +200,7 @@ describe("LiveTrajectoryCanvas", () => {
   });
 
   it("exposes an accessible aria-label on the wrapper and svg", () => {
-    const points: TrajectoryPoint[] = [
-      makePoint(0, 0, 0),
-      makePoint(1, 5, 5),
-    ];
+    const points: TrajectoryPoint[] = [makePoint(0, 0, 0), makePoint(1, 5, 5)];
     render(
       <LiveTrajectoryCanvas
         points={points}
@@ -237,9 +226,7 @@ describe("LiveTrajectoryCanvas", () => {
       )
     ).not.toThrow();
     expect(screen.getByTestId("live-trajectory-marker")).toBeTruthy();
-    expect(screen.getByTestId("live-trajectory-step-label").textContent).toContain(
-      "STEP 1 / 1"
-    );
+    expect(screen.getByTestId("live-trajectory-step-label").textContent).toContain("STEP 1 / 1");
   });
 
   it("places the marker at the projected position of points[currentStep] initially", () => {

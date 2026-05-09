@@ -44,7 +44,7 @@ function easeInOutCubic(t: number): number {
 
 // Shortest-arc lerp between two angles (degrees).
 function lerpAngle(from: number, to: number, eased: number): number {
-  return from + ((((to - from) % 360) + 540) % 360 - 180) * eased;
+  return from + (((((to - from) % 360) + 540) % 360) - 180) * eased;
 }
 
 type Projector = (x: number, y: number) => readonly [number, number];
@@ -281,10 +281,7 @@ export function LiveTrajectoryCanvas({
     const group = markerGroupRef.current;
     if (!group) return;
     if (lastVisualRef.current === null) {
-      group.setAttribute(
-        "transform",
-        `translate(${target.x} ${target.y}) rotate(${target.angle})`
-      );
+      group.setAttribute("transform", `translate(${target.x} ${target.y}) rotate(${target.angle})`);
       lastVisualRef.current = { x: target.x, y: target.y, angle: target.angle };
     }
   }, [target, totalSteps]);
@@ -430,11 +427,7 @@ export function LiveTrajectoryCanvas({
         ) : null}
 
         {/* Vehicle marker */}
-        <g
-          ref={markerGroupRef}
-          data-testid="live-trajectory-marker"
-          transform={initialTransform}
-        >
+        <g ref={markerGroupRef} data-testid="live-trajectory-marker" transform={initialTransform}>
           <polygon points="0,-4 4,4 -4,4" fill="#38bdf8" />
         </g>
 

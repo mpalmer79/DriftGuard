@@ -78,9 +78,7 @@ function buildSummary(controllers: TriplexControllerHealth[], mode: SystemMode):
 function detectWebGL(): boolean {
   try {
     const canvas = document.createElement("canvas");
-    const ctx =
-      canvas.getContext("webgl") ||
-      canvas.getContext("experimental-webgl");
+    const ctx = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     return Boolean(ctx);
   } catch {
     return false;
@@ -101,10 +99,7 @@ export default function TriplexHero3D({
     setWebglAvailable(detectWebGL());
   }, []);
 
-  const summary = useMemo(
-    () => buildSummary(controllers, systemMode),
-    [controllers, systemMode],
-  );
+  const summary = useMemo(() => buildSummary(controllers, systemMode), [controllers, systemMode]);
 
   // Map controller id -> latest fault for pulse-boost keying.
   const faultByTarget = useMemo(() => {
@@ -119,10 +114,7 @@ export default function TriplexHero3D({
 
   if (webglAvailable === false) {
     return (
-      <div
-        className={wrapperClass}
-        aria-label="Triplex controller visualization"
-      >
+      <div className={wrapperClass} aria-label="Triplex controller visualization">
         <span className="sr-only">{summary}</span>
         <div className="flex flex-col items-center justify-center w-full h-full">
           <Image
@@ -160,9 +152,7 @@ export default function TriplexHero3D({
           />
           {controllers.map((health, i) => {
             const fault = faultByTarget.get(health.id);
-            const pulseBoostKey = fault
-              ? `${fault.startedAtStep}-${fault.id}`
-              : undefined;
+            const pulseBoostKey = fault ? `${fault.startedAtStep}-${fault.id}` : undefined;
             return (
               <Controller
                 key={health.id}

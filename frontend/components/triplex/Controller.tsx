@@ -35,7 +35,12 @@ export type ControllerProps = {
   pulseBoostKey?: string;
 };
 
-export function Controller({ position, health, prefersReducedMotion, pulseBoostKey }: ControllerProps) {
+export function Controller({
+  position,
+  health,
+  prefersReducedMotion,
+  pulseBoostKey,
+}: ControllerProps) {
   const innerRef = useRef<Mesh>(null);
   const shellRef = useRef<Mesh>(null);
   const innerMaterialRef = useRef<MeshStandardMaterial>(null);

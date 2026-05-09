@@ -5,10 +5,7 @@ import { describe, expect, it, afterEach, beforeEach, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 import TriplexHero3D from "./TriplexHero3D";
-import type {
-  TriplexControllerHealth,
-  TriplexFaultInjected,
-} from "./TriplexHero3D";
+import type { TriplexControllerHealth, TriplexFaultInjected } from "./TriplexHero3D";
 
 // jsdom shouts "Not implemented: HTMLCanvasElement.prototype.getContext"
 // every time we feature-detect WebGL. Stub it to return null (a valid
@@ -55,7 +52,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={[]}
         prefersReducedMotion={false}
-      />,
+      />
     );
     const fallback = screen.getByRole("img", {
       name: /3D unavailable in this browser/i,
@@ -72,7 +69,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={[]}
         prefersReducedMotion={false}
-      />,
+      />
     );
     const sr = container.querySelector(".sr-only");
     expect(sr).toBeTruthy();
@@ -91,7 +88,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={[]}
         prefersReducedMotion={false}
-      />,
+      />
     );
     const wrapper = screen.getByLabelText("Triplex controller visualization");
     expect(wrapper).toBeTruthy();
@@ -106,7 +103,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={[]}
         prefersReducedMotion={false}
-      />,
+      />
     );
     const before = container.querySelector(".sr-only")?.textContent ?? "";
     expect(before).toMatch(/System mode NORMAL/);
@@ -115,7 +112,7 @@ describe("TriplexHero3D", () => {
     const updated: TriplexControllerHealth[] = baseControllers.map((c) =>
       c.id === "controller_b"
         ? { ...c, isRejected: false, isTrusted: true, status: "RECOVERING" }
-        : c,
+        : c
     );
     rerender(
       <TriplexHero3D
@@ -124,7 +121,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={[]}
         prefersReducedMotion={false}
-      />,
+      />
     );
     const after = container.querySelector(".sr-only")?.textContent ?? "";
     expect(after).toMatch(/System mode DEGRADED/);
@@ -139,7 +136,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={[]}
         prefersReducedMotion={false}
-      />,
+      />
     );
     expect(screen.getByText(/3D scene unavailable in this browser/i)).toBeTruthy();
   });
@@ -152,7 +149,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={[]}
         prefersReducedMotion={true}
-      />,
+      />
     );
     expect(container.querySelector('[aria-label="Triplex controller visualization"]')).toBeTruthy();
   });
@@ -166,7 +163,7 @@ describe("TriplexHero3D", () => {
         faultsJustInjected={[]}
         prefersReducedMotion={false}
         className="my-custom-hero"
-      />,
+      />
     );
     const wrapper = screen.getByLabelText("Triplex controller visualization");
     expect(wrapper.className).toMatch(/aspect-\[16\/7\]/);
@@ -191,7 +188,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={[]}
         prefersReducedMotion={false}
-      />,
+      />
     );
     const text = container.querySelector(".sr-only")?.textContent ?? "";
     expect(text).toMatch(/Controller A suspect/);
@@ -213,7 +210,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={faults}
         prefersReducedMotion={false}
-      />,
+      />
     );
     expect(container.querySelector('[aria-label="Triplex controller visualization"]')).toBeTruthy();
   });
@@ -226,7 +223,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={{ from: "DEGRADED", to: "SAFE_MODE" }}
         faultsJustInjected={[]}
         prefersReducedMotion={false}
-      />,
+      />
     );
     expect(container.querySelector('[aria-label="Triplex controller visualization"]')).toBeTruthy();
   });
@@ -239,7 +236,7 @@ describe("TriplexHero3D", () => {
         modeJustChanged={null}
         faultsJustInjected={[]}
         prefersReducedMotion={false}
-      />,
+      />
     );
     const sr = container.querySelector(".sr-only");
     const img = container.querySelector("img");
@@ -247,7 +244,7 @@ describe("TriplexHero3D", () => {
     expect(img).toBeTruthy();
     // sr should appear before img in document order.
     expect(
-      sr && img && sr.compareDocumentPosition(img) & Node.DOCUMENT_POSITION_FOLLOWING,
+      sr && img && sr.compareDocumentPosition(img) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
   });
 
