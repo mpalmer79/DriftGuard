@@ -7,7 +7,7 @@ import { HeaderNav } from "../components/HeaderNav";
 export const metadata: Metadata = {
   title: {
     default: "DriftGuard",
-    template: "%s · DriftGuard",
+    template: "%s - DriftGuard",
   },
   description:
     "Deterministic, fault-tolerant control-system simulation. Triple-redundant controllers, majority voting, and explicit safe-mode escalation, with replayable runs and an auditable mission report.",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
         url: "/og.png",
         width: 1200,
         height: 627,
-        alt: "DriftGuard — deterministic, fault-tolerant control-system simulation",
+        alt: "DriftGuard - deterministic, fault-tolerant control-system simulation",
       },
     ],
   },
@@ -63,14 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="border-b border-dg-border bg-dg-panel/50 backdrop-blur sticky top-0 z-10">
             <nav className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <HeaderNav />
-              
-                href="https://github.com/mpalmer79/DriftGuard"
-                target="_blank"
-                rel="noreferrer"
-                className="ml-auto opacity-60 hover:opacity-100"
-              >
-                source
-              </a>
+              <a href="https://github.com/mpalmer79/DriftGuard" target="_blank" rel="noreferrer" className="ml-auto opacity-60 hover:opacity-100">source</a>
               <ThemeToggle />
             </nav>
           </header>
