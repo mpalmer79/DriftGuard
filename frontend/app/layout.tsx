@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   description:
     "Deterministic, fault-tolerant control-system simulation. Triple-redundant controllers, majority voting, and explicit safe-mode escalation, with replayable runs and an auditable mission report.",
   applicationName: "DriftGuard",
+  metadataBase: new URL("https://driftguard.up.railway.app"),
   keywords: [
     "fault tolerance",
     "control systems",
@@ -63,7 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <HeaderNav />
               
-                href="https://github.com/mpalmer79/driftguard"
+                href="https://github.com/mpalmer79/DriftGuard"
                 target="_blank"
                 rel="noreferrer"
                 className="ml-auto opacity-60 hover:opacity-100"
